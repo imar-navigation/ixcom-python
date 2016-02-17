@@ -1,4 +1,6 @@
 import collections
+import struct
+import crc16
 from enum import IntEnum
 
 class XcomResponse(IntEnum):

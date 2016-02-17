@@ -2,10 +2,8 @@ import asynchat, socket
 import asyncore
 import threading
 import collections
-import struct
 import crc16
 import math
-import binascii
 from enum import IntEnum
 from xcom import xcomdata
 
@@ -74,7 +72,7 @@ class XcomMessageParser:
         self.messageEvent.messageID = None
         
     def parse_response(self, inBytes):
-        message = XcomProtocolMessage()
+        message = xcomdata.XcomProtocolMessage()
         message.header.from_bytes(inBytes[:16])
         message.payload = xcomdata.XcomResponsePayload(message.header.msgLength)
         message.from_bytes(inBytes)
@@ -83,7 +81,7 @@ class XcomMessageParser:
         print(message.payload.data['responseText'].decode('utf-8'))
                 
     def parse_parameter(self, inBytes):
-        message = XcomProtocolMessage()
+        message = xcomdata.XcomProtocolMessage()
         message.payload = xcomdata.XcomDefaultParameterPayload()
         message.payload.from_bytes(inBytes[16:20])
         parameterID = message.payload.data['parameterID']
@@ -97,7 +95,7 @@ class XcomMessageParser:
         self.parameterEvent.set()
         
     def parse(self, inBytes):
-        header = XcomProtocolHeader()
+        header = xcomdata.XcomProtocolHeader()
         header.from_bytes(inBytes)
         if header.msgID == xcomdata.MessageID.RESPONSE:
             self.parse_response(inBytes)
