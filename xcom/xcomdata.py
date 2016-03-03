@@ -615,7 +615,7 @@ class PARMAG_CAL_Payload(XcomDefaultParameterPayload):
         super().__init__()
         self.structString += "9f3fI"
         self.data['C'] = [1,0,0, 0,0,0, 0,0,1]
-        self.data['bias'] = 0   
+        self.data['bias'] = [0,0,0]   
         self.data['valid'] = 0
         
 class PARMAG_CALSTATE_Payload(XcomDefaultParameterPayload):
@@ -680,7 +680,7 @@ class PARODO_DIRECTION_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "3f"
-        self.data['direction'] = 0
+        self.data['direction'] = [0, 0, 0]
         
 class PARODO_CONSTRAINTS_Payload(XcomDefaultParameterPayload):
     def __init__(self):
@@ -1141,8 +1141,33 @@ class SYSSTAT_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
         self.structString += "II"
-        self.data['mode']    = 0
-        self.data['sysstat'] = 0
+        self.data['statMode']= 0
+        self.data['sysStat'] = 0
+        
+    def from_bytes(self, inBytes):
+        self.data['statMode'] = struct.unpack("I", inBytes[:4])[0]
+        if(self.data['statMode'] & (1 << 0)):
+            self.structString += "I"
+            self.data['imuStat'] = 0
+        if(self.data['statMode'] & (1 << 1)):
+            self.structString += "I"
+            self.data['gnssStat'] = 0
+        if(self.data['statMode'] & (1 << 2)):
+            self.structString += "I"
+            self.data['magStat'] = 0
+        if(self.data['statMode'] & (1 << 3)):
+            self.structString += "I"
+            self.data['madcStat'] = 0
+        if(self.data['statMode'] & (1 << 4)):
+            self.structString += "2I"
+            self.data['ekfStat'] = [0, 0]
+        if(self.data['statMode'] & (1 << 5)):
+            self.structString += "I"
+            self.data['ekfGeneralStat'] = 0
+        if(self.data['statMode'] & (1 << 6)):
+            self.structString += "2I"
+            self.data['addStat'] = [0, 0]
+        super().from_bytes(inBytes)
         
 class INSRPY_Payload(XcomProtocolPayload):
     def __init__(self):
@@ -1218,7 +1243,7 @@ class AIRDATA_Payload(XcomProtocolPayload):
 class EKFSTDDEV_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
-        self.structString += "3f3f3f3f3f3f3ffI"
+        self.structString += "3f3f3f3f3f3f3ff"
         self.data['pos']        = [0, 0, 0]
         self.data['vel']        = [0, 0, 0]
         self.data['tilt']       = [0, 0, 0]
@@ -1227,7 +1252,6 @@ class EKFSTDDEV_Payload(XcomProtocolPayload):
         self.data['scfAcc']     = [0, 0, 0]
         self.data['scfOmg']     = [0, 0, 0]
         self.data['scfOdo']     =  0
-        self.data['status']     =  0
         
 class EKFERROR_Payload(XcomProtocolPayload):
     def __init__(self):
