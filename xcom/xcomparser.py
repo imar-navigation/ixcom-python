@@ -18,44 +18,58 @@ class XcomMessageSearcher:
     def __init__(self, parserDelegate):
         self.parserDelegate = parserDelegate
         self.searcherState  = XcomMessageSearcherState.waiting_for_sync
-        self.currentBytes = bytearray()
+        self.currentBytes = bytearray(b' '*512)
+        self.currentByteIdx = 0
         self.remainingByteCount = 0
+        self.disableCRC = False
         self.processing = threading.Lock()
         
     def process_bytes(self, inBytes):
         self.processing.acquire()
-        tmpBytes = bytearray(inBytes)
-        while len(tmpBytes) > 0:
+        inByteIdx = 0
+        while inByteIdx < len(inBytes):
+            
             if self.searcherState == XcomMessageSearcherState.waiting_for_sync:
-                poppedByte = tmpBytes.pop(0)
+                poppedByte = inBytes[inByteIdx]
+                inByteIdx += 1
                 if poppedByte == 0x7E:
-                    self.currentBytes = bytearray(b'\x7e')
+                    self.currentBytes[0] = 0x7E
+                    self.currentByteIdx = 1
                     self.remainingByteCount = 5
                     self.searcherState = XcomMessageSearcherState.waiting_for_msglength
             elif self.searcherState == XcomMessageSearcherState.waiting_for_msglength:
-                self.currentBytes.append(tmpBytes.pop(0))
+                poppedByte = inBytes[inByteIdx]
+                inByteIdx += 1
+                self.currentBytes[self.currentByteIdx] = poppedByte
+                self.currentByteIdx += 1
                 self.remainingByteCount -= 1
                 if self.remainingByteCount == 0:
-                    self.remainingByteCount = self.currentBytes[-1]*256 + self.currentBytes[-2]-6
+                    self.remainingByteCount = self.currentBytes[self.currentByteIdx-1]*256 + self.currentBytes[self.currentByteIdx-2]-6
                     if self.remainingByteCount < 600:
                         self.searcherState = XcomMessageSearcherState.fetching_bytes
                     else:
                         self.searcherState = XcomMessageSearcherState.waiting_for_sync
             elif self.searcherState == XcomMessageSearcherState.fetching_bytes:
-                if len(tmpBytes) > self.remainingByteCount:
-                    self.currentBytes.extend(tmpBytes[:self.remainingByteCount])
-                    tmpBytes = tmpBytes[self.remainingByteCount:]
+                if len(inBytes)-1 >=self.remainingByteCount+inByteIdx-1: # Der Buffer ist Länger als der Rest der Nachricht.
+                    self.currentBytes[self.currentByteIdx:self.currentByteIdx+self.remainingByteCount] = inBytes[inByteIdx:inByteIdx+self.remainingByteCount]
+                    self.currentByteIdx = self.currentByteIdx+self.remainingByteCount
+                    inByteIdx = inByteIdx+self.remainingByteCount
                     self.remainingByteCount = 0
                 else:
-                    self.currentBytes.append(tmpBytes.pop(0))
-                    self.remainingByteCount -= 1
+                    self.currentBytes[self.currentByteIdx:self.currentByteIdx+(len(inBytes)-inByteIdx)] = inBytes[inByteIdx:]
+                    self.currentByteIdx = self.currentByteIdx+(len(inBytes)-inByteIdx)
+                    self.remainingByteCount -= (len(inBytes)-inByteIdx)
+                    inByteIdx = len(inBytes)
                 if self.remainingByteCount == 0:
-                    crc = crc16.crc16xmodem(bytes(self.currentBytes[:-2]))
-                    if crc == self.currentBytes[-2]+self.currentBytes[-1]*256:
-                        if hasattr(self.parserDelegate, 'parse'):
-                            self.parserDelegate.parse(self.currentBytes)
+                    if self.disableCRC:
+                        self.parserDelegate.parse(self.currentBytes[:self.currentByteIdx])
                     else:
-                        print("CRC Error %d" % crc)
+                        crc = crc16.crc16xmodem(bytes(self.currentBytes[:self.currentByteIdx-2]))
+                        if crc == self.currentBytes[self.currentByteIdx-2]+self.currentBytes[self.currentByteIdx-1]*256:
+                            if hasattr(self.parserDelegate, 'parse'):
+                                self.parserDelegate.parse(self.currentBytes[:self.currentByteIdx])
+                        else:
+                            print("CRC Error %d" % crc)
                     self.searcherState = XcomMessageSearcherState.waiting_for_sync
         self.processing.release()
         
