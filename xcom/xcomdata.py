@@ -147,6 +147,7 @@ class ParameterID(IntEnum):
     PARIMU_LATENCY          = 108
     PARIMU_CALIB            = 109
     PARIMU_CROSSCOUPLING    = 110
+    PARIMU_REFPOINTOFFSET   = 111
     
     PARGNSS_PORT            = 200
     PARGNSS_BAUD            = 201
@@ -154,7 +155,10 @@ class ParameterID(IntEnum):
     PARGNSS_RTKMODE         = 207
     PARGNSS_AIDFRAME        = 209
     PARGNSS_DUALANTMODE     = 211
-    PARGNSS_ELEVATIONMASK   = 212
+    PARGNSS_SETSYSTEM       = 212
+    PARGNSS_RTCMV3CONFIG    = 213
+    PARGNSS_NAVCONFIG       = 214
+    PARGNSS_STDDEV          = 215
     
     PARMAG_PERIOD           = 302
     PARMAG_MISALIGN         = 304
@@ -163,12 +167,9 @@ class ParameterID(IntEnum):
     PARMAG_FOM              = 309
     PARMAG_CFG              = 310
     
-    PARMADC_PORT            = 400
-    PARMADC_BAUD            = 401
-    PARMADC_RATE            = 402
-    PARMADC_LATENCY         = 403
-    PARMADC_BAROCORRECTION  = 404
-    PARMADC_FILTER          = 405
+    PARMADC_ENABLE          = 400
+    PARMADC_LEVERARM        = 401
+    PARMADC_LOWPASS         = 402
     
     PARMON_LEVEL            = 500
     PARMON_TPYE             = 501
@@ -176,9 +177,9 @@ class ParameterID(IntEnum):
     PARMON_BAUD             = 503
     
     PARREC_CONFIG           = 600
-    PARREC_START            = 601
-    PARREC_STOP             = 602
-    PARREC_POWER            = 603
+    PARREC_START            = 603
+    PARREC_STOP             = 604
+    PARREC_POWER            = 605
     
     PAREKF_ALIGNMODE        = 700
     PAREKF_ALIGNTIME        = 701
@@ -209,6 +210,11 @@ class ParameterID(IntEnum):
     PAREKF_DUALANTAID       = 730
     PAREKF_STARTUPV2        = 731
     PAREKF_MAGATTAID        = 732
+    PAREKF_MADCAID          = 733
+    PAREKF_ALIGNMENT        = 734
+    PAREKF_GRAVITYAID       = 735
+    PAREKF_FEEDBACK         = 736
+    PAREKF_ZARU             = 737
     
     PARDAT_POS              = 800
     PARDAT_VEL              = 801
@@ -222,6 +228,17 @@ class ParameterID(IntEnum):
     PARXCOM_NTRIP           = 907
     PARXCOM_POSTPROC        = 908
     PARXCOM_BROADCAST       = 909
+    PARXCOM_UDPCONFIG       = 910
+    PARXCOM_DUMPENABLE      = 911
+    PARXCOM_MIGRATOR        = 912
+    
+    PARFPGA_IMUSTATUSREG    = 1000
+    PARFPGA_HDLCREG         = 1001
+    PARFPGA_TIMINGREG       = 1002
+    PARFPGA_TIMER           = 1003
+    PARFPGA_INTERFACE       = 1004
+    PARFPGA_CONTROLREG      = 1005
+    PARFPGA_POWERUPTHR      = 1006
     
     
     PARPCTRL_MODES          = 1010
@@ -241,11 +258,14 @@ class ParameterID(IntEnum):
     PARARINC825_PORT        = 1200
     PARARINC825_BAUD        = 1201
     PARARINC825_ENABLE      = 1202
+    PARARINC825_LOGLIST     = 1204
+    PARARINC825_BUSRECOVERY = 1205
     
     PARNMEA_COM             = 1300
     PARNMEA_ENABLE          = 1301
     PARNMEA_TXMASK          = 1302
     PARNMEA_DECPLACES       = 1303
+    PARNMEA_RATE            = 1304
     
     
 class MessageItem(object):
@@ -539,6 +559,12 @@ class PARIMU_CROSSCOUPLING_Payload(XcomDefaultParameterPayload):
         self.structString += "9d9d"
         self.data['CCAcc'] = [0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.data['CCOmg'] = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+        
+class PARIMU_REFPOINTOFFSET_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "3d"
+        self.data['offset'] = [0, 0, 0]
 
 
 """
@@ -593,12 +619,42 @@ class PARGNSS_DUALANTMODE_Payload(XcomDefaultParameterPayload):
         super().__init__()
         self.structString += "I"
         self.data['dualAntMode'] = 0
-        
-class PARGNSS_ELEVATIONMASK_Payload(XcomDefaultParameterPayload):
+
+class PARGNSS_SETSYSTEM_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
-        self.structString += "f"
-        self.data['elevationMaskAngle'] = 0
+        self.structString += "I"
+        self.data['system'] = 0
+        
+class PARGNSS_RTCMV3CONFIG_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "BBHI"
+        self.data['port'] = 0
+        self.data['enable'] = 0
+        self.data['reserved2'] = 0
+        self.data['baud'] = 0
+        
+class PARGNSS_NAVCONFIG_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "fBBH"
+        self.data['elevationCutoff'] = 0
+        self.data['CN0ThreshSVs'] = 0
+        self.data['CN0Thresh'] = 0
+        self.data['reserved2'] = 0
+        
+class PARGNSS_STDDEV_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "ffffff"
+        self.data['stdDevScalingPos'] = 0
+        self.data['minStdDevPos'] = 0
+        self.data['stdDevScalingRTK'] = 0
+        self.data['minStdDevRTK'] = 0
+        self.data['stdDevScalingVel'] = 0
+        self.data['minStdDevVel'] = 0
+        
         
 """
 PARMAG
@@ -642,6 +698,29 @@ class PARMAG_FOM_Payload(XcomDefaultParameterPayload):
         super().__init__()
         self.structString += "f"
         self.data['FOM'] = 0
+        
+"""
+PARMADC
+"""
+class PARMADC_ENABLE_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "I"
+        self.data['enable'] = 0
+        
+class PARMADC_LEVERARM_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "3f3f"
+        self.data['leverArm'] = [0.0]*3
+        self.data['leverArmStdDev'] = [0.0]*3
+
+class PARMADC_LOWPASS_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "fI"
+        self.data['cutoff'] = 0
+        self.data['enableFilter'] = 0
         
 """
 PARODO
@@ -710,6 +789,45 @@ class PARODO_THR_Payload(XcomDefaultParameterPayload):
         self.data['thrOmg'] = 0
         
 """
+PARARINC
+"""
+        
+class PARARINC825_PORT_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "I"
+        self.data['port'] = 0
+        
+class PARARINC825_BAUD_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "I"
+        self.data['baud'] = 0
+        
+class PARARINC825_ENABLE_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "HH"
+        self.data['reserved2'] = 0
+        self.data['enable'] = 0
+        
+class PARARINC825_LOGLIST_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        for idx in range(0,21):            
+            self.structString += "HHI"
+            self.data["divider_%d" % idx] = 0
+            self.data["reserved_%d" % idx] = 0
+            self.data["docnumber_%d" % idx] = 0
+            
+class PARARINC825_BUSRECOVERY_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "HH"
+        self.data['enable'] = 0
+        self.data['reserved2'] = 0
+        
+"""
 PARREC
 """
 class PARREC_CONFIG_Payload(XcomDefaultParameterPayload):
@@ -718,7 +836,7 @@ class PARREC_CONFIG_Payload(XcomDefaultParameterPayload):
         self.structString += "BBH"
         self.data['channelNumber'] = 0
         self.data['enable'] = 0
-        self.data['autostart'] = 0
+        self.data['reserved2'] = 0
         
 class PARREC_START_Payload(XcomDefaultParameterPayload):
     def __init__(self):
@@ -991,6 +1109,60 @@ class PAREKF_MAGATTAID_Payload(XcomDefaultParameterPayload):
         self.data['thrINSHdg'] = 0
         self.data['mode'] = 0
         self.data['interval'] = 0
+        
+class PAREKF_MADCAID_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "ffHHffffff"
+        self.data['altStdDev'] = 0.0
+        self.data['latency'] = 0.0
+        self.data['aidInterval'] = 0
+        self.data['reserved2'] = 0
+        self.data['sfError'] = 0.0
+        self.data['sfStdDev'] = 0.0
+        self.data['rwSf'] = 0.0
+        self.data['bias'] = 0.0
+        self.data['biasStdDev'] = 0.0
+        self.data['rwBias'] = 0.0
+        
+class PAREKF_ALIGNMENT_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "IHHdBBf3fH3I"
+        self.data['method'] = 0
+        self.data['levellingDuration'] = 0
+        self.data['stationaryDuration'] = 0
+        self.data['alignZuptStdDev'] = 0.0
+        self.data['enableGyroAvg'] = 0
+        self.data['enableTrackAlign'] = 0
+        self.data['trackAlignThresh'] = 0.0
+        self.data['trackAlignDirection'] = [0.0]*3
+        self.data['reserved2'] = 0
+        self.data['reserved3'] = [0]*3
+        
+class PAREKF_GRAVITYAID_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "Ifffff"
+        self.data['enable'] = 0
+        self.data['omgThresh'] = 0.0
+        self.data['accThresh'] = 0.0
+        self.data['stdDev'] = 0.0
+        self.data['gnssTimeout'] = 0.0
+        self.data['aidingInterval'] = 0.0
+        
+class PAREKF_FEEDBACK_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "I"
+        self.data['feedbackMask'] = 0
+        
+class PAREKF_ZARU_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "B3B"
+        self.data['enable'] = 0
+        self.data['reserved2'] = [0]*3
 
 """
 PARDAT
@@ -1067,6 +1239,19 @@ class PARXCOM_AUTOSTART_Payload(XcomDefaultParameterPayload):
         self.data['port'] = 0
         self.data['reserved2'] = 0
         
+class PARXCOM_NTRIP_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "128s128s128s128sBBHI"
+        self.data['stream'] = "\0"*128
+        self.data['user'] = "\0"*128
+        self.data['password'] = "\0"*128
+        self.data['server'] = "\0"*128
+        self.data['port'] = 0
+        self.data['enable'] = 0
+        self.data['reserved2'] = 0
+        self.data['baud'] = 0
+        
 class PARXCOM_POSTPROC_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1083,6 +1268,121 @@ class PARXCOM_BROADCAST_Payload(XcomDefaultParameterPayload):
         self.data['hidden_mode'] = 0
         self.data['reserved2'] = 0
         self.data['reserved3'] = 0
+        
+class PARXCOM_UDPCONFIG_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "IIBBH"
+        self.data['ip'] = 0
+        self.data['port'] = 0
+        self.data['enable'] = 0
+        self.data['channel'] = 0
+        self.data['reserved2'] = 0
+        
+class PARXCOM_DUMPENABLE_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "I"
+        self.data['enable'] = 0
+        
+class PARXCOM_MIGRATOR_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "I"
+        self.data['enable'] = 0
+
+"""
+PARFPGA
+"""
+class PARFPGA_TIMER_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "13HHH"
+        self.data['timer'] = [0]*13
+        self.data['reserved2'] = 0
+        self.data['password'] = 0
+        
+class PARFPGA_TIMINGREG_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "BB2HH"
+        self.data['timing_reg'] = 0
+        self.data['reserved2'] = 0
+        self.data['userTimer'] = [0]*2
+        self.data['password'] = 0
+        
+class PARFPGA_HDLCREG_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "BBBBHH"
+        self.data['mode'] = 0
+        self.data['clock'] = 0
+        self.data['invertData'] = 0
+        self.data['invertClock'] = 0
+        self.data['reserved2'] = 0
+        self.data['password'] = 0
+        
+class PARFPGA_INTERFACE_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "22IHH"
+        self.data['matrix'] = [0]*22
+        self.data['reserved2'] = 0
+        self.data['password'] = 0
+        
+class PARFPGA_CONTROLREG_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "HH"
+        self.data['controlReg'] = 0
+        self.data['reserved2'] = 0
+        
+class PARFPGA_POWERUPTHR_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "ff"
+        self.data['powerupThr'] = 0.0
+        self.data['reserved2'] = 0.0
+
+"""
+PARNMEA
+"""
+class PARNMEA_COM_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "BBHI"
+        self.data['port'] = 0
+        self.data['reserved2'] = 0
+        self.data['reserved3'] = 0
+        self.data['baud'] = 0
+        
+class PARNMEA_ENABLE_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "BBH"
+        self.data['enable'] = 0
+        self.data['qualityMode'] = 0
+        self.data['reserved2'] = 0
+        
+class PARNMEA_TXMASK_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "I"
+        self.data['txMask'] = 0
+        
+class PARNMEA_DECPLACES_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "BBH"
+        self.data['digitsPos'] = 0
+        self.data['digitsHdg'] = 0
+        self.data['reserved2'] = 0
+        
+class PARNMEA_RATE_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "I"
+        self.data['divider'] = 0
         
 """
 Messages
@@ -1408,6 +1708,9 @@ ParameterPayloadDictionary = {
     ParameterID.PARIMU_LATENCY:PARIMU_LATENCY_Payload,
     ParameterID.PARIMU_CALIB:PARIMU_CALIB_Payload,
     ParameterID.PARIMU_CROSSCOUPLING:PARIMU_CROSSCOUPLING_Payload,
+    ParameterID.PARIMU_REFPOINTOFFSET:PARIMU_REFPOINTOFFSET_Payload,
+    
+    
     
     ParameterID.PARGNSS_PORT:PARGNSS_PORT_Payload,
     ParameterID.PARGNSS_BAUD:PARGNSS_BAUD_Payload,
@@ -1415,7 +1718,18 @@ ParameterPayloadDictionary = {
     ParameterID.PARGNSS_RTKMODE:PARGNSS_RTKMODE_Payload,
     ParameterID.PARGNSS_AIDFRAME:PARGNSS_AIDFRAME_Payload,
     ParameterID.PARGNSS_DUALANTMODE:PARGNSS_DUALANTMODE_Payload,
-    ParameterID.PARGNSS_ELEVATIONMASK:PARGNSS_ELEVATIONMASK_Payload,
+    ParameterID.PARGNSS_SETSYSTEM:PARGNSS_SETSYSTEM_Payload,
+    ParameterID.PARGNSS_RTCMV3CONFIG:PARGNSS_RTCMV3CONFIG_Payload,
+    ParameterID.PARGNSS_NAVCONFIG:PARGNSS_NAVCONFIG_Payload,
+    ParameterID.PARGNSS_STDDEV:PARGNSS_STDDEV_Payload,
+    
+    
+    ParameterID.PARFPGA_HDLCREG:PARFPGA_HDLCREG_Payload,
+    ParameterID.PARFPGA_TIMINGREG:PARFPGA_TIMINGREG_Payload,
+    ParameterID.PARFPGA_TIMER:PARFPGA_TIMER_Payload,
+    ParameterID.PARFPGA_INTERFACE:PARFPGA_INTERFACE_Payload,
+    ParameterID.PARFPGA_CONTROLREG:PARFPGA_CONTROLREG_Payload,
+    ParameterID.PARFPGA_POWERUPTHR:PARFPGA_POWERUPTHR_Payload,
     
     ParameterID.PARMAG_PERIOD:PARMAG_PERIOD_Payload,
     ParameterID.PARMAG_MISALIGN:PARMAG_MISALIGN_Payload,
@@ -1423,6 +1737,10 @@ ParameterPayloadDictionary = {
     ParameterID.PARMAG_CALSTATE:PARMAG_CALSTATE_Payload,
     ParameterID.PARMAG_FOM:PARMAG_FOM_Payload,
     ParameterID.PARMAG_CFG:PARMAG_CFG_Payload,
+    
+    ParameterID.PARMADC_ENABLE:PARMADC_ENABLE_Payload,
+    ParameterID.PARMADC_LEVERARM:PARMADC_LEVERARM_Payload,
+    ParameterID.PARMADC_LOWPASS:PARMADC_LOWPASS_Payload,
     
     ParameterID.PARODO_SCF:PARODO_SCF_Payload,
     ParameterID.PARODO_TIMEOUT:PARODO_TIMEOUT_Payload,
@@ -1433,6 +1751,12 @@ ParameterPayloadDictionary = {
     ParameterID.PARODO_CONSTRAINT:PARODO_CONSTRAINTS_Payload,
     ParameterID.PARODO_UPDATERATE:PARODO_RATE_Payload,
     ParameterID.PARODO_THR:PARODO_THR_Payload,
+    
+    ParameterID.PARARINC825_PORT:PARARINC825_PORT_Payload,
+    ParameterID.PARARINC825_BAUD:PARARINC825_BAUD_Payload,
+    ParameterID.PARARINC825_ENABLE:PARARINC825_ENABLE_Payload,
+    ParameterID.PARARINC825_LOGLIST:PARARINC825_LOGLIST_Payload,
+    ParameterID.PARARINC825_BUSRECOVERY:PARARINC825_BUSRECOVERY_Payload,
     
     ParameterID.PARREC_CONFIG:PARREC_CONFIG_Payload,
     ParameterID.PARREC_START:PARREC_START_Payload,
@@ -1468,6 +1792,11 @@ ParameterPayloadDictionary = {
     ParameterID.PAREKF_DUALANTAID:PAREKF_DUALANTAID_Payload,
     ParameterID.PAREKF_STARTUPV2:PAREKF_STARTUPV2_Payload,
     ParameterID.PAREKF_MAGATTAID:PAREKF_MAGATTAID_Payload,
+    ParameterID.PAREKF_MADCAID:PAREKF_MADCAID_Payload,
+    ParameterID.PAREKF_ALIGNMENT:PAREKF_ALIGNMENT_Payload,
+    ParameterID.PAREKF_GRAVITYAID:PAREKF_GRAVITYAID_Payload,
+    ParameterID.PAREKF_FEEDBACK:PAREKF_FEEDBACK_Payload,
+    ParameterID.PAREKF_ZARU:PAREKF_ZARU_Payload,
     
     ParameterID.PARDAT_POS:PARDAT_POS_Payload,
     ParameterID.PARDAT_VEL:PARDAT_VEL_Payload,
@@ -1478,7 +1807,17 @@ ParameterPayloadDictionary = {
     ParameterID.PARXCOM_NETCONFIG:PARXCOM_NETCONFIG_Payload,
     ParameterID.PARXCOM_AUTOSTART:PARXCOM_AUTOSTART_Payload,
     ParameterID.PARXCOM_POSTPROC:PARXCOM_POSTPROC_Payload,
-    ParameterID.PARXCOM_BROADCAST:PARXCOM_BROADCAST_Payload
+    ParameterID.PARXCOM_BROADCAST:PARXCOM_BROADCAST_Payload,
+    ParameterID.PARXCOM_NTRIP:PARXCOM_NTRIP_Payload,
+    ParameterID.PARXCOM_UDPCONFIG:PARXCOM_UDPCONFIG_Payload,
+    ParameterID.PARXCOM_DUMPENABLE:PARXCOM_DUMPENABLE_Payload,
+    ParameterID.PARXCOM_MIGRATOR:PARXCOM_MIGRATOR_Payload,
+    
+    ParameterID.PARNMEA_COM:PARNMEA_COM_Payload,
+    ParameterID.PARNMEA_ENABLE:PARNMEA_ENABLE_Payload,
+    ParameterID.PARNMEA_TXMASK:PARNMEA_TXMASK_Payload,
+    ParameterID.PARNMEA_DECPLACES:PARNMEA_DECPLACES_Payload,
+    ParameterID.PARNMEA_RATE:PARNMEA_RATE_Payload,
 }
 
 MessagePayloadDictionary = {
