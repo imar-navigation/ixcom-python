@@ -401,6 +401,11 @@ class XcomDefaultParameterPayload(XcomProtocolPayload):
     def __init__(self):
         self.structString = "=HBB"
         self.data = collections.OrderedDict([('parameterID',0),('reserved',0),('action',XcomParameterAction.REQUESTING)])
+        
+    def get_name(self):
+        classname = self.__class__.__name__
+        return ParameterID(self.data['parameterID']).name
+        
 """
 Commands
 """
@@ -821,7 +826,7 @@ class PAREKF_STARTUPV2_Payload(XcomDefaultParameterPayload):
         self.data['posMode'] = 0
         self.data['hdgMode'] = 0
         self.data['gnssTimeout'] = 0
-        self.data['reserved2'] = 0
+        self.data['altMSL'] = 0
         self.data['realign'] = 0
         self.data['inMotion'] = 0
         self.data['autoRestart'] = 0
@@ -1103,7 +1108,7 @@ class POSTPROC_Payload(XcomProtocolPayload):
 class INSSOL_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
-        self.structString += "3f3f3f3fddfHH"
+        self.structString += "3f3f3f3fddfhH"
         self.data['acc'] = [0, 0, 0]
         self.data['omg'] = [0, 0, 0]
         self.data['rpy'] = [0, 0, 0]
@@ -1111,7 +1116,7 @@ class INSSOL_Payload(XcomProtocolPayload):
         self.data['lon'] = 0
         self.data['lat'] = 0
         self.data['alt'] = 0
-        self.data['DiffAge'] = 0
+        self.data['undulation'] = 0
         self.data['DatSel'] = 0
         
 class IMU_Payload(XcomProtocolPayload):
@@ -1124,11 +1129,12 @@ class IMU_Payload(XcomProtocolPayload):
 class IMUCAL_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
-        self.structString += "3f3f3d3d4d3d3d16fI2I6I"
+        self.structString += "3f3f3d3dd4d3d3d16fI2I6I"
         self.data['accLSB'] = [0, 0, 0]
         self.data['omgLSB'] = [0, 0, 0]
         self.data['accCal'] = [0, 0, 0]
         self.data['omgCal'] = [0, 0, 0]
+        self.data['avgTime'] = 0
         self.data['q_nb']   = [1, 0, 0, 0]
         self.data['pos']    = [0, 0, 0]
         self.data['vel']    = [0, 0, 0]
