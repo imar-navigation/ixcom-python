@@ -333,18 +333,21 @@ class XcomProtocolPayload(MessageItem):
         return bytearray(struct.pack(self.structString, *values))
         
     def from_bytes(self, inBytes):
-        keyList = self.data.keys()
-        valueList = list(struct.unpack(self.structString, inBytes))
-        numberOfValues = 0
-        for key in keyList:
-            if isinstance(self.data[key], list):
-                curLen = len(self.data[key])
-                value = valueList[:curLen]
-                valueList = valueList[curLen:]
-            else:
-                value = valueList[0]
-                valueList = valueList[1:]
-            self.data[key] = value
+        try:
+            keyList = self.data.keys()
+            valueList = list(struct.unpack(self.structString, inBytes))
+            numberOfValues = 0
+            for key in keyList:
+                if isinstance(self.data[key], list):
+                    curLen = len(self.data[key])
+                    value = valueList[:curLen]
+                    valueList = valueList[curLen:]
+                else:
+                    value = valueList[0]
+                    valueList = valueList[1:]
+                self.data[key] = value
+        except:
+            print("Could not convert")
             
     def get_name(self):
         classname = self.__class__.__name__
