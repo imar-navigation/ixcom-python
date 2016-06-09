@@ -4,6 +4,8 @@ import threading
 import collections
 import crc16
 import math
+import time
+import socket
 from enum import IntEnum
 from xcom import xcomdata
 
@@ -69,7 +71,8 @@ class XcomMessageSearcher:
                             if hasattr(self.parserDelegate, 'parse'):
                                 self.parserDelegate.parse(self.currentBytes[:self.currentByteIdx])
                         else:
-                            print("CRC Error %d" % crc)
+                            pass
+                            #print("CRC Error %d" % crc)
                     self.searcherState = XcomMessageSearcherState.waiting_for_sync
         self.processing.release()
         
@@ -92,7 +95,7 @@ class XcomMessageParser:
         message.from_bytes(inBytes)
         self.responseEvent.responseID = message.payload.data['responseID']
         self.responseEvent.set()
-        print(message.payload.data['responseText'].decode('utf-8'))
+        #print(message.payload.data['responseText'].decode('utf-8'))
                 
     def parse_parameter(self, inBytes):
         message = xcomdata.XcomProtocolMessage()
@@ -104,9 +107,23 @@ class XcomMessageParser:
             message.from_bytes(inBytes)
             self.publish(message)
         else:
-            print("Unknown parameter ID %s" % parameterID)
+            pass
+            #print("Unknown parameter ID %s" % parameterID)
         self.parameterEvent.parameter = message
         self.parameterEvent.set()
+        
+    def parse_command(self, inBytes):
+        message = xcomdata.XcomProtocolMessage()
+        message.payload = xcomdata.XcomDefaultCommandPayload()
+        message.payload.from_bytes(inBytes[16:20])
+        cmdID = message.payload.data['cmdID']
+        message = xcomdata.getCommandWithID(cmdID)
+        if message is not None:
+            message.from_bytes(inBytes)
+            self.publish(message)
+        else:
+            pass
+            #print("Unknown parameter ID %s" % parameterID)
         
     def parse(self, inBytes):
         header = xcomdata.XcomProtocolHeader()
@@ -115,6 +132,8 @@ class XcomMessageParser:
             self.parse_response(inBytes)
         elif header.msgID == xcomdata.MessageID.PARAMETER:
             self.parse_parameter(inBytes)
+        elif header.msgID == xcomdata.MessageID.COMMAND:
+            self.parse_command(inBytes)
         else:
             message = xcomdata.getMessageWithID(header.msgID)
             if message is not None:
@@ -663,11 +682,12 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
         returnDict['CCOmg'] = param.payload.data['CCOmg']
         return returnDict
         
-    def enable_postproc(self, channel):
+    def enable_postproc(self, channel, copy_channel = 0):
         msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PARXCOM_POSTPROC)
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
         msgToSend.payload.data['channel'] = channel
         msgToSend.payload.data['enable'] = 1
+        msgToSend.payload.data['log_mode'] = copy_channel
         bytesToSend = msgToSend.to_bytes()
         self.send_and_wait_for_okay(bytesToSend)
         self.save_config()
@@ -764,6 +784,23 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
     def found_terminator(self):
         pass
         
+        
+def broadcast_search(timeout = 0.1, port = 4000, addr = "<broadcast>"):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, True)
+    s.settimeout(timeout)
+
+    s.sendto("hello".encode('utf-8'), (addr, port))
+    time.sleep(timeout)
+    result = dict()
+    while True:
+        try:
+            data, (ip,port) = s.recvfrom(1024) # buffer size is 1024 bytes
+            result[ip] = data[:-1].decode('utf-8')
+        except socket.timeout:
+            s.close()
+            break
+    return result
 
         
           

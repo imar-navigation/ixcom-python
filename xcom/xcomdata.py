@@ -294,6 +294,9 @@ class XcomProtocolHeader(MessageItem):
         self.timeOfWeek_sec     = 0
         self.timeOfWeek_usec     = 0
         
+    def get_time(self):
+        return self.timeOfWeek_sec + 1.0e-6*self.timeOfWeek_usec;
+        
     def to_bytes(self):
         return bytearray(struct.pack(self.structString, self.sync, self.msgID, self.frameCounter, self.reserved, self.msgLength, self.week, self.timeOfWeek_sec, self.timeOfWeek_usec))
         
@@ -346,8 +349,8 @@ class XcomProtocolPayload(MessageItem):
                     value = valueList[0]
                     valueList = valueList[1:]
                 self.data[key] = value
-        except:
-            print("Could not convert")
+        except Exception as e:
+            print("Could not convert, %s, %s, %s" % ((inBytes), self.get_name(), str(e)))
             
     def get_name(self):
         classname = self.__class__.__name__
@@ -411,6 +414,10 @@ class XcomDefaultCommandPayload(XcomProtocolPayload):
     def __init__(self):
         self.structString = "=HH"
         self.data = collections.OrderedDict([('cmdID',0),('specific',0)])
+    
+    def get_name(self):
+        classname = self.__class__.__name__
+        return CommandID(self.data['cmdID']).name
         
 class XcomResponsePayload(XcomProtocolPayload):
     def __init__(self, msgLength):
@@ -1258,9 +1265,10 @@ class PARXCOM_NTRIP_Payload(XcomDefaultParameterPayload):
 class PARXCOM_POSTPROC_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
-        self.structString += "BBH"
+        self.structString += "BBBB"
         self.data['enable'] = 0
         self.data['channel'] = 0
+        self.data['log_mode'] = 0
         self.data['reserved2'] = 0
         
 class PARXCOM_BROADCAST_Payload(XcomDefaultParameterPayload):
