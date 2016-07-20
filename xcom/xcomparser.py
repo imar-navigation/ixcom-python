@@ -661,6 +661,7 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
         
     def set_threshholds(self, pos_medium = 1, pos_high = 0.1, heading_good = 0.001*math.pi/180.0):
         msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PAREKF_HDGPOSTHR)
+        msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
         msgToSend.payload.data['hdgGoodThr'] = heading_good
         msgToSend.payload.data['posMedThr'] = pos_medium
         msgToSend.payload.data['posHighThr'] = pos_high
