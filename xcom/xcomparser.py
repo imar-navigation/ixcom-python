@@ -632,7 +632,7 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
         msgToSend.payload.data['leverArm'] = leverArm
         msgToSend.payload.data['stdLeverArm'] = leverArmStdDev
         msgToSend.payload.data['gnssTimeout'] = gnssTimeout
-        msgToSend.payload.data['reserved2'] = 0
+        msgToSend.payload.data['altMSL'] = 0
         msgToSend.payload.data['realign'] = realign
         msgToSend.payload.data['inMotion'] = inMotion
         msgToSend.payload.data['autoRestart'] = autorestart
@@ -706,6 +706,25 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
         msgToSend.payload.data['elevationMaskAngle'] = mask_angle
         bytesToSend = msgToSend.to_bytes()
         self.send_and_wait_for_okay(bytesToSend)
+        
+    def set_feedback(self, pos = 1, vel = 1, att = 1, sensor_err = 1):
+        msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PAREKF_FEEDBACK)
+        msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
+        msgToSend.payload.data['feedbackMask'] = (pos << 0) | (vel << 1) | (att << 2) | (sensor_err << 3)
+        bytesToSend = msgToSend.to_bytes()
+        self.send_and_wait_for_okay(bytesToSend)
+        
+    def aid_height(self, height, standard_dev, time = 0, timeMode = 1):
+        msgToSend = xcomdata.getCommandWithID(xcomdata.CommandID.EXTAID)
+        msgToSend.payload.data['time'] = time
+        msgToSend.payload.data['timeMode'] = timeMode
+        msgToSend.payload.data['cmdParamID'] = 6
+        msgToSend.payload.structString += "dd"
+        msgToSend.payload.data['height'] = height
+        msgToSend.payload.data['heightStdDev'] = standard_dev
+        bytesToSend = msgToSend.to_bytes()
+        self.send_and_wait_for_okay(bytesToSend)
+        
         
     def send_and_wait_for_okay(self, inBytes):
         """Waits for reception of OK response

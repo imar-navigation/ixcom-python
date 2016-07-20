@@ -462,6 +462,14 @@ class CMD_CONF_Payload(XcomDefaultCommandPayload):
         self.structString += "I"
         self.data['configAction'] = 0
         
+class CMD_EXT_Payload(XcomDefaultCommandPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "dHH"
+        self.data['time'] = 0
+        self.data['timeMode'] = 0
+        self.data['cmdParamID'] = 0
+        
     
 class XcomCommandPayload(XcomDefaultCommandPayload):
     def __init__(self):
@@ -1112,13 +1120,15 @@ class PAREKF_DUALANTAID_Payload(XcomDefaultParameterPayload):
 class PAREKF_MAGATTAID_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
-        self.structString += "IfffHH"
+        self.structString += "IfffBBH3f"
         self.data['samplePeriods'] = 0
         self.data['thrHdg'] = 0
         self.data['latency'] = 0
         self.data['thrINSHdg'] = 0
-        self.data['mode'] = 0
-        self.data['interval'] = 0
+        self.data['aidingMode'] = 0
+        self.data['updateMode'] = 0
+        self.data['aidingInterval'] = 0
+        self.data['magFieldStdDev'] = [0]*3
         
 class PAREKF_MADCAID_Payload(XcomDefaultParameterPayload):
     def __init__(self):
@@ -1689,7 +1699,8 @@ CommandPayloadDictionary = {
     CommandID.XCOM:XcomCommandPayload,
     CommandID.LOG:CMD_LOG_Payload,
     CommandID.EKF:CMD_EKF_Payload,
-    CommandID.CONF:CMD_CONF_Payload
+    CommandID.CONF:CMD_CONF_Payload,
+    CommandID.EXTAID:CMD_EXT_Payload
                         }
 ParameterPayloadDictionary = {
     ParameterID.PARSYS_PRJNUM:PARSYS_STRING_Payload, 
