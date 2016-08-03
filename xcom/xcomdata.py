@@ -46,6 +46,7 @@ class MessageID(IntEnum):
     INSPOSLLH     = 0x0A
     INSPOSECEF    = 0x0B
     INSPOSUTM     = 0x0C
+    INSROTTEST    = 0x0D
     POSTPROC      = 0x40
 
     EKFSTDDEV     = 0x0F
@@ -215,6 +216,7 @@ class ParameterID(IntEnum):
     PAREKF_GRAVITYAID       = 735
     PAREKF_FEEDBACK         = 736
     PAREKF_ZARU             = 737
+    PAREKF_STATEFREEZE      = 740
     
     PARDAT_POS              = 800
     PARDAT_VEL              = 801
@@ -1183,6 +1185,12 @@ class PAREKF_ZARU_Payload(XcomDefaultParameterPayload):
         self.structString += "B3B"
         self.data['enable'] = 0
         self.data['reserved2'] = [0]*3
+        
+class PAREKF_STATEFREEZE_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "I"
+        self.data['freezeMask'] = 0
 
 """
 PARDAT
@@ -1446,6 +1454,12 @@ class IMU_Payload(XcomProtocolPayload):
         self.structString += "3f3f"
         self.data['acc'] = [0, 0, 0]
         self.data['omg'] = [0, 0, 0]
+        
+class INSROTTEST_Payload(XcomProtocolPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "3d"
+        self.data['accNED'] = [0, 0, 0]
 
 class IMUCAL_Payload(XcomProtocolPayload):
     def __init__(self):
@@ -1819,6 +1833,7 @@ ParameterPayloadDictionary = {
     ParameterID.PAREKF_GRAVITYAID:PAREKF_GRAVITYAID_Payload,
     ParameterID.PAREKF_FEEDBACK:PAREKF_FEEDBACK_Payload,
     ParameterID.PAREKF_ZARU:PAREKF_ZARU_Payload,
+    ParameterID.PAREKF_STATEFREEZE:PAREKF_STATEFREEZE_Payload,
     
     ParameterID.PARDAT_POS:PARDAT_POS_Payload,
     ParameterID.PARDAT_VEL:PARDAT_VEL_Payload,
@@ -1857,6 +1872,8 @@ MessagePayloadDictionary = {
     MessageID.INSPOSLLH:INSPOSLLH_Payload,
     MessageID.INSPOSECEF:INSPOSECEF_Payload,
     MessageID.INSPOSUTM:INSPOSUTM_Payload,
+    MessageID.INSPOSUTM:INSPOSUTM_Payload,
+    MessageID.INSROTTEST:INSROTTEST_Payload,
     MessageID.POSTPROC:POSTPROC_Payload,
 
     MessageID.EKFSTDDEV:EKFSTDDEV_Payload,

@@ -715,6 +715,13 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
         bytesToSend = msgToSend.to_bytes()
         self.send_and_wait_for_okay(bytesToSend)
         
+    def set_freeze(self, pos = 0, vel = 0, att = 0, height = 0):
+        msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PAREKF_STATEFREEZE)
+        msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
+        msgToSend.payload.data['freezeMask'] = (pos << 0) | (vel << 1) | (att << 2) | (height << 3)
+        bytesToSend = msgToSend.to_bytes()
+        self.send_and_wait_for_okay(bytesToSend)
+        
     def aid_height(self, height, standard_dev, time = 0, timeMode = 1):
         msgToSend = xcomdata.getCommandWithID(xcomdata.CommandID.EXTAID)
         msgToSend.payload.data['time'] = time
