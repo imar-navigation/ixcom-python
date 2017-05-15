@@ -216,6 +216,62 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
         bytesToSend = msgToSend.to_bytes()
         self.send_and_wait_for_okay(bytesToSend)
         
+    def open_lastFreeChannel(self):
+        """Opens an XCOM logical channel
+
+        Opens an XCOM logical channel on the associated socket and waits for an "OK" response.
+
+        Raises:
+            TimeoutError: Timeout while waiting for response from the XCOM server
+            ValueError: The response from the system was not "OK"
+            
+        Returns:
+            channelNumber: number of the opened channel
+        
+        """
+        msgToSend = xcomdata.getCommandWithID(xcomdata.CommandID.XCOM)
+        msgToSend.payload.data['mode']  = xcomdata.XcomCommandParameter.channel_open
+        channelNumber = 31;
+        while channelNumber >= 0: 
+            msgToSend.payload.data['channelNumber'] = channelNumber
+            bytesToSend = msgToSend.to_bytes()
+            try:
+                self.send_and_wait_for_okay(bytesToSend)
+                print("Open channel: " + str(channelNumber))
+                return channelNumber
+            except:
+                channelNumber -= 1
+                if channelNumber < 0:
+                    raise RuntimeError("No free channel on the system!")
+                
+    def open_firstFreeChannel(self):
+        """Opens an XCOM logical channel
+
+        Opens an XCOM logical channel on the associated socket and waits for an "OK" response.
+
+        Raises:
+            TimeoutError: Timeout while waiting for response from the XCOM server
+            ValueError: The response from the system was not "OK"
+            
+        Returns:
+            channelNumber: number of the opened channel
+        
+        """
+        msgToSend = xcomdata.getCommandWithID(xcomdata.CommandID.XCOM)
+        msgToSend.payload.data['mode']  = xcomdata.XcomCommandParameter.channel_open
+        channelNumber = 0;
+        while channelNumber <= 31: 
+            msgToSend.payload.data['channelNumber'] = channelNumber
+            bytesToSend = msgToSend.to_bytes()
+            try:
+                self.send_and_wait_for_okay(bytesToSend)
+                print("Open channel: " + str(channelNumber))
+                return channelNumber
+            except:
+                channelNumber += 1
+                if channelNumber > 31:
+                    raise RuntimeError("No free channel on the system!")
+        
         
     def close_channel(self, channelNumber = 0):
         """Closes an XCOM logical channel
@@ -587,6 +643,13 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
         bytesToSend = msgToSend.to_bytes()
         self.send_and_wait_for_okay(bytesToSend)
         
+    def enable_fullSysStatus(self):
+        msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PARDAT_SYSSTAT)
+        msgToSend.payload.data['statMode'] = 127
+        msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
+        bytesToSend = msgToSend.to_bytes()
+        self.send_and_wait_for_okay(bytesToSend)
+        
     def set_schulermode(self, enable_schuler):
         msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PAREKF_SCHULERMODE)
         msgToSend.payload.data['enable'] = enable_schuler
@@ -636,6 +699,14 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
         msgToSend.payload.data['realign'] = realign
         msgToSend.payload.data['inMotion'] = inMotion
         msgToSend.payload.data['autoRestart'] = autorestart
+        msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
+        bytesToSend = msgToSend.to_bytes()
+        self.send_and_wait_for_okay(bytesToSend)
+        
+    def set_parEKF_Aiding(self, mode = 0, mask = 0):
+        msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PAREKF_AIDING)
+        msgToSend.payload.data['aidingMode'] = mode
+        msgToSend.payload.data['aidingMask'] = mask
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
         bytesToSend = msgToSend.to_bytes()
         self.send_and_wait_for_okay(bytesToSend)
@@ -722,6 +793,59 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
         bytesToSend = msgToSend.to_bytes()
         self.send_and_wait_for_okay(bytesToSend)
         
+    def aid_pos(self, lonLatAlt, llhStdDev, leverarmXYZ, leverarmStdDev, time = 0, timeMode = 1):
+        msgToSend = xcomdata.getCommandWithID(xcomdata.CommandID.EXTAID)
+        msgToSend.payload.data['time'] = time
+        msgToSend.payload.data['timeMode'] = timeMode
+        msgToSend.payload.data['cmdParamID'] = 3
+        msgToSend.payload.structString += "dddddddddddd"
+        msgToSend.payload.data['lon'] = lonLatAlt[0];
+        msgToSend.payload.data['lat'] = lonLatAlt[1];
+        msgToSend.payload.data['alt'] = lonLatAlt[2];
+        msgToSend.payload.data['lonStdDev'] = llhStdDev[0];
+        msgToSend.payload.data['latStdDev'] = llhStdDev[1];
+        msgToSend.payload.data['altStdDev'] = llhStdDev[2];
+        msgToSend.payload.data['laX'] = leverarmXYZ[0];
+        msgToSend.payload.data['laY'] = leverarmXYZ[1];
+        msgToSend.payload.data['laZ'] = leverarmXYZ[2];
+        msgToSend.payload.data['laXStdDev'] = leverarmStdDev[0];
+        msgToSend.payload.data['laYStdDev'] = leverarmStdDev[1];
+        msgToSend.payload.data['laZStdDev'] = leverarmStdDev[2];
+        bytesToSend = msgToSend.to_bytes()
+        self.send_and_wait_for_okay(bytesToSend) 
+        
+    def aid_vel(self, vNED, vNEDStdDev, time = 0, timeMode = 1):
+        msgToSend = xcomdata.getCommandWithID(xcomdata.CommandID.EXTAID)
+        msgToSend.payload.data['time'] = time
+        msgToSend.payload.data['timeMode'] = timeMode
+        msgToSend.payload.data['cmdParamID'] = 4
+        msgToSend.payload.structString += "dddddd"
+        msgToSend.payload.data['vN'] = vNED[0];
+        msgToSend.payload.data['vE'] = vNED[1];
+        msgToSend.payload.data['vD'] = vNED[2];
+        msgToSend.payload.data['vNStdDev'] = vNEDStdDev[0];
+        msgToSend.payload.data['vEStdDev'] = vNEDStdDev[1];
+        msgToSend.payload.data['vDStdDev'] = vNEDStdDev[2];
+        #msgToSend.payload.data['laX'] = leverarmXYZ[0];
+        #msgToSend.payload.data['laY'] = leverarmXYZ[1];
+        #msgToSend.payload.data['laZ'] = leverarmXYZ[2];
+        #msgToSend.payload.data['laXStdDev'] = leverarmStdDev[0];
+        #msgToSend.payload.data['laYStdDev'] = leverarmStdDev[1];
+        #msgToSend.payload.data['laZStdDev'] = leverarmStdDev[2];
+        bytesToSend = msgToSend.to_bytes()
+        self.send_and_wait_for_okay(bytesToSend) 
+        
+    def aid_heading(self, heading, standard_dev, time = 0, timeMode = 1):
+        msgToSend = xcomdata.getCommandWithID(xcomdata.CommandID.EXTAID)
+        msgToSend.payload.data['time'] = time
+        msgToSend.payload.data['timeMode'] = timeMode
+        msgToSend.payload.data['cmdParamID'] = 5
+        msgToSend.payload.structString += "dd"
+        msgToSend.payload.data['heading'] = heading
+        msgToSend.payload.data['headingStdDev'] = standard_dev
+        bytesToSend = msgToSend.to_bytes()
+        self.send_and_wait_for_okay(bytesToSend) 
+        
     def aid_height(self, height, standard_dev, time = 0, timeMode = 1):
         msgToSend = xcomdata.getCommandWithID(xcomdata.CommandID.EXTAID)
         msgToSend.payload.data['time'] = time
@@ -731,8 +855,7 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
         msgToSend.payload.data['height'] = height
         msgToSend.payload.data['heightStdDev'] = standard_dev
         bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
-        
+        self.send_and_wait_for_okay(bytesToSend)        
         
     def send_and_wait_for_okay(self, inBytes):
         """Waits for reception of OK response
@@ -800,10 +923,50 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
         msgToSend.payload.data['reserved'] = antenna
         msgToSend.payload.data['antennaOffset'] = offset
-        msgToSend.payload.data['stdDev'] = offset
+        msgToSend.payload.data['stdDev'] = stdDev
         bytesToSend = msgToSend.to_bytes()
         self.send_and_wait_for_okay(bytesToSend)
+        
+    def get_virtualMeasPt(self):
+        """Convenience getter for virtual measpoint offset
+
+        Gets the virtual measpoint offset for the output values defined with the mask #
+                
+        Raises:
+            TimeoutError: Timeout while waiting for response or parameter from the XCOM server
+            ValueError: The response from the system was not "OK".
+        
+        """
+        msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PAREKF_VMP)
+        msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.REQUESTING
+        bytesToSend = msgToSend.to_bytes()
+        self.send_and_wait_for_okay(bytesToSend)
+        self.wait_for_parameter()
+        return self.parameterEvent.parameter
     
+    def set_virtualMeasPt(self, offset = [0,0,0], activationMask = 0, cutOffFreq = 0):
+        """Convenience setter for virtual measpoint offset
+
+        Sets the virtual measpoint offset #
+        
+        Args:
+            offset: Distance between INS center of measurement and virtual measurement point [m, m, m].
+            activationMask: Bit 0 -> INS/GNSS Position, Bit 1 -> INS/GNSS Velocity, Bit 2 -> Specific Force, Bit 3 -> Angular Rate
+            cutOffFreq: The parameter CUTOFF-FREQ specifies the cut-off 1st frequency in [Hz] of the 1 order low pass. The low pass
+                        is used to filter ω for the transformation. Due to the noise, the derivation of ω will not be transformed.
+        
+        Raises:
+            TimeoutError: Timeout while waiting for response or parameter from the XCOM server
+            ValueError: The response from the system was not "OK".
+        
+        """
+        msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PAREKF_VMP)
+        msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
+        msgToSend.payload.data['leverArm'] = offset
+        msgToSend.payload.data['mask'] = activationMask
+        msgToSend.payload.data['cutoff'] = cutOffFreq
+        bytesToSend = msgToSend.to_bytes()
+        self.send_and_wait_for_okay(bytesToSend)
         
     def collect_incoming_data(self, data):
         self.messageSearcher.process_bytes(data)

@@ -1506,8 +1506,8 @@ class SYSSTAT_Payload(XcomProtocolPayload):
             self.structString += "I"
             self.data['ekfGeneralStat'] = 0
         if(self.data['statMode'] & (1 << 6)):
-            self.structString += "2I"
-            self.data['addStat'] = [0, 0]
+            self.structString += "4I"
+            self.data['addStat'] = [0, 0, 0, 0]
         super().from_bytes(inBytes)
         
 class INSRPY_Payload(XcomProtocolPayload):
