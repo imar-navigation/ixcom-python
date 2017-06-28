@@ -160,6 +160,8 @@ class ParameterID(IntEnum):
     PARGNSS_RTCMV3CONFIG    = 213
     PARGNSS_NAVCONFIG       = 214
     PARGNSS_STDDEV          = 215
+    PARGNSS_MODEL           = 217
+    PARGNSS_VERSION         = 218
     
     PARMAG_PERIOD           = 302
     PARMAG_MISALIGN         = 304
@@ -216,6 +218,7 @@ class ParameterID(IntEnum):
     PAREKF_GRAVITYAID       = 735
     PAREKF_FEEDBACK         = 736
     PAREKF_ZARU             = 737
+    PAREKF_IMUCONFIG        = 738
     PAREKF_STATEFREEZE      = 740
     
     PARDAT_POS              = 800
@@ -225,7 +228,7 @@ class ParameterID(IntEnum):
     
     PARXCOM_SERIALPORT      = 902
     PARXCOM_NETCONFIG       = 903
-    PARXCOM_LOGLISTE        = 905
+    PARXCOM_LOGLIST         = 905
     PARXCOM_AUTOSTART       = 906
     PARXCOM_NTRIP           = 907
     PARXCOM_POSTPROC        = 908
@@ -674,6 +677,34 @@ class PARGNSS_STDDEV_Payload(XcomDefaultParameterPayload):
         self.data['minStdDevRTK'] = 0
         self.data['stdDevScalingVel'] = 0
         self.data['minStdDevVel'] = 0
+        
+class PARGNSS_MODEL_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        modelstructstring = "16sIII"
+        self.structString += "BBH"
+        self.data['rtkCode'] = 0
+        self.data['reserved2'] = 0
+        self.data['reserved3'] = 0
+        for idx in range(6):
+            self.data['modelName_%d' % idx] = "\0"*16
+            self.data['year_%d' % idx] = 0
+            self.data['month_%d' % idx] = 0
+            self.data['day_%d' % idx] = 0
+            self.structString += modelstructstring
+            
+class PARGNSS_VERSION_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "I16s16s16s16s16s16s16s"
+        self.data['type'] = 0
+        self.data['model'] = "\0"*16
+        self.data['psn'] = "\0"*16
+        self.data['hwversion'] = "\0"*16
+        self.data['swversion'] = "\0"*16
+        self.data['bootversion'] = "\0"*16
+        self.data['compdate'] = "\0"*16
+        self.data['comptime'] = "\0"*16
         
         
 """
@@ -1186,6 +1217,29 @@ class PAREKF_ZARU_Payload(XcomDefaultParameterPayload):
         self.data['enable'] = 0
         self.data['reserved2'] = [0]*3
         
+class PAREKF_IMUCONFIG_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        tmp = "3d3d3d3d3ddd3d"
+        self.structString += tmp*2
+        self.data['accPSD'] = [0]*3
+        self.data['accOffStdDev'] = [0]*3
+        self.data['accOffRW'] = [0]*3
+        self.data['accSfStdDev'] = [0]*3
+        self.data['accSfRW'] = [0]*3
+        self.data['accMaStdDev'] = 0
+        self.data['accMaRW'] = 0
+        self.data['accQuantization'] = [0]*3
+        
+        self.data['gyroPSD'] = [0]*3
+        self.data['gyroOffStdDev'] = [0]*3
+        self.data['gyroOffRW'] = [0]*3
+        self.data['gyroSfStdDev'] = [0]*3
+        self.data['gyroSfRW'] = [0]*3
+        self.data['gyroMaStdDev'] = 0
+        self.data['gyroMaRW'] = 0
+        self.data['gyroQuantization'] = [0]*3
+        
 class PAREKF_STATEFREEZE_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1257,6 +1311,14 @@ class PARXCOM_NETCONFIG_Payload(XcomDefaultParameterPayload):
         self.data['ip'] = 0
         self.data['subnetmask'] = 0
         self.data['gateway'] = 0
+        
+class PARXCOM_LOGLIST_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        for idx in range(0,16):            
+            self.structString += "HH"
+            self.data["divider_%d" % idx] = 0
+            self.data["msgid_%d" % idx] = 0
         
 class PARXCOM_AUTOSTART_Payload(XcomDefaultParameterPayload):
     def __init__(self):
@@ -1338,6 +1400,14 @@ class PARFPGA_TIMINGREG_Payload(XcomDefaultParameterPayload):
         self.data['timing_reg'] = 0
         self.data['reserved2'] = 0
         self.data['userTimer'] = [0]*2
+        self.data['password'] = 0
+        
+class PARFPGA_IMUSTATUSREG_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "BBH"
+        self.data['register'] = 0
+        self.data['reserved2'] = 0
         self.data['password'] = 0
         
 class PARFPGA_HDLCREG_Payload(XcomDefaultParameterPayload):
@@ -1758,8 +1828,10 @@ ParameterPayloadDictionary = {
     ParameterID.PARGNSS_RTCMV3CONFIG:PARGNSS_RTCMV3CONFIG_Payload,
     ParameterID.PARGNSS_NAVCONFIG:PARGNSS_NAVCONFIG_Payload,
     ParameterID.PARGNSS_STDDEV:PARGNSS_STDDEV_Payload,
+    ParameterID.PARGNSS_MODEL:PARGNSS_MODEL_Payload,
+    ParameterID.PARGNSS_VERSION:PARGNSS_VERSION_Payload,
     
-    
+    ParameterID.PARFPGA_IMUSTATUSREG:PARFPGA_IMUSTATUSREG_Payload,
     ParameterID.PARFPGA_HDLCREG:PARFPGA_HDLCREG_Payload,
     ParameterID.PARFPGA_TIMINGREG:PARFPGA_TIMINGREG_Payload,
     ParameterID.PARFPGA_TIMER:PARFPGA_TIMER_Payload,
@@ -1833,6 +1905,7 @@ ParameterPayloadDictionary = {
     ParameterID.PAREKF_GRAVITYAID:PAREKF_GRAVITYAID_Payload,
     ParameterID.PAREKF_FEEDBACK:PAREKF_FEEDBACK_Payload,
     ParameterID.PAREKF_ZARU:PAREKF_ZARU_Payload,
+    ParameterID.PAREKF_IMUCONFIG:PAREKF_IMUCONFIG_Payload,
     ParameterID.PAREKF_STATEFREEZE:PAREKF_STATEFREEZE_Payload,
     
     ParameterID.PARDAT_POS:PARDAT_POS_Payload,
@@ -1842,6 +1915,7 @@ ParameterPayloadDictionary = {
     
     ParameterID.PARXCOM_SERIALPORT:PARXCOM_SERIALPORT_Payload,
     ParameterID.PARXCOM_NETCONFIG:PARXCOM_NETCONFIG_Payload,
+    ParameterID.PARXCOM_LOGLIST:PARXCOM_LOGLIST_Payload,
     ParameterID.PARXCOM_AUTOSTART:PARXCOM_AUTOSTART_Payload,
     ParameterID.PARXCOM_POSTPROC:PARXCOM_POSTPROC_Payload,
     ParameterID.PARXCOM_BROADCAST:PARXCOM_BROADCAST_Payload,
