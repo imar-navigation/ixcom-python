@@ -149,6 +149,7 @@ class ParameterID(IntEnum):
     PARIMU_CALIB            = 109
     PARIMU_CROSSCOUPLING    = 110
     PARIMU_REFPOINTOFFSET   = 111
+    PARIMU_ACCLEVERARM      = 114
     
     PARGNSS_PORT            = 200
     PARGNSS_BAUD            = 201
@@ -588,6 +589,13 @@ class PARIMU_REFPOINTOFFSET_Payload(XcomDefaultParameterPayload):
         super().__init__()
         self.structString += "3d"
         self.data['offset'] = [0, 0, 0]
+        
+class PARIMU_ACCLEVERARM_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "9d"
+        self.data['leverarms'] = [0]*9
+
 
 
 """
@@ -1815,6 +1823,7 @@ ParameterPayloadDictionary = {
     ParameterID.PARIMU_CALIB:PARIMU_CALIB_Payload,
     ParameterID.PARIMU_CROSSCOUPLING:PARIMU_CROSSCOUPLING_Payload,
     ParameterID.PARIMU_REFPOINTOFFSET:PARIMU_REFPOINTOFFSET_Payload,
+    ParameterID.PARIMU_ACCLEVERARM:PARIMU_ACCLEVERARM_Payload,
     
     
     
