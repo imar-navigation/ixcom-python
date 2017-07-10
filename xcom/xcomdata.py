@@ -776,7 +776,7 @@ class PARGNSS_MODEL_Payload(XcomDefaultParameterPayload):
         self.data['reserved2'] = 0
         self.data['reserved3'] = 0
         for idx in range(6):
-            self.data['modelName_%d' % idx] = "\0"*16
+            self.data['modelName_%d' % idx] = b"\0"*16
             self.data['year_%d' % idx] = 0
             self.data['month_%d' % idx] = 0
             self.data['day_%d' % idx] = 0
@@ -788,13 +788,13 @@ class PARGNSS_VERSION_Payload(XcomDefaultParameterPayload):
         super().__init__()
         self.structString += "I16s16s16s16s16s16s16s"
         self.data['type'] = 0
-        self.data['model'] = "\0"*16
-        self.data['psn'] = "\0"*16
-        self.data['hwversion'] = "\0"*16
-        self.data['swversion'] = "\0"*16
-        self.data['bootversion'] = "\0"*16
-        self.data['compdate'] = "\0"*16
-        self.data['comptime'] = "\0"*16
+        self.data['model'] = b"\0"*16
+        self.data['psn'] = b"\0"*16
+        self.data['hwversion'] = b"\0"*16
+        self.data['swversion'] = b"\0"*16
+        self.data['bootversion'] = b"\0"*16
+        self.data['compdate'] = b"\0"*16
+        self.data['comptime'] = b"\0"*16
 
 class PARGNSS_RTKSOLTHR_Payload(XcomDefaultParameterPayload):
     def __init__(self):
@@ -1502,10 +1502,10 @@ class PARXCOM_NTRIP_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "128s128s128s128sBBHI"
-        self.data['stream'] = "\0"*128
-        self.data['user'] = "\0"*128
-        self.data['password'] = "\0"*128
-        self.data['server'] = "\0"*128
+        self.data['stream'] = b"\0"*128
+        self.data['user'] = b"\0"*128
+        self.data['password'] = b"\0"*128
+        self.data['server'] = b"\0"*128
         self.data['port'] = 0
         self.data['enable'] = 0
         self.data['reserved2'] = 0
@@ -1603,7 +1603,7 @@ class PARXCOM_CALPROC_Payload(XcomDefaultParameterPayload):
         self.data['enable'] = 0
         self.data['channel'] = 0
         self.data['divider'] = 0
-        self.data['pathName'] = "\0"*256
+        self.data['pathName'] = b"\0"*256
 
 class PARXCOM_CLIENT_Payload(XcomDefaultParameterPayload):
     def __init__(self):
