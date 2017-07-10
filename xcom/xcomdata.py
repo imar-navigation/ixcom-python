@@ -781,8 +781,7 @@ class PARGNSS_MODEL_Payload(XcomDefaultParameterPayload):
             self.data['month_%d' % idx] = 0
             self.data['day_%d' % idx] = 0
             self.structString += modelstructstring
-        print(self.structString)
-            
+
 class PARGNSS_VERSION_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1623,7 +1622,6 @@ class PARXCOM_CLIENT_Payload(XcomDefaultParameterPayload):
         self.structString += "B3B"
         self.data['useUDPInterface'] = 0
         self.data['reserved2'] = [0, 0, 0]
-        print(self.structString)
 
 """
 PARFPGA
@@ -1631,8 +1629,8 @@ PARFPGA
 class PARFPGA_TIMER_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
-        self.structString += "13HHH"
-        self.data['timer'] = [0]*13
+        self.structString += "14HHH"
+        self.data['timer'] = [0]*14
         self.data['reserved2'] = 0
         self.data['password'] = 0
         
