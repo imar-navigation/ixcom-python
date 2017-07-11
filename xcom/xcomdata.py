@@ -3,6 +3,7 @@ import struct
 import crc16
 from enum import IntEnum
 
+
 class XcomResponse(IntEnum):
     OK                  = 0x0
     InvalidParameter    = 0x1
@@ -292,10 +293,6 @@ class ParameterID(IntEnum):
     PARFPGA_PPTCONFIG       = 1013
     PARFPGA_AUTOWAKEUP      = 1014
 
-    #PARPCTRL_MODES          = 1010
-    #PARPCTRL_GAINS          = 1011
-    #PARPCTRL_INTERFACE      = 1012
-
     PARODO_SCF              = 1100
     PARODO_TIMEOUT          = 1101
     PARODO_MODE             = 1102
@@ -401,7 +398,6 @@ class XcomProtocolPayload(MessageItem):
         try:
             keyList = self.data.keys()
             valueList = list(struct.unpack(self.structString, inBytes))
-            numberOfValues = 0
             for key in keyList:
                 if isinstance(self.data[key], list):
                     curLen = len(self.data[key])
@@ -479,7 +475,6 @@ class XcomDefaultCommandPayload(XcomProtocolPayload):
         self.data = collections.OrderedDict([('cmdID',0),('specific',0)])
 
     def get_name(self):
-        classname = self.__class__.__name__
         return CommandID(self.data['cmdID']).name
 
 class XcomResponsePayload(XcomProtocolPayload):
@@ -496,7 +491,6 @@ class XcomDefaultParameterPayload(XcomProtocolPayload):
         self.data = collections.OrderedDict([('parameterID',0),('reserved',0),('action',XcomParameterAction.REQUESTING)])
 
     def get_name(self):
-        classname = self.__class__.__name__
         return ParameterID(self.data['parameterID']).name
 
 """
@@ -2577,6 +2571,8 @@ MessagePayloadDictionary = {
     MessageID.IMURAW:IMU_Payload,
     MessageID.IMUCORR:IMU_Payload,
     MessageID.IMUCOMP:IMU_Payload,
+    MessageID.IMUCAL: IMUCAL_Payload,
+
     MessageID.INSSOL:INSSOL_Payload,
     MessageID.INSRPY:INSRPY_Payload,
     MessageID.INSDCM:INSDCM_Payload,
@@ -2590,7 +2586,6 @@ MessagePayloadDictionary = {
     MessageID.INSPOSUTM:INSPOSUTM_Payload,
     MessageID.INSPOSUTM:INSPOSUTM_Payload,
     MessageID.INSROTTEST:INSROTTEST_Payload,
-    MessageID.POSTPROC:POSTPROC_Payload,
 
     MessageID.EKFSTDDEV:EKFSTDDEV_Payload,
     MessageID.EKFSTDDEV2:EKFSTDDEV2_Payload,
@@ -2623,14 +2618,14 @@ MessagePayloadDictionary = {
     MessageID.ARINC429STAT:ARINC429STAT_Payload,
     MessageID.EVENTTIME:EVENTTIME_Payload,
     MessageID.OMGINT:OMGINT_Payload,
+    MessageID.POSTPROC: POSTPROC_Payload,
 
     MessageID.ADC24STATUS:ADC24STATUS_Payload,
     MessageID.ADC24DATA:ADC24DATA_Payload,
 
-    #MessageID.IMUDBG:,
-    MessageID.IMUCAL:IMUCAL_Payload,
     MessageID.WHEELDATADBG:WHEELDATADBG_Payload
 }
+
 
 def getMessageWithID(msgID):
     message = XcomProtocolMessage()
@@ -2641,6 +2636,7 @@ def getMessageWithID(msgID):
     else:
         return None
 
+
 def getCommandWithID(cmdID):
     message = XcomProtocolMessage()
     message.header.msgID = MessageID.COMMAND
@@ -2650,6 +2646,7 @@ def getCommandWithID(cmdID):
         return message
     else:
         return None
+
 
 def getParameterWithID(parameterID):
     message = XcomProtocolMessage()
