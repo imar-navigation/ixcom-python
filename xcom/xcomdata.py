@@ -180,7 +180,7 @@ class ParameterID(IntEnum):
     PARGNSS_AIDFRAME        = 209
     # PARGNSS_RTCMV3AIDING    = 210 --> variable payload testing is not implemented yet
     PARGNSS_DUALANTMODE     = 211
-    PARGNSS_SETSYSTEM       = 212
+    PARGNSS_LOCKOUTSYSTEM   = 212
     PARGNSS_RTCMV3CONFIG    = 213
     PARGNSS_NAVCONFIG       = 214
     PARGNSS_STDDEV          = 215
@@ -735,11 +735,13 @@ class PARGNSS_DUALANTMODE_Payload(XcomDefaultParameterPayload):
         self.structString += "I"
         self.data['dualAntMode'] = 0
 
-class PARGNSS_SETSYSTEM_Payload(XcomDefaultParameterPayload):
+class PARGNSS_LOCKOUTSYSTEM_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
-        self.structString += "I"
-        self.data['system'] = 0
+        self.structString += "BBH"
+        self.data['lockoutMask'] = 0
+        self.data['reserved2'] = 0
+        self.data['reserved3'] = 0
 
 class PARGNSS_RTCMV3CONFIG_Payload(XcomDefaultParameterPayload):
     def __init__(self):
@@ -1530,10 +1532,9 @@ class PARXCOM_NTRIP_Payload(XcomDefaultParameterPayload):
 class PARXCOM_POSTPROC_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
-        self.structString += "BBBB"
+        self.structString += "BBH"
         self.data['enable'] = 0
         self.data['channel'] = 0
-        self.data['log_mode'] = 0
         self.data['reserved2'] = 0
 
 class PARXCOM_BROADCAST_Payload(XcomDefaultParameterPayload):
@@ -1548,11 +1549,12 @@ class PARXCOM_BROADCAST_Payload(XcomDefaultParameterPayload):
 class PARXCOM_UDPCONFIG_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
-        self.structString += "IIBBH"
+        self.structString += "IIBBBB"
         self.data['ip'] = 0
         self.data['port'] = 0
         self.data['enable'] = 0
         self.data['channel'] = 0
+        self.data['enableABD'] = 0
         self.data['reserved2'] = 0
 
 class PARXCOM_DUMPENABLE_Payload(XcomDefaultParameterPayload):
@@ -1770,10 +1772,11 @@ class PARNMEA_COM_Payload(XcomDefaultParameterPayload):
 class PARNMEA_ENABLE_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
-        self.structString += "BBH"
-        self.data['enable'] = 0
-        self.data['qualityMode'] = 0
+        self.structString += "BBBB"
         self.data['reserved2'] = 0
+        self.data['qualityMode'] = 0
+        self.data['selectionSwitch'] = 0
+        self.data['reserved4'] = 0
 
 class PARNMEA_TXMASK_Payload(XcomDefaultParameterPayload):
     def __init__(self):
@@ -1992,7 +1995,7 @@ class INSPOSLLH_Payload(XcomProtocolPayload):
 class INSPOSUTM_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
-        self.structString += "Iddf"
+        self.structString += "iddf"
         self.data['zone']       = 0
         self.data['easting']    = 0
         self.data['northing']   = 0
@@ -2243,7 +2246,7 @@ class GNSSSOLCUST_Payload(XcomProtocolPayload):
 class GNSSHDG_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
-        self.structString += "ffffHHHBI"
+        self.structString += "ffffHHHBBI"
         self.data['hdg']        = 0
         self.data['stdDevHdg']  = 0
         self.data['pitch']      = 0
@@ -2422,7 +2425,7 @@ ParameterPayloadDictionary = {
     ParameterID.PARGNSS_RTKMODE:PARGNSS_RTKMODE_Payload,
     ParameterID.PARGNSS_AIDFRAME:PARGNSS_AIDFRAME_Payload,
     ParameterID.PARGNSS_DUALANTMODE:PARGNSS_DUALANTMODE_Payload,
-    ParameterID.PARGNSS_SETSYSTEM:PARGNSS_SETSYSTEM_Payload,
+    ParameterID.PARGNSS_LOCKOUTSYSTEM:PARGNSS_LOCKOUTSYSTEM_Payload,
     ParameterID.PARGNSS_RTCMV3CONFIG:PARGNSS_RTCMV3CONFIG_Payload,
     ParameterID.PARGNSS_NAVCONFIG:PARGNSS_NAVCONFIG_Payload,
     ParameterID.PARGNSS_STDDEV:PARGNSS_STDDEV_Payload,
