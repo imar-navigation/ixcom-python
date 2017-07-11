@@ -567,7 +567,7 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
         msgToSend.payload.data['messageID'] = msgID
         msgToSend.payload.data['trigger'] = xcomdata.LogTrigger.POLLED
         msgToSend.payload.data['parameter'] = xcomdata.LogCommand.ADD
-        msgToSend.payload.data['divider'] = 1
+        msgToSend.payload.data['divider'] = 500
         bytesToSend = msgToSend.to_bytes()
         self.send_and_wait_for_okay(bytesToSend)
         self.wait_for_log(msgID)

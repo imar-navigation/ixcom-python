@@ -17,7 +17,7 @@ class XcomResponse(IntEnum):
     LogExists           = 0xA
     InvalidTrigger      = 0xB
     InternalError       = 0xC
-    
+
 class DatatSelectionMask(IntEnum):
     IMURAW  = 0b0000000000000001
     IMUCORR = 0b0000000000000010
@@ -30,7 +30,7 @@ class DatatSelectionMask(IntEnum):
     BAROALT = 0b0000000100000000
     WGS84POS= 0b0000001000000000
     ECEFPOS = 0b0000010000000000
-    
+
 class MessageID(IntEnum):
     IMURAW        = 0x00
     IMUCORR       = 0x01
@@ -50,30 +50,48 @@ class MessageID(IntEnum):
     POSTPROC      = 0x40
 
     EKFSTDDEV     = 0x0F
+    EKFSTDDEV2    = 0x28
     EKFERROR      = 0x10
+    EKFERROR2     = 0x27
+    EKFTIGHTLY    = 0x11
+    EKFPOSCOVAR   = 0x29
 
     GNSSSOL       = 0x12
     GNSSSTATUS    = 0x13
     GNSSTIME      = 0x14
+    GNSSSOLCUST   = 0x15
     GNSSHDG       = 0x33
     GNSSLEVERARM  = 0x1B
+    GNSSVOTER     = 0x1C
+    GNSSHWMON     = 0x1E
+    GNSSSATINFO   = 0x25
+    GNSSALIGNBSL  = 0x38
 
     WHEELDATA     = 0x16
     AIRDATA       = 0x17
     MAGDATA       = 0x18
     SYSSTAT       = 0x19
+    ARINC429STAT  = 0x1D
+    HEAVE         = 0x1F
     STATFPGA      = 0x20
     POWER         = 0x21
     TEMP          = 0x22
+    CANSTAT       = 0x24
+    TIME          = 0x26
 
     IMUDBG        = 0x30
     IMUCAL        = 0x31
     WHEELDATADBG  = 0x32
-    
+    EVENTTIME     = 0x34
+    OMGINT        = 0x35
+
+    ADC24STATUS   = 0x36
+    ADC24DATA     = 0x37
+
     COMMAND       = 0xFD
     RESPONSE      = 0xFE
     PARAMETER     = 0xFF
-    
+
 class CommandID(IntEnum):
     LOG     = 0x0
     EXT     = 0x1
@@ -85,7 +103,7 @@ class CommandID(IntEnum):
     EXTAID  = 0x7
     PCTRL   = 0x8
     USR     = 0x9
-    
+
 class EkfCommand(IntEnum):
     ALIGN           = 0
     SAVEPOS         = 1
@@ -93,7 +111,7 @@ class EkfCommand(IntEnum):
     SAVEANTOFFSET   = 3
     FORCED_ZUPT     = 4
     ALIGN_COMPLETE  = 5
-    
+
 class LogTrigger(IntEnum):
     SYNC          = 0
     EVENT         = 1
@@ -107,20 +125,20 @@ class LogCommand(IntEnum):
     CLEAR_ALL   = 4
     STOP_ALL    = 5
     START_ALL   = 6
-    
+
 class StartupPositionMode(IntEnum):
     GNSSPOS     = 0
     STOREDPOS   = 1
     FORCEDPOS   = 2
     CURRENTPOS  = 3
-    
+
 class StartupHeadingMode(IntEnum):
     DEFAULT     = 0
     STOREDHDG   = 1
     FORCEDHDG   = 2
     MAGHDG      = 3
     DUALANTHDG  = 4
-    
+
 class ParameterID(IntEnum):
     PARSYS_PRJNUM           = 0
     PARSYS_PARTNUM          = 1
@@ -142,7 +160,7 @@ class ParameterID(IntEnum):
     PARSYS_CONFIGCRC        = 17
     PARSYS_OSVERSION        = 18
     PARSYS_SYSNAME          = 19
-    
+
     PARIMU_MISALIGN         = 105
     PARIMU_TYPE             = 107
     PARIMU_LATENCY          = 108
@@ -184,12 +202,12 @@ class ParameterID(IntEnum):
     PARMADC_ENABLE          = 400
     PARMADC_LEVERARM        = 401
     PARMADC_LOWPASS         = 402
-    
+
     PARMON_LEVEL            = 500
     PARMON_TPYE             = 501
     PARMON_PORT             = 502
     PARMON_BAUD             = 503
-    
+
     PARREC_CONFIG           = 600
     PARREC_START            = 603
     PARREC_STOP             = 604
@@ -234,12 +252,12 @@ class ParameterID(IntEnum):
     PAREKF_IMUCONFIG        = 738
     PAREKF_ZUPTCALIB        = 739
     PAREKF_STATEFREEZE      = 740
-    
+
     PARDAT_POS              = 800
     PARDAT_VEL              = 801
     PARDAT_IMU              = 802
     PARDAT_SYSSTAT          = 803
-    
+
     PARXCOM_SERIALPORT      = 902
     PARXCOM_NETCONFIG       = 903
     PARXCOM_LOGLIST         = 905
@@ -277,7 +295,7 @@ class ParameterID(IntEnum):
     #PARPCTRL_MODES          = 1010
     #PARPCTRL_GAINS          = 1011
     #PARPCTRL_INTERFACE      = 1012
-    
+
     PARODO_SCF              = 1100
     PARODO_TIMEOUT          = 1101
     PARODO_MODE             = 1102
@@ -315,10 +333,10 @@ class ParameterID(IntEnum):
 class MessageItem(object):
     def to_bytes(self):
         raise NotImplementedError()
-    
+
     def from_bytes(self, inBytes):
         raise NotImplementedError()
-        
+
     def size(self):
         try:
             return struct.calcsize(self.structString)
@@ -327,7 +345,7 @@ class MessageItem(object):
 
 class XcomProtocolHeader(MessageItem):
     structString = "=BBBBHHII"
-    
+
     def __init__(self):
         self.sync               = 0x7E
         self.msgID              = 0
@@ -337,39 +355,39 @@ class XcomProtocolHeader(MessageItem):
         self.week               = 0
         self.timeOfWeek_sec     = 0
         self.timeOfWeek_usec     = 0
-        
+
     def get_time(self):
         return self.timeOfWeek_sec + 1.0e-6*self.timeOfWeek_usec;
-        
+
     def to_bytes(self):
         return bytearray(struct.pack(self.structString, self.sync, self.msgID, self.frameCounter, self.reserved, self.msgLength, self.week, self.timeOfWeek_sec, self.timeOfWeek_usec))
-        
+
     def from_bytes(self, inBytes):
         self.sync, self.msgID, self.frameCounter, self.reserved, self.msgLength, self.week, self.timeOfWeek_sec, self.timeOfWeek_usec = struct.unpack(self.structString, inBytes[:16])
-        
 
-        
+
+
 class XcomProtocolBottom(MessageItem):
     structString = "=HH"
-    
+
     def __init__(self):
         self.gStatus = 0
         self.crc = 0
-        
+
     def to_bytes(self):
         return bytearray(struct.pack(self.structString, self.gStatus, self.crc))
-        
+
     def from_bytes(self, inBytes):
         self.gStatus, self.crc = struct.unpack(self.structString, inBytes)
 
 class XcomProtocolPayload(MessageItem):
     data = collections.OrderedDict()
-    
+
     def __init__(self):
         super(XcomProtocolPayload, self).__init__()
         self.structString = "="
         self.data = collections.OrderedDict()
-        
+
     def to_bytes(self):
         values = []
         for value in self.data.values():
@@ -378,7 +396,7 @@ class XcomProtocolPayload(MessageItem):
             else:
                 values += [value]
         return bytearray(struct.pack(self.structString, *values))
-        
+
     def from_bytes(self, inBytes):
         try:
             keyList = self.data.keys()
@@ -396,7 +414,7 @@ class XcomProtocolPayload(MessageItem):
         except Exception as e:
             from sys import stderr
             stderr.write("Could not convert, %s, %s, %s" % ((inBytes), self.get_name(), str(e)))
-            
+
     def get_name(self):
         classname = self.__class__.__name__
         return classname.split('_')[0]
@@ -406,7 +424,7 @@ class XcomProtocolMessage(MessageItem):
         self.header  =  XcomProtocolHeader()
         self.payload =  XcomProtocolPayload()
         self.bottom  =  XcomProtocolBottom()
-        
+
     def to_bytes(self):
         self.header.msgLength = self.size()
         msgBytes = self.header.to_bytes()
@@ -414,7 +432,7 @@ class XcomProtocolMessage(MessageItem):
         msgBytes += b'\x00\x00'
         self.bottom.crc = crc16.crc16xmodem(bytes(msgBytes))
         return self.header.to_bytes() + self.payload.to_bytes() + self.bottom.to_bytes()
-    
+
     def from_bytes(self, inBytes):
         headerBytes = inBytes[:16]
         self.header.from_bytes(headerBytes)
@@ -422,7 +440,7 @@ class XcomProtocolMessage(MessageItem):
         self.payload.from_bytes(messageBytes)
         bottomBytes = inBytes[self.header.msgLength-4:self.header.msgLength]
         self.bottom.from_bytes(bottomBytes)
-        
+
     def __str__(self):
         tmp = str(self.header.frameCounter)+","+str(self.header.timeOfWeek_sec+1e-6*self.header.timeOfWeek_usec)
         for item in self.payload.data:
@@ -432,7 +450,7 @@ class XcomProtocolMessage(MessageItem):
                 datastr = str(self.payload.data[item])
             tmp += ","+datastr
         return tmp
-        
+
     def to_double_array(self):
         tmp = [self.header.frameCounter, (self.header.timeOfWeek_sec+1e-6*self.header.timeOfWeek_usec)]
         for item in self.payload.data:
@@ -441,29 +459,29 @@ class XcomProtocolMessage(MessageItem):
             else:
                 tmp += [self.payload.data[item]]
         return tmp
-        
+
     def size(self):
         return self.header.size()+self.payload.size()+self.bottom.size()
-        
-    
+
+
 class XcomCommandParameter(IntEnum):
     reboot        = 2
     channel_open  = 1
     channel_close = 0
-    
+
 class XcomParameterAction(IntEnum):
     CHANGING = 0
     REQUESTING = 1
-    
+
 class XcomDefaultCommandPayload(XcomProtocolPayload):
     def __init__(self):
         self.structString = "=HH"
         self.data = collections.OrderedDict([('cmdID',0),('specific',0)])
-    
+
     def get_name(self):
         classname = self.__class__.__name__
         return CommandID(self.data['cmdID']).name
-        
+
 class XcomResponsePayload(XcomProtocolPayload):
     def __init__(self, msgLength):
         self.structString = "=HH%ds" % (msgLength-20-4)
@@ -471,16 +489,16 @@ class XcomResponsePayload(XcomProtocolPayload):
         self.data['responseID'] = 0
         self.data['repsonseLength'] = 0
         self.data['responseText'] = ' '*(msgLength-24)
-    
+
 class XcomDefaultParameterPayload(XcomProtocolPayload):
     def __init__(self):
         self.structString = "=HBB"
         self.data = collections.OrderedDict([('parameterID',0),('reserved',0),('action',XcomParameterAction.REQUESTING)])
-        
+
     def get_name(self):
         classname = self.__class__.__name__
         return ParameterID(self.data['parameterID']).name
-        
+
 """
 Commands
 """
@@ -492,21 +510,21 @@ class CMD_LOG_Payload(XcomDefaultCommandPayload):
         self.data['trigger'] = 0
         self.data['parameter'] = 0
         self.data['divider'] = 0
-        
+
 class CMD_EKF_Payload(XcomDefaultCommandPayload):
     def __init__(self):
         super().__init__()
         self.structString += "HH"
         self.data['subcommand'] = 0
         self.data['numberOfParams'] = 0
-        
-        
+
+
 class CMD_CONF_Payload(XcomDefaultCommandPayload):
     def __init__(self):
         super().__init__()
         self.structString += "I"
         self.data['configAction'] = 0
-        
+
 class CMD_EXT_Payload(XcomDefaultCommandPayload):
     def __init__(self):
         super().__init__()
@@ -514,8 +532,8 @@ class CMD_EXT_Payload(XcomDefaultCommandPayload):
         self.data['time'] = 0
         self.data['timeMode'] = 0
         self.data['cmdParamID'] = 0
-        
-    
+
+
 class XcomCommandPayload(XcomDefaultCommandPayload):
     def __init__(self):
         super().__init__()
@@ -531,13 +549,13 @@ class PARSYS_STRING_Payload(XcomDefaultParameterPayload):
         super().__init__()
         self.structString += "32s"
         self.data['str'] = bytes(' '*32, 'utf-8')
-        
+
 class PARSYS_STRING64_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "64s"
         self.data['str'] = bytes(' '*64, 'utf-8')
-        
+
 class PARSYS_MAINTIMIMG_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -552,32 +570,32 @@ class PARSYS_CALDATE_Payload(XcomDefaultParameterPayload):
         self.data['password'] = 0
         self.data['reserved2'] = 0
         self.data['calDate'] = bytes(' '*32, 'utf-8')
-        
+
 class PARSYS_PRESCALER_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "HH"
         self.data['prescaler'] = 0
         self.data['password'] = 0
-        
+
 class PARSYS_UPTIME_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "f"
         self.data['uptime'] = 0
-        
+
 class PARSYS_OPHOURCOUNT_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "I"
         self.data['ophours'] = 0
-        
+
 class PARSYS_BOOTMODE_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "I"
         self.data['bootmode'] = 0
-        
+
 class PARSYS_FPGAVER_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -585,7 +603,7 @@ class PARSYS_FPGAVER_Payload(XcomDefaultParameterPayload):
         self.data['major'] = 0
         self.data['minor'] = 0
         self.data['imutype'] = 0
-        
+
 class PARSYS_CONFIGCRC_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -602,19 +620,19 @@ class PARIMU_MISALIGN_Payload(XcomDefaultParameterPayload):
         self.structString += "3f"
         self.data['rpy'] = [0, 0, 0]
 
-        
+
 class PARIMU_TYPE_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "I"
         self.data['type'] = 0
-        
+
 class PARIMU_LATENCY_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "d"
         self.data['latency'] = 0
-        
+
 class PARIMU_CALIB_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -623,14 +641,14 @@ class PARIMU_CALIB_Payload(XcomDefaultParameterPayload):
         self.data['biasAcc'] = [0, 0, 0]
         self.data['sfOmg'] = [0, 0, 0]
         self.data['biasOmg'] = [0, 0, 0]
-        
+
 class PARIMU_CROSSCOUPLING_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "9d9d"
         self.data['CCAcc'] = [0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.data['CCOmg'] = [0, 0, 0, 0, 0, 0, 0, 0, 0]
-        
+
 class PARIMU_REFPOINTOFFSET_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -667,7 +685,7 @@ class PARIMU_STRAPDOWNCONF_Payload(XcomDefaultParameterPayload):
 
 """
 PARGNSS
-"""  
+"""
 class PARGNSS_PORT_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -675,7 +693,7 @@ class PARGNSS_PORT_Payload(XcomDefaultParameterPayload):
         self.data['port'] = 0
         self.data['reserved2'] = 0
         self.data['password'] = 0
-        
+
 class PARGNSS_BAUD_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -698,13 +716,13 @@ class PARGNSS_ANTOFFSET_Payload(XcomDefaultParameterPayload):
         self.data['antennaOffset'] = [0,0,0]
         self.data['stdDev'] = [0,0,0]
 
-        
+
 class PARGNSS_RTKMODE_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "I"
         self.data['rtkMode'] = 0
-        
+
 class PARGNSS_AIDFRAME_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -722,7 +740,7 @@ class PARGNSS_SETSYSTEM_Payload(XcomDefaultParameterPayload):
         super().__init__()
         self.structString += "I"
         self.data['system'] = 0
-        
+
 class PARGNSS_RTCMV3CONFIG_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -731,7 +749,7 @@ class PARGNSS_RTCMV3CONFIG_Payload(XcomDefaultParameterPayload):
         self.data['enable'] = 0
         self.data['reserved2'] = 0
         self.data['baud'] = 0
-        
+
 class PARGNSS_NAVCONFIG_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -740,7 +758,7 @@ class PARGNSS_NAVCONFIG_Payload(XcomDefaultParameterPayload):
         self.data['CN0ThreshSVs'] = 0
         self.data['CN0Thresh'] = 0
         self.data['reserved2'] = 0
-        
+
 class PARGNSS_STDDEV_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -824,27 +842,27 @@ class PARMAG_PERIOD_Payload(XcomDefaultParameterPayload):
         super().__init__()
         self.structString += "I"
         self.data['period'] = 0
-        
+
 class PARMAG_MISALIGN_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "3f"
         self.data['rpy'] = [0,0,0]
-        
+
 class PARMAG_CAL_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "9f3fI"
         self.data['C'] = [1,0,0, 0,0,0, 0,0,1]
-        self.data['bias'] = [0,0,0]   
+        self.data['bias'] = [0,0,0]
         self.data['valid'] = 0
-        
+
 class PARMAG_CALSTATE_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "i"
         self.data['calstate'] = 0
-        
+
 class PARMAG_CFG_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -864,7 +882,7 @@ class PARMAG_FOM_Payload(XcomDefaultParameterPayload):
         super().__init__()
         self.structString += "f"
         self.data['FOM'] = 0
-        
+
 """
 PARMADC
 """
@@ -873,7 +891,7 @@ class PARMADC_ENABLE_Payload(XcomDefaultParameterPayload):
         super().__init__()
         self.structString += "I"
         self.data['enable'] = 0
-        
+
 class PARMADC_LEVERARM_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -887,7 +905,7 @@ class PARMADC_LOWPASS_Payload(XcomDefaultParameterPayload):
         self.structString += "fI"
         self.data['cutoff'] = 0
         self.data['enableFilter'] = 0
-        
+
 """
 PARODO
 """
@@ -898,13 +916,13 @@ class PARODO_SCF_Payload(XcomDefaultParameterPayload):
         self.data['scfOdo'] = 0
         self.data['scfEst'] = 0
         self.data['selection'] = 0
-        
+
 class PARODO_TIMEOUT_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "f"
         self.data['timeout'] = 0
-        
+
 class PARODO_MODE_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -913,25 +931,25 @@ class PARODO_MODE_Payload(XcomDefaultParameterPayload):
         self.data['mode'] = 0
         self.data['deglitcherA'] = 0
         self.data['deglitcherB'] = 0
-        
+
 class PARODO_LEVERARM_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "3f"
         self.data['leverArm'] = [0, 0, 0]
-        
+
 class PARODO_VELSTDDEV_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "f"
         self.data['stdDev'] = 0
-        
+
 class PARODO_DIRECTION_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "3f"
         self.data['direction'] = [0, 0, 0]
-        
+
 class PARODO_CONSTRAINTS_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -940,13 +958,13 @@ class PARODO_CONSTRAINTS_Payload(XcomDefaultParameterPayload):
         self.data['reserved2'] = 0
         self.data['reserved3'] = 0
         self.data['stdDev'] = 0
-        
+
 class PARODO_RATE_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "f"
         self.data['rate'] = 0
-        
+
 class PARODO_THR_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -963,35 +981,35 @@ class PARODO_EQEP_Payload(XcomDefaultParameterPayload):
 """
 PARARINC
 """
-        
+
 class PARARINC825_PORT_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "I"
         self.data['port'] = 0
-        
+
 class PARARINC825_BAUD_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "I"
         self.data['baud'] = 0
-        
+
 class PARARINC825_ENABLE_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "HH"
         self.data['reserved2'] = 0
         self.data['enable'] = 0
-        
+
 class PARARINC825_LOGLIST_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
-        for idx in range(0,21):            
+        for idx in range(0,29):
             self.structString += "HHI"
             self.data["divider_%d" % idx] = 0
             self.data["reserved_%d" % idx] = 0
             self.data["docnumber_%d" % idx] = 0
-            
+
 class PARARINC825_BUSRECOVERY_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1037,17 +1055,17 @@ class PARREC_CONFIG_Payload(XcomDefaultParameterPayload):
         self.data['channelNumber'] = 0
         self.data['enable'] = 0
         self.data['reserved2'] = 0
-        
+
 class PARREC_START_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "128s"
         self.data['str'] = bytes(' '*128, 'utf-8')
-        
+
 class PARREC_STOP_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
-        
+
 class PARREC_POWER_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1074,7 +1092,7 @@ class PAREKF_ALIGNMODE_Payload(XcomDefaultParameterPayload):
         super().__init__()
         self.structString += "I"
         self.data['alignmode'] = 0
-        
+
 class PAREKF_HDGPOSTHR_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1082,19 +1100,19 @@ class PAREKF_HDGPOSTHR_Payload(XcomDefaultParameterPayload):
         self.data['hdgGoodThr'] = 0
         self.data['posMedThr'] = 0
         self.data['posHighThr'] = 0
-        
+
 class PAREKF_ALIGNTIME_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "I"
         self.data['aligntime'] = 0
-        
+
 class PAREKF_COARSETIME_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "I"
         self.data['coarsetime'] = 0
-        
+
 class PAREKF_VMP_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1102,7 +1120,7 @@ class PAREKF_VMP_Payload(XcomDefaultParameterPayload):
         self.data['leverArm'] = [0, 0, 0]
         self.data['mask'] = 0
         self.data['cutoff'] = 0
-        
+
 class PAREKF_AIDING_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1122,7 +1140,7 @@ class PAREKF_OUTLIER_Payload(XcomDefaultParameterPayload):
         self.structString += "II"
         self.data['outlierMode'] = 0
         self.data['outlierMask'] = 0
-        
+
 class PAREKF_STARTUP_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1140,7 +1158,7 @@ class PAREKF_STARTUP_Payload(XcomDefaultParameterPayload):
         self.data['realign'] = 0
         self.data['inMotion'] = 0
         self.data['autoRestart'] = 0
-        
+
 class PAREKF_STARTUPV2_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1160,7 +1178,7 @@ class PAREKF_STARTUPV2_Payload(XcomDefaultParameterPayload):
         self.data['realign'] = 0
         self.data['inMotion'] = 0
         self.data['autoRestart'] = 0
-        
+
 class PAREKF_ZUPT_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1176,7 +1194,7 @@ class PAREKF_ZUPT_Payload(XcomDefaultParameterPayload):
         self.data['delay'] = 0
         self.data['mask'] = 0
         self.data['autoZupt'] = 0
-        
+
 class PAREKF_DEFPOS_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1190,7 +1208,7 @@ class PAREKF_DEFHDG_Payload(XcomDefaultParameterPayload):
         super().__init__()
         self.structString += "f"
         self.data['hdg'] = 0
-        
+
 class PAREKF_SMOOTH_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1202,14 +1220,14 @@ class PAREKF_POWERDOWN_Payload(XcomDefaultParameterPayload):
         super().__init__()
         self.structString += "I"
         self.data['savestate'] = 0
-        
+
 class PAREKF_EARTHRAD_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "ff"
         self.data['M'] = 0
         self.data['N'] = 0
-        
+
 class PAREKF_STOREDPOS_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1217,36 +1235,36 @@ class PAREKF_STOREDPOS_Payload(XcomDefaultParameterPayload):
         self.data['lon'] = 0
         self.data['lat'] = 0
         self.data['alt'] = 0
-        
+
         self.data['stdDevLon'] = 0
         self.data['stdDevLat'] = 0
         self.data['stdDevAlt'] = 0
-        
+
 class PAREKF_STOREDATT_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "3f3f"
         self.data['rpy'] = [0,0,0]
         self.data['stdDev'] = [0,0,0]
-        
+
 class PAREKF_ALIGNZUPTSTDDEV_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "d"
         self.data['zuptStdDev'] = 0
-        
+
 class PAREKF_POSAIDSTDDEVTHR_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "d"
         self.data['thr'] = 0
-        
+
 class PAREKF_SCHULERMODE_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "I"
         self.data['enable'] = 0
-        
+
 class PAREKF_ODOMETER_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1264,21 +1282,21 @@ class PAREKF_ODOMETER_Payload(XcomDefaultParameterPayload):
         self.data['maxVel'] = 0
         self.data['useAvgInno'] = 0
         self.data['enableCoarseCal'] = 0
-        
+
 class PAREKF_ODOBOGIE_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "fI"
         self.data['distance'] = 0
         self.data['enable'] = 0
-         
+
 class PAREKF_GNSSLEVERARMEST_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "HH"
         self.data['primary'] = 0
         self.data['secondary'] = 0
-         
+
 class PAREKF_GNSSAIDINGRATE_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1289,7 +1307,7 @@ class PAREKF_GNSSAIDINGRATE_Payload(XcomDefaultParameterPayload):
         self.data['rtktimeout'] = 0
         self.data['hdg'] = 0
         self.data['duringzupt'] = 0
-        
+
 class PAREKF_KINALIGNTHR_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1301,7 +1319,7 @@ class PAREKF_PDOPTHR_Payload(XcomDefaultParameterPayload):
         super().__init__()
         self.structString += "f"
         self.data['thr'] = 0
-        
+
 class PAREKF_DUALANTAID_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1310,7 +1328,7 @@ class PAREKF_DUALANTAID_Payload(XcomDefaultParameterPayload):
         self.data['thrPitch'] = 0
         self.data['thrINSHdg'] = 0
         self.data['mode'] = 0
-        
+
 class PAREKF_MAGATTAID_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1323,7 +1341,7 @@ class PAREKF_MAGATTAID_Payload(XcomDefaultParameterPayload):
         self.data['updateMode'] = 0
         self.data['aidingInterval'] = 0
         self.data['magFieldStdDev'] = [0]*3
-        
+
 class PAREKF_MADCAID_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1338,7 +1356,7 @@ class PAREKF_MADCAID_Payload(XcomDefaultParameterPayload):
         self.data['bias'] = 0.0
         self.data['biasStdDev'] = 0.0
         self.data['rwBias'] = 0.0
-        
+
 class PAREKF_ALIGNMENT_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1353,7 +1371,7 @@ class PAREKF_ALIGNMENT_Payload(XcomDefaultParameterPayload):
         self.data['trackAlignDirection'] = [0.0]*3
         self.data['reserved2'] = 0
         self.data['reserved3'] = [0]*3
-        
+
 class PAREKF_GRAVITYAID_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1364,20 +1382,20 @@ class PAREKF_GRAVITYAID_Payload(XcomDefaultParameterPayload):
         self.data['stdDev'] = 0.0
         self.data['gnssTimeout'] = 0.0
         self.data['aidingInterval'] = 0.0
-        
+
 class PAREKF_FEEDBACK_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "I"
         self.data['feedbackMask'] = 0
-        
+
 class PAREKF_ZARU_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "B3B"
         self.data['enable'] = 0
         self.data['reserved2'] = [0]*3
-        
+
 class PAREKF_IMUCONFIG_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1391,7 +1409,7 @@ class PAREKF_IMUCONFIG_Payload(XcomDefaultParameterPayload):
         self.data['accMaStdDev'] = 0
         self.data['accMaRW'] = 0
         self.data['accQuantization'] = [0]*3
-        
+
         self.data['gyroPSD'] = [0]*3
         self.data['gyroOffStdDev'] = [0]*3
         self.data['gyroOffRW'] = [0]*3
@@ -1423,13 +1441,13 @@ class PARDAT_POS_Payload(XcomDefaultParameterPayload):
         self.structString += "HH"
         self.data['posMode'] = 0
         self.data['altMode'] = 0
-        
+
 class PARDAT_VEL_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "I"
         self.data['velMode'] = 0
-        
+
 class PARDAT_IMU_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1441,7 +1459,7 @@ class PARDAT_SYSSTAT_Payload(XcomDefaultParameterPayload):
         super().__init__()
         self.structString += "I"
         self.data['statMode'] = 0
-        
+
 class PARDAT_STATFPGA_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1453,20 +1471,19 @@ class PARDAT_STATFPGA_Payload(XcomDefaultParameterPayload):
         self.data['imuStatus'] = 0
         self.data['tempStatus'] = 0
         self.data['reserved2'] = 0
-        
+
 """
 PARXCOM
 """
 class PARXCOM_SERIALPORT_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
-        self.structString += "BBBBI"
-        self.data['port'] = 0
+        self.structString += "BBHI"
+        self.data['port'] = 1 # port = 0 results in error 5: port is invalid
         self.data['switch'] = 0
-        self.data['loopback'] = 0
         self.data['reserved2'] = 0
         self.data['baudRate'] = 0
-        
+
 class PARXCOM_NETCONFIG_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1479,15 +1496,15 @@ class PARXCOM_NETCONFIG_Payload(XcomDefaultParameterPayload):
         self.data['ip'] = 0
         self.data['subnetmask'] = 0
         self.data['gateway'] = 0
-        
+
 class PARXCOM_LOGLIST_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
-        for idx in range(0,16):            
+        for idx in range(0,16):
             self.structString += "HH"
             self.data["divider_%d" % idx] = 0
             self.data["msgid_%d" % idx] = 0
-        
+
 class PARXCOM_AUTOSTART_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1496,7 +1513,7 @@ class PARXCOM_AUTOSTART_Payload(XcomDefaultParameterPayload):
         self.data['autoStart'] = 0
         self.data['port'] = 0
         self.data['reserved2'] = 0
-        
+
 class PARXCOM_NTRIP_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1509,7 +1526,7 @@ class PARXCOM_NTRIP_Payload(XcomDefaultParameterPayload):
         self.data['enable'] = 0
         self.data['reserved2'] = 0
         self.data['baud'] = 0
-        
+
 class PARXCOM_POSTPROC_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1518,7 +1535,7 @@ class PARXCOM_POSTPROC_Payload(XcomDefaultParameterPayload):
         self.data['channel'] = 0
         self.data['log_mode'] = 0
         self.data['reserved2'] = 0
-        
+
 class PARXCOM_BROADCAST_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1527,7 +1544,7 @@ class PARXCOM_BROADCAST_Payload(XcomDefaultParameterPayload):
         self.data['hidden_mode'] = 0
         self.data['reserved2'] = 0
         self.data['reserved3'] = 0
-        
+
 class PARXCOM_UDPCONFIG_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1537,13 +1554,13 @@ class PARXCOM_UDPCONFIG_Payload(XcomDefaultParameterPayload):
         self.data['enable'] = 0
         self.data['channel'] = 0
         self.data['reserved2'] = 0
-        
+
 class PARXCOM_DUMPENABLE_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "I"
         self.data['enable'] = 0
-        
+
 class PARXCOM_MIGRATOR_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1619,9 +1636,10 @@ class PARXCOM_CLIENT_Payload(XcomDefaultParameterPayload):
                 self.data["messageId %d%d" % (idx, idx2)] = 0
                 self.data["trigger %d%d" % (idx, idx2)] = 0
                 self.data["dividerLogs %d%d" % (idx, idx2)] = 0
-        self.structString += "B3B"
-        self.data['useUDPInterface'] = 0
-        self.data['reserved2'] = [0, 0, 0]
+        #self.structString += "B3B"
+        #self.data['useUDPInterface'] = 0
+        #self.data['reserved2'] = [0]*3
+        print(self.data)
 
 """
 PARFPGA
@@ -1633,7 +1651,7 @@ class PARFPGA_TIMER_Payload(XcomDefaultParameterPayload):
         self.data['timer'] = [0]*14
         self.data['reserved2'] = 0
         self.data['password'] = 0
-        
+
 class PARFPGA_TIMINGREG_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1642,7 +1660,7 @@ class PARFPGA_TIMINGREG_Payload(XcomDefaultParameterPayload):
         self.data['reserved2'] = 0
         self.data['userTimer'] = [0]*2
         self.data['password'] = 0
-        
+
 class PARFPGA_IMUSTATUSREG_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1650,7 +1668,7 @@ class PARFPGA_IMUSTATUSREG_Payload(XcomDefaultParameterPayload):
         self.data['register'] = 0
         self.data['reserved2'] = 0
         self.data['password'] = 0
-        
+
 class PARFPGA_HDLCREG_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1661,7 +1679,7 @@ class PARFPGA_HDLCREG_Payload(XcomDefaultParameterPayload):
         self.data['invertClock'] = 0
         self.data['reserved2'] = 0
         self.data['password'] = 0
-        
+
 class PARFPGA_INTERFACE_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1669,14 +1687,14 @@ class PARFPGA_INTERFACE_Payload(XcomDefaultParameterPayload):
         self.data['matrix'] = [0]*22
         self.data['reserved2'] = 0
         self.data['password'] = 0
-        
+
 class PARFPGA_CONTROLREG_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "HH"
         self.data['controlReg'] = 0
         self.data['reserved2'] = 0
-        
+
 class PARFPGA_POWERUPTHR_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1748,7 +1766,7 @@ class PARNMEA_COM_Payload(XcomDefaultParameterPayload):
         self.data['reserved2'] = 0
         self.data['reserved3'] = 0
         self.data['baud'] = 0
-        
+
 class PARNMEA_ENABLE_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1756,13 +1774,13 @@ class PARNMEA_ENABLE_Payload(XcomDefaultParameterPayload):
         self.data['enable'] = 0
         self.data['qualityMode'] = 0
         self.data['reserved2'] = 0
-        
+
 class PARNMEA_TXMASK_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
         self.structString += "I"
         self.data['txMask'] = 0
-        
+
 class PARNMEA_DECPLACES_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1780,10 +1798,12 @@ class PARNMEA_RATE_Payload(XcomDefaultParameterPayload):
 class PARNMEA_UDP_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
-        self.structString += "IIB"
+        self.structString += "IIBBH"
         self.data['serverAddress'] = 0
-        self.data['port'] = 0
+        self.data['port'] = 1
         self.data['enable'] = 0
+        self.data['reserved2'] = 0
+        self.data['reserved3'] = 0
 
 """
 PARARINC429
@@ -1815,7 +1835,6 @@ class PARARINC429_LIST_Payload(XcomDefaultParameterPayload):
             self.data["period %d" % idx] = 0
             self.data["timer %d" % idx] = 0
 
-
 """
 IO
 """
@@ -1835,7 +1854,7 @@ class PARIO_HW288_Payload(XcomDefaultParameterPayload):
 """
 Messages
 """
-        
+
 class POSTPROC_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
@@ -1852,7 +1871,7 @@ class POSTPROC_Payload(XcomProtocolPayload):
         self.data['odoInterval'] = 0
         self.data['odoTrigEvent'] = 0
         self.data['odoNextEvent'] = 0
-        
+
 class INSSOL_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
@@ -1866,14 +1885,14 @@ class INSSOL_Payload(XcomProtocolPayload):
         self.data['alt'] = 0
         self.data['undulation'] = 0
         self.data['DatSel'] = 0
-        
+
 class IMU_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
         self.structString += "3f3f"
         self.data['acc'] = [0, 0, 0]
         self.data['omg'] = [0, 0, 0]
-        
+
 class INSROTTEST_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
@@ -1896,14 +1915,29 @@ class IMUCAL_Payload(XcomProtocolPayload):
         self.data['sysstat']=  0
         self.data['ekfstat']= [0, 0]
         self.data['imustat']= [0, 0, 0, 0, 0, 0]
-        
+
+class STATFPGA_Payload(XcomProtocolPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "HBBIIHHBBH"
+        self.data['usParID'] = 0
+        self.data['uReserved'] = 0
+        self.data['ucAction'] = 0
+        self.data['uiPowerStatLower'] = 0
+        self.data['uiPowerStatUpper'] = 0
+        self.data['usFpgaStatus'] = 0
+        self.data['usSupervisorStatus'] = 0
+        self.data['ucImuStatus'] = 0
+        self.data['ucTempStatus'] = 0
+        self.data['usRes'] = 0
+
 class SYSSTAT_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
         self.structString += "II"
         self.data['statMode']= 0
         self.data['sysStat'] = 0
-        
+
     def from_bytes(self, inBytes):
         self.data['statMode'] = struct.unpack("I", inBytes[:4])[0]
         if(self.data['statMode'] & (1 << 0)):
@@ -1928,13 +1962,13 @@ class SYSSTAT_Payload(XcomProtocolPayload):
             self.structString += "4I"
             self.data['addStat'] = [0, 0, 0, 0]
         super().from_bytes(inBytes)
-        
+
 class INSRPY_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
         self.structString += "3f"
         self.data['rpy']    = [0, 0, 0]
-        
+
 class INSDCM_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
@@ -1946,7 +1980,7 @@ class INSQUAT_Payload(XcomProtocolPayload):
         super().__init__()
         self.structString += "4f"
         self.data['quat']    = [0, 0, 0, 0]
-        
+
 class INSPOSLLH_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
@@ -1954,7 +1988,7 @@ class INSPOSLLH_Payload(XcomProtocolPayload):
         self.data['lon']    = 0
         self.data['lat']    = 0
         self.data['alt']    = 0
-        
+
 class INSPOSUTM_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
@@ -1963,7 +1997,7 @@ class INSPOSUTM_Payload(XcomProtocolPayload):
         self.data['easting']    = 0
         self.data['northing']   = 0
         self.data['height']     = 0
-    
+
 class INSPOSECEF_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
@@ -1975,7 +2009,7 @@ class INSVEL_Payload(XcomProtocolPayload):
         super().__init__()
         self.structString += "3f"
         self.data['vel'] = [0, 0, 0]
-        
+
 class MAGDATA_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
@@ -1986,20 +2020,24 @@ class MAGDATA_Payload(XcomProtocolPayload):
         self.data['magElevation']    =  0
         self.data['magDeviation']    =  0
         self.data['status']          =  0
-        
+
 class AIRDATA_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
-        self.structString += "fffffffI"
+        self.structString += "fffffffffffI"
         self.data['TAS']        = 0
         self.data['IAS']        = 0
         self.data['baroAlt']    = 0
-        self.data['Vs']         = 0
+        self.data['baroAltRate'] = 0
         self.data['Pd']         = 0
         self.data['Ps']         = 0
         self.data['OAT']        = 0
+        self.data['estBias']        = 0
+        self.data['estScaleFactor']        = 0
+        self.data['estBiasStdDev']        = 0
+        self.data['estScaleFactorStdDev']        = 0
         self.data['status']     = 0
-        
+
 class EKFSTDDEV_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
@@ -2012,7 +2050,32 @@ class EKFSTDDEV_Payload(XcomProtocolPayload):
         self.data['scfAcc']     = [0, 0, 0]
         self.data['scfOmg']     = [0, 0, 0]
         self.data['scfOdo']     =  0
-        
+
+class EKFSTDDEV2_Payload(XcomProtocolPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "3f3f3f3f3f9f9ff2f"
+        self.data['pos']        = [0, 0, 0]
+        self.data['vel']        = [0, 0, 0]
+        self.data['rpy']        = [0, 0, 0]
+        self.data['biasAcc']    = [0, 0, 0]
+        self.data['biasOmg']    = [0, 0, 0]
+        self.data['fMaAcc']     = [0, 0, 0]
+        self.data['fMaOmg']     = [0, 0, 0]
+        self.data['scfOdo']     = 0
+        self.data['fMaOdo']     = [0]*2
+
+class EKFERROR2_Payload(XcomProtocolPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "3f3f9f9ff2f"
+        self.data['biasAcc']    = [0, 0, 0]
+        self.data['biasOmg']    = [0, 0, 0]
+        self.data['fMaAcc']     = [0]*9
+        self.data['fMaOmg']     = [0]*9
+        self.data['scfOdo']     = 0
+        self.data['maOdo']      = [0, 0]
+
 class EKFERROR_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
@@ -2023,19 +2086,102 @@ class EKFERROR_Payload(XcomProtocolPayload):
         self.data['scfOmg']     = [0, 0, 0]
         self.data['scfOdo']     =  0
         self.data['maOdo']      = [0, 0]
-        
+
+class EKFTIGHTLY_Payload(XcomProtocolPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "BBBBBBBBIIIIIIIIIIII"
+        self.data['ucSatsAvailablePSR'] = 0
+        self.data['ucSatsUsedPSR'] = 0
+        self.data['ucSatsAvailableRR'] = 0
+        self.data['ucSatsUsedRR'] = 0
+
+        self.data['ucSatsAvailableTDCP'] = 0
+        self.data['ucSatsUsedTDCP'] = 0
+        self.data['ucRefSatTDCP'] = 0
+        self.data['usReserved'] = 0
+
+        self.data['uiUsedSatsPSR_GPS'] = 0
+        self.data['uiOutlierSatsPSR_GPS'] = 0
+
+        self.data['uiUsedSatsPSR_GLONASS'] = 0
+        self.data['uiOutlierSatsPSR_GLONASS'] = 0
+
+        self.data['uiUsedSatsRR_GPS'] = 0
+        self.data['uiOutlierSatsRR_GPS'] = 0
+
+        self.data['uiUsedSatsRR_GLONASS'] = 0
+        self.data['uiOutlierSatsRR_GLONASS'] = 0
+
+        self.data['uiUsedSatsTDCP_GPS'] = 0
+        self.data['uiOutlierSatsTDCP_GPS'] = 0
+
+        self.data['uiUsedSatsTDCP_GLONASS'] = 0
+        self.data['uiOutlierSatsTDCP_GLONASS'] = 0
+
+class EKFPOSCOVAR_Payload(XcomProtocolPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "9f"
+        self.data['fPosCovar'] = [0]*9
+
 class POWER_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
         self.structString += "32f"
         self.data['power']    = [0]*32
-        
+
 class TEMP_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
         self.structString += "16f"
         self.data['temperatures']    = [0]*16
-        
+
+class HEAVE_Payload(XcomProtocolPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "dddddddd2dII"
+        self.data['StatFiltPos'] = 0
+        self.data['AppliedFreqHz'] = 0
+        self.data['AppliedAmplMeter'] = 0
+        self.data['AppliedSigWaveHeightMeter'] = 0
+        self.data['PZpos'] = 0
+        self.data['ZDpos'] = 0
+        self.data['ZDvel'] = 0
+        self.data['AccZnavDown'] = 0
+
+        self.data['HeavePosVelDown'] = [0] * 2
+        self.data['HeaveAlgoStatus1'] = 0
+        self.data['HeaveAlgoStatus2'] = 0
+
+class CANSTAT_Payload(XcomProtocolPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "IBBBB"
+        self.data['uiErrorMask'] = 0
+        self.data['ucControllerStatus'] = 0
+        self.data['ucTransceiverStatus'] = 0
+        self.data['ucProtocolStatus'] = 0
+        self.data['ucProtocolLocation'] = 0
+
+class ARINC429STAT_Payload(XcomProtocolPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "I"
+        self.data['uiStatus']    = 0
+
+class TIME_Payload(XcomProtocolPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "ddddddd"
+        self.data['sysTime']    = 0
+        self.data['ImuInterval']    = 0
+        self.data['TimeSincePPS']    = 0
+        self.data['PPS_IMUtime']    = 0
+        self.data['PPS_GNSStime']    = 0
+        self.data['GNSSbias']    = 0
+        self.data['GNSSbiasSmoothed']    = 0
+
 class GNSSSOL_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
@@ -2056,7 +2202,7 @@ class GNSSSOL_Payload(XcomProtocolPayload):
         self.data['diffAge']        = 0
         self.data['solAge']         = 0
         self.data['gnssStatus']     = 0
-        
+
 class GNSSTIME_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
@@ -2070,7 +2216,30 @@ class GNSSTIME_Payload(XcomProtocolPayload):
         self.data['minute']         = 0
         self.data['millisec']       = 0
         self.data['status']         = 0
-        
+
+class GNSSSOLCUST_Payload(XcomProtocolPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "ddff3f3f3f3f3fH2fBBBHffI"
+        self.data['dLon']           = 0
+        self.data['dLat']           = 0
+        self.data['fAlt']           = 0
+        self.data['fUndulation']    = 0
+        self.data['fStdDev_Pos']    = [0]*3
+        self.data['fVned']          = [0]*3
+        self.data['fStdDev_Vel']    = [0]*3
+        self.data['fDisplacement']  = [0]*3
+        self.data['fStdDev_Displacement'] = [0]*3
+        self.data['usSolStatus']    = 0
+        self.data['fDOP']           = [0]*2
+        self.data['ucSatsPos']      = 0
+        self.data['ucSatsVel']      = 0
+        self.data['ucSatsDisplacement'] = 0
+        self.data['usReserved']     = 0
+        self.data['fDiffAge']       = 0
+        self.data['fSolAge']        = 0
+        self.data['uiGnssStatus']   = 0
+
 class GNSSHDG_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
@@ -2085,7 +2254,7 @@ class GNSSHDG_Payload(XcomProtocolPayload):
         self.data['satsUsed']   = 0
         self.data['satsTracked']= 0
         self.data['gnssStatus'] = 0
-        
+
 class GNSSLEVERARM_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
@@ -2094,12 +2263,64 @@ class GNSSLEVERARM_Payload(XcomProtocolPayload):
         self.data['stdDevPrimary']  = [0]*3
         self.data['relative']       = [0]*3
         self.data['stdDevRelative'] = [0]*3
-        
+
+class GNSSVOTER_Payload(XcomProtocolPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "BBHffffI"
+        self.data['ucSatsUsed_INT']        = [0]
+        self.data['ucSatsUsed_EXT']        = [0]
+        self.data['usReserved']            = [0]
+        self.data['fStdDevHDG_INT']        = [0]
+        self.data['fStdDevHDG_EXT']        = [0]
+        self.data['fStdDevPOS_INT']        = [0]
+        self.data['fStdDevPOS_EXT']        = [0]
+        self.data['uiStatus']              = [0]
+
+class GNSSHWMON_Payload(XcomProtocolPayload):
+    def __init__(self):
+        super().__init__()
+        for idx in range(16):
+            self.data['val %d' % idx] = 0
+            self.data['status %d' % idx] = 0
+            self.structString += "fI"
+
 class GNSSSTATUS_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
         self.structString += "I"
         self.data['status']        = 0
+
+class GNSSSATINFO_Payload(XcomProtocolPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "I3d3dfffff"
+        self.data['svID']                 = 0
+        self.data['dPositionECEF']        = [0]*3
+        self.data['dVelocityECEF']        = [0]*3
+        self.data['fClockError']          = 0
+        self.data['fIonoError']           = 0
+        self.data['fTropoError']          = 0
+        self.data['fElevation']           = 0
+        self.data['fAzimuth']             = 0
+
+class GNSSALIGNBSL_Payload(XcomProtocolPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "dddfffHHBBBB"
+        self.data['east']               = 0
+        self.data['north']              = 0
+        self.data['up']                 = 0
+        self.data['eastStddev']         = 0
+        self.data['northStddev']        = 0
+        self.data['upStddev']           = 0
+        self.data['solStatus']          = 0
+        self.data['posVelType']         = 0
+        self.data['satsTracked']        = 0
+        self.data['satsUsedInSolution'] = 0
+        self.data['extSolStat']         = 0
+        self.data['reserved']           = 0
+
 
 class WHEELDATA_Payload(XcomProtocolPayload):
     def __init__(self):
@@ -2107,7 +2328,7 @@ class WHEELDATA_Payload(XcomProtocolPayload):
         self.structString += "fi"
         self.data['odoSpeed']   = 0
         self.data['ticks']      = 0
-        
+
 class WHEELDATADBG_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
@@ -2117,7 +2338,7 @@ class WHEELDATADBG_Payload(XcomProtocolPayload):
         self.data['interval']       = 0
         self.data['trigEvent']      = 0
         self.data['trigNextEvent']  = 0
-        
+
 class WHEELDATADBG_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
@@ -2127,6 +2348,38 @@ class WHEELDATADBG_Payload(XcomProtocolPayload):
         self.data['interval']       = 0
         self.data['trigEvent']      = 0
         self.data['trigNextEvent']  = 0
+
+class EVENTTIME_Payload(XcomProtocolPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "dd"
+        self.data['dGpsTime_EVENT_0'] = 0
+        self.data['dGpsTime_EVENT_1'] = 0
+
+class OMGINT_Payload(XcomProtocolPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "3ff"
+        self.data['omgINT'] = [0]*3
+        self.data['omgINTtime'] = 0
+
+class ADC24STATUS_Payload(XcomProtocolPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "4I4I"
+        self.data['uiRRidx']   = [0]*4
+        self.data['uiRRvalue'] = [0]*4
+
+class ADC24DATA_Payload(XcomProtocolPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "3IHhB3B"
+        self.data['acc']            = [0]*3
+        self.data['frameCounter']   = [0]
+        self.data['temperature']    = [0]
+        self.data['errorStatus']    = [0]
+        self.data['intervalCounter'] = [0]*3
+
 
 ParameterPayloadDictionary = {
     ParameterID.PARSYS_PRJNUM:PARSYS_STRING_Payload,
@@ -2186,7 +2439,7 @@ ParameterPayloadDictionary = {
     ParameterID.PARMAG_CALSTATE:PARMAG_CALSTATE_Payload,
     ParameterID.PARMAG_FOM:PARMAG_FOM_Payload,
     ParameterID.PARMAG_CFG:PARMAG_CFG_Payload,
-    ParameterID.PARMAG_ENABLE: PARMAG_ENABLE_Payload,
+    ParameterID.PARMAG_ENABLE:PARMAG_ENABLE_Payload,
 
     ParameterID.PARMADC_ENABLE:PARMADC_ENABLE_Payload,
     ParameterID.PARMADC_LEVERARM:PARMADC_LEVERARM_Payload,
@@ -2315,7 +2568,7 @@ CommandPayloadDictionary = {
     CommandID.EKF:CMD_EKF_Payload,
     CommandID.CONF:CMD_CONF_Payload,
     CommandID.EXTAID:CMD_EXT_Payload
-                        }
+}
 
 MessagePayloadDictionary = {
     MessageID.IMURAW:IMU_Payload,
@@ -2337,26 +2590,44 @@ MessagePayloadDictionary = {
     MessageID.POSTPROC:POSTPROC_Payload,
 
     MessageID.EKFSTDDEV:EKFSTDDEV_Payload,
+    MessageID.EKFSTDDEV2:EKFSTDDEV2_Payload,
     MessageID.EKFERROR:EKFERROR_Payload,
+    MessageID.EKFERROR2:EKFERROR2_Payload,
+    MessageID.EKFTIGHTLY:EKFTIGHTLY_Payload,
+    MessageID.EKFPOSCOVAR:EKFPOSCOVAR_Payload,
 
     MessageID.GNSSSOL:GNSSSOL_Payload,
     MessageID.GNSSSTATUS:GNSSSTATUS_Payload,
     MessageID.GNSSTIME:GNSSTIME_Payload,
+    MessageID.GNSSSOLCUST:GNSSSOLCUST_Payload,
     MessageID.GNSSHDG:GNSSHDG_Payload,
     MessageID.GNSSLEVERARM:GNSSLEVERARM_Payload,
+    MessageID.GNSSVOTER:GNSSVOTER_Payload,
+    MessageID.GNSSHWMON:GNSSHWMON_Payload,
+    MessageID.GNSSSATINFO:GNSSSATINFO_Payload,
+    MessageID.GNSSALIGNBSL:GNSSALIGNBSL_Payload,
 
     MessageID.WHEELDATA:WHEELDATA_Payload,
     MessageID.AIRDATA:AIRDATA_Payload,
     MessageID.MAGDATA:MAGDATA_Payload,
     MessageID.SYSSTAT:SYSSTAT_Payload,
-    #MessageID.STATFPGA:,
+    MessageID.STATFPGA:STATFPGA_Payload,
     MessageID.POWER:POWER_Payload,
     MessageID.TEMP:TEMP_Payload,
+    MessageID.HEAVE:HEAVE_Payload,
+    MessageID.CANSTAT:CANSTAT_Payload,
+    MessageID.TIME:TIME_Payload,
+    MessageID.ARINC429STAT:ARINC429STAT_Payload,
+    MessageID.EVENTTIME:EVENTTIME_Payload,
+    MessageID.OMGINT:OMGINT_Payload,
+
+    MessageID.ADC24STATUS:ADC24STATUS_Payload,
+    MessageID.ADC24DATA:ADC24DATA_Payload,
 
     #MessageID.IMUDBG:,
     MessageID.IMUCAL:IMUCAL_Payload,
     MessageID.WHEELDATADBG:WHEELDATADBG_Payload
-}        
+}
 
 def getMessageWithID(msgID):
     message = XcomProtocolMessage()
@@ -2366,7 +2637,7 @@ def getMessageWithID(msgID):
         return message
     else:
         return None
-    
+
 def getCommandWithID(cmdID):
     message = XcomProtocolMessage()
     message.header.msgID = MessageID.COMMAND
@@ -2376,7 +2647,7 @@ def getCommandWithID(cmdID):
         return message
     else:
         return None
-        
+
 def getParameterWithID(parameterID):
     message = XcomProtocolMessage()
     message.header.msgID = MessageID.PARAMETER
