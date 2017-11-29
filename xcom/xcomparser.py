@@ -122,7 +122,7 @@ class XcomMessageParser:
             self.publish(message)
         else:
             pass
-            # print("Unknown parameter ID %s" % parameterID)
+            print("Unknown parameter ID %s\n" % parameterID)
         self.parameterEvent.parameter = message
         self.parameterEvent.set()
 

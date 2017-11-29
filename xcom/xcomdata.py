@@ -213,9 +213,8 @@ class ParameterID(IntEnum):
     PARREC_START            = 603
     PARREC_STOP             = 604
     PARREC_POWER            = 605
-    PARREC_SUFFIX           = 606
     PARREC_DISKSPACE        = 607
-
+    
     PAREKF_ALIGNMODE        = 700
     PAREKF_ALIGNTIME        = 701
     PAREKF_COARSETIME       = 702
@@ -253,7 +252,8 @@ class ParameterID(IntEnum):
     PAREKF_IMUCONFIG        = 738
     PAREKF_ZUPTCALIB        = 739
     PAREKF_STATEFREEZE      = 740
-
+    PAREKF_RECOVERY         = 741
+    
     PARDAT_POS              = 800
     PARDAT_VEL              = 801
     PARDAT_IMU              = 802
@@ -1067,6 +1067,12 @@ class PARREC_POWER_Payload(XcomDefaultParameterPayload):
         super().__init__()
         self.structString += "I"
         self.data['enable'] = 0
+        
+class PARREC_DISKSPACE_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "d"
+        self.data['freespace'] = 0
 
 class PARREC_SUFFIX_Payload(XcomDefaultParameterPayload):
     def __init__(self):
@@ -1427,6 +1433,12 @@ class PAREKF_STATEFREEZE_Payload(XcomDefaultParameterPayload):
         super().__init__()
         self.structString += "I"
         self.data['freezeMask'] = 0
+        
+class PAREKF_RECOVERY_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "I"
+        self.data['recoveryMask'] = 0
 
 """
 PARDAT
@@ -2446,9 +2458,9 @@ ParameterPayloadDictionary = {
     ParameterID.PARREC_START:PARREC_START_Payload,
     ParameterID.PARREC_STOP:PARREC_STOP_Payload,
     ParameterID.PARREC_POWER:PARREC_POWER_Payload,
-    ParameterID.PARREC_SUFFIX:PARREC_SUFFIX_Payload,
     ParameterID.PARREC_DISKSPACE:PARREC_DISKSPACE_Payload,
-
+    
+    
     ParameterID.PAREKF_ALIGNMODE:PAREKF_ALIGNMODE_Payload,
     ParameterID.PAREKF_ALIGNTIME:PAREKF_ALIGNTIME_Payload,
     ParameterID.PAREKF_COARSETIME:PAREKF_COARSETIME_Payload,
@@ -2486,7 +2498,8 @@ ParameterPayloadDictionary = {
     ParameterID.PAREKF_IMUCONFIG:PAREKF_IMUCONFIG_Payload,
     ParameterID.PAREKF_ZUPTCALIB:PAREKF_ZUPTCALIB_Payload,
     ParameterID.PAREKF_STATEFREEZE:PAREKF_STATEFREEZE_Payload,
-
+    ParameterID.PAREKF_RECOVERY:PAREKF_RECOVERY_Payload,
+    
     ParameterID.PARDAT_POS:PARDAT_POS_Payload,
     ParameterID.PARDAT_VEL:PARDAT_VEL_Payload,
     ParameterID.PARDAT_IMU:PARDAT_IMU_Payload,
