@@ -190,7 +190,11 @@ class ParameterID(IntEnum):
     PARGNSS_VERSION         = 218
     PARGNSS_RTKSOLTHR       = 219
     PARGNSS_TERRASTAR       = 220
-
+    PARGNSS_REFSTATION      = 221
+    PARGNSS_FIXPOS          = 222
+    PARGNSS_POSAVE          = 223
+    PARGNSS_CORPORTCFG      = 224
+    
     PARMAG_COM              = 300
     PARMAG_PERIOD           = 302
     PARMAG_MISALIGN         = 304
@@ -822,6 +826,44 @@ class PARGNSS_TERRASTAR_Payload(XcomDefaultParameterPayload):
         self.data['PPPPosition'] = 0
         self.data['reserved2'] = [0, 0, 0, 0, 0, 0, 0]
 
+class PARGNSS_CORPORTCFG_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "IIIIf"
+        self.data['rxType'] = 0
+        self.data['txType'] = 0
+        self.data['baud'] = 0
+        self.data['enable'] = 0
+        self.data['periodGGA'] = 0
+
+class PARGNSS_REFSTATION_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "BBBB"
+        self.data['enableNTRIP'] = 0
+        self.data['useFIXPOS'] = 0
+        self.data['enableRTCMoutput'] = 0
+        self.data['reserved2'] = 0 
+        
+class PARGNSS_FIXPOS_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "dddfff"
+        self.data['pos'] = [0, 0, 0]
+        self.data['posStdDev'] = [0, 0, 0]
+
+class PARGNSS_POSAVE_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "fffIIIBBBB"
+        self.data['maxTime'] = 0
+        self.data['maxHorStdDev'] = 0
+        self.data['maxVertStdDev'] = 0
+        self.data['aveStatus'] = 0
+        self.data['aveTime'] = 0
+        self.data['state'] = 0
+        self.data['reserved2'] = [0, 0, 0]
+        
 """
 PARMAG
 """
@@ -2440,7 +2482,11 @@ ParameterPayloadDictionary = {
     ParameterID.PARGNSS_VERSION:PARGNSS_VERSION_Payload,
     ParameterID.PARGNSS_RTKSOLTHR:PARGNSS_RTKSOLTHR_Payload,
     ParameterID.PARGNSS_TERRASTAR:PARGNSS_TERRASTAR_Payload,
-
+    ParameterID.PARGNSS_REFSTATION:PARGNSS_REFSTATION_Payload,
+    ParameterID.PARGNSS_FIXPOS:PARGNSS_FIXPOS_Payload,
+    ParameterID.PARGNSS_POSAVE:PARGNSS_POSAVE_Payload,
+    ParameterID.PARGNSS_CORPORTCFG:PARGNSS_CORPORTCFG_Payload,
+    
     ParameterID.PARMAG_COM:PARMAG_COM_Payload,
     ParameterID.PARMAG_PERIOD:PARMAG_PERIOD_Payload,
     ParameterID.PARMAG_MISALIGN:PARMAG_MISALIGN_Payload,
