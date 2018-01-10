@@ -280,6 +280,7 @@ class ParameterID(IntEnum):
     PARXCOM_LOGLIST2        = 917
     PARXCOM_CALPROC         = 918
     PARXCOM_CLIENT          = 919
+    PARXCOM_FRAMEOUT        =	920
 
     PARFPGA_IMUSTATUSREG    = 1000
     PARFPGA_HDLCREG         = 1001
@@ -1617,6 +1618,12 @@ class PARXCOM_MIGRATOR_Payload(XcomDefaultParameterPayload):
         self.structString += "I"
         self.data['enable'] = 0
 
+class PARXCOM_FRAMEOUT_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "I"
+        self.data['outputframe'] = 0
+
 class PARXCOM_TCPKEEPAL_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1625,6 +1632,7 @@ class PARXCOM_TCPKEEPAL_Payload(XcomDefaultParameterPayload):
         self.data['interval'] = 0
         self.data['probes'] = 0
         self.data['enable'] = 0
+
 
 class PARXCOM_CANGATEWAY_Payload(XcomDefaultParameterPayload):
     def __init__(self):
@@ -2561,6 +2569,7 @@ ParameterPayloadDictionary = {
     ParameterID.PARXCOM_UDPCONFIG:PARXCOM_UDPCONFIG_Payload,
     ParameterID.PARXCOM_DUMPENABLE:PARXCOM_DUMPENABLE_Payload,
     ParameterID.PARXCOM_MIGRATOR:PARXCOM_MIGRATOR_Payload,
+    ParameterID.PARXCOM_FRAMEOUT:PARXCOM_FRAMEOUT_Payload,
     ParameterID.PARXCOM_TCPKEEPAL:PARXCOM_TCPKEEPAL_Payload,
     ParameterID.PARXCOM_CANGATEWAY:PARXCOM_CANGATEWAY_Payload,
     ParameterID.PARXCOM_DEFAULTIP:PARXCOM_DEFAULTIP_Payload,
