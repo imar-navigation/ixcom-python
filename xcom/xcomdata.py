@@ -218,6 +218,7 @@ class ParameterID(IntEnum):
     PARREC_STOP             = 604
     PARREC_POWER            = 605
     PARREC_DISKSPACE        = 607
+    PARREC_AUXILIARY        = 608
     
     PAREKF_ALIGNMODE        = 700
     PAREKF_ALIGNTIME        = 701
@@ -1117,6 +1118,18 @@ class PARREC_DISKSPACE_Payload(XcomDefaultParameterPayload):
         self.structString += "d"
         self.data['freespace'] = 0
 
+class PARREC_AUXILIARY_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "BBHIII"
+        self.data['port'] = 0
+        self.data['enable'] = 0
+        self.data['reserved2'] = 0
+        self.data['baudrate'] = 0
+        self.data['ip'] = 0
+        self.data['udpport'] = 0
+        
+        
 class PARREC_SUFFIX_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -2513,7 +2526,7 @@ ParameterPayloadDictionary = {
     ParameterID.PARREC_STOP:PARREC_STOP_Payload,
     ParameterID.PARREC_POWER:PARREC_POWER_Payload,
     ParameterID.PARREC_DISKSPACE:PARREC_DISKSPACE_Payload,
-    
+    ParameterID.PARREC_AUXILIARY:PARREC_AUXILIARY_Payload,
     
     ParameterID.PAREKF_ALIGNMODE:PAREKF_ALIGNMODE_Payload,
     ParameterID.PAREKF_ALIGNTIME:PAREKF_ALIGNTIME_Payload,
