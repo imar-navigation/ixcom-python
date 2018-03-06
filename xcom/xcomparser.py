@@ -230,7 +230,7 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
         bytesToSend = msgToSend.to_bytes()
         self.send_and_wait_for_okay(bytesToSend)
 
-    def open_lastFreeChannel(self):
+    def open_last_free_channel(self):
         """Opens an XCOM logical channel
 
         Opens an XCOM logical channel on the associated socket and waits for an "OK" response.
@@ -258,7 +258,7 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
                 if channelNumber < 0:
                     raise RuntimeError("No free channel on the system!")
 
-    def open_firstFreeChannel(self):
+    def open_first_free_channel(self):
         """Opens an XCOM logical channel
 
         Opens an XCOM logical channel on the associated socket and waits for an "OK" response.
@@ -655,7 +655,7 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
         bytesToSend = msgToSend.to_bytes()
         self.send_and_wait_for_okay(bytesToSend)
 
-    def enable_fullSysStatus(self):
+    def enable_full_sysstatus(self):
         msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PARDAT_SYSSTAT)
         msgToSend.payload.data['statMode'] = 127
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
@@ -719,7 +719,7 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
         bytesToSend = msgToSend.to_bytes()
         self.send_and_wait_for_okay(bytesToSend)
 
-    def set_parEKF_Aiding(self, mode=0, mask=0):
+    def set_parekf_aiding(self, mode=0, mask=0):
         msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PAREKF_AIDING)
         msgToSend.payload.data['aidingMode'] = mode
         msgToSend.payload.data['aidingMask'] = mask
@@ -942,8 +942,18 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
         msgToSend.payload.data['stdDev'] = stdDev
         bytesToSend = msgToSend.to_bytes()
         self.send_and_wait_for_okay(bytesToSend)
+        
+    def set_gpspower(self, state):
+        msgToSend = self.get_parameter(xcomdata.ParameterID.PARFPGA_POWER)
+        msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
+        if state == 1:
+            msgToSend.payload.data['powerSwitch'] |= 1
+        elif state == 0:
+            msgToSend.payload.data['powerSwitch'] &= ~(1 << 0)
+        bytesToSend = msgToSend.to_bytes()
+        self.send_and_wait_for_okay(bytesToSend)
 
-    def get_virtualMeasPt(self):
+    def get_virtual_meas_pt(self):
         """Convenience getter for virtual measpoint offset
 
         Gets the virtual measpoint offset for the output values defined with the mask #
@@ -960,7 +970,7 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
         self.wait_for_parameter()
         return self.parameterEvent.parameter
 
-    def set_virtualMeasPt(self, offset=[0, 0, 0], activationMask=0, cutOffFreq=0):
+    def set_virtual_meas_pt(self, offset=[0, 0, 0], activationMask=0, cutOffFreq=0):
         """Convenience setter for virtual measpoint offset
 
         Sets the virtual measpoint offset #
