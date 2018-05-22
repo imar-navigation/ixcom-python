@@ -1,11 +1,8 @@
-import asynchat
-import asyncore
-import threading
+import asyncio
 import collections
 import crc16
 import math
 import time
-import socket
 from enum import IntEnum
 from xcom import xcomdata
 
@@ -15,7 +12,7 @@ SYNC_BYTE = 0x7E
 GENERAL_PORT = 3000
 BROADCAST_PORT = 4000
 LAST_CHANNEL_NUMBER = 31
-WAIT_TIME_FOR_RESPONSE = 1000
+WAIT_TIME_FOR_RESPONSE = 10
 
 
 class XcomMessageSearcherState(IntEnum):
@@ -32,10 +29,8 @@ class XcomMessageSearcher:
         self.currentByteIdx = 0
         self.remainingByteCount = 0
         self.disableCRC = False
-        self.processing = threading.Lock()
 
     def process_bytes(self, inBytes):
-        self.processing.acquire()
         inByteIdx = 0
         while inByteIdx < len(inBytes):
 
@@ -87,29 +82,19 @@ class XcomMessageSearcher:
                             pass
                             # print("CRC Error %d" % crc)
                     self.searcherState = XcomMessageSearcherState.waiting_for_sync
-        self.processing.release()
 
 
 class XcomMessageParser:
     def __init__(self):
         self.subscribers = set()
         self.messageSearcher = XcomMessageSearcher(self)
-        self.responseEvent = threading.Event()
-        self.responseEvent.responseID = None
-        self.parameterEvent = threading.Event()
-        self.parameterEvent.parameter = None
-        self.messageEvent = threading.Event()
-        self.messageEvent.message = None
-        self.messageEvent.messageID = None
 
     def parse_response(self, inBytes):
         message = xcomdata.XcomProtocolMessage()
         message.header.from_bytes(inBytes[:16])
         message.payload = xcomdata.XcomResponsePayload(message.header.msgLength)
         message.from_bytes(inBytes)
-        self.responseEvent.responseID = message.payload.data['responseID']
-        self.responseEvent.set()
-        # print(message.payload.data['responseText'].decode('utf-8'))
+        self.publish(message)
 
     def parse_parameter(self, inBytes):
         message = xcomdata.XcomProtocolMessage()
@@ -123,8 +108,6 @@ class XcomMessageParser:
         else:
             pass
             print("Unknown parameter ID %s\n" % parameterID)
-        self.parameterEvent.parameter = message
-        self.parameterEvent.set()
 
     def parse_command(self, inBytes):
         message = xcomdata.XcomProtocolMessage()
@@ -153,9 +136,6 @@ class XcomMessageParser:
             if message is not None:
                 message.from_bytes(inBytes)
                 self.publish(message)
-            if header.msgID == self.messageEvent.messageID:
-                self.messageEvent.message = message
-                self.messageEvent.set()
 
     def add_subscriber(self, subscriber):
         self.subscribers.add(subscriber)
@@ -168,7 +148,7 @@ class XcomMessageParser:
             subscriber.handle_message(message, from_device=self)
 
 
-class XcomClient(asynchat.async_chat, XcomMessageParser):
+class XcomClient(XcomMessageParser, asyncio.Protocol):
     """XCOM TCP Client
 
     Implements a TCP-socket based XCOM client and offers convenience methods to interact with the 
@@ -176,19 +156,24 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
     """
 
     def __init__(self, host, port=GENERAL_PORT):
-        asynchat.async_chat.__init__(self)
         XcomMessageParser.__init__(self)
+        self.loop = asyncio.get_event_loop()
+        
+        self.response_event = asyncio.Event()
+        self.response_event.response = None
+        self.parameter_event = asyncio.Event()
+        self.parameter_event.parameter = None
+        self.message_event = asyncio.Event()
+        self.message_event.msg = None
+        self.message_event.id = None
+        
+        self.add_subscriber(self)
+        
+        
+        coro = self.loop.create_connection(lambda: self,
+                                      host, port)
+        self.loop.run_until_complete(coro)
 
-        self.set_terminator(None)
-        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
-        hostAndPort = (host, port)
-        self.connect(hostAndPort)
-        self.sending = threading.Lock()
-        self.waiting = threading.Lock()
-        threading.Thread(target=asyncore.loop).start()
-
-    def __del__(self):
-        self.close()
 
     def __hash__(self):
         """Hash function
@@ -204,12 +189,18 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
 
     def __eq__(self, other):
         return self is other
-
-    def initiate_send(self):
-        # because of bug in asynchat
-        self.sending.acquire()
-        asynchat.async_chat.initiate_send(self)
-        self.sending.release()
+        
+    def handle_message(self, message, from_device):
+       if message.header.msgID == xcomdata.MessageID.RESPONSE:
+           self.response_event.response = message
+           self.response_event.set()
+       elif message.header.msgID == xcomdata.MessageID.PARAMETER:           
+           self.parameter_event.parameter = message
+           self.parameter_event.set()
+       elif message.header.msgID == self.message_event.id:
+           self.message_event.msg = message
+           self.message_event.set()
+        
 
     def open_channel(self, channelNumber=0):
         """Opens an XCOM logical channel
@@ -251,11 +242,11 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
             bytesToSend = msgToSend.to_bytes()
             try:
                 self.send_and_wait_for_okay(bytesToSend)
-                print("Open channel: " + str(channelNumber))
+                self.clear_all()
                 return channelNumber
             except:
                 channelNumber -= 1
-                if channelNumber < 0:
+                if channelNumber == 0:
                     raise RuntimeError("No free channel on the system!")
 
     def open_first_free_channel(self):
@@ -279,7 +270,6 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
             bytesToSend = msgToSend.to_bytes()
             try:
                 self.send_and_wait_for_okay(bytesToSend)
-                print("Open channel: " + str(channelNumber))
                 return channelNumber
             except:
                 channelNumber += 1
@@ -340,8 +330,7 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.REQUESTING
         bytesToSend = msgToSend.to_bytes()
         self.send_and_wait_for_okay(bytesToSend)
-        self.wait_for_parameter()
-        return self.parameterEvent.parameter
+        return self.wait_for_parameter()
 
     def set_aligncomplete(self):
         """Completes the alignment
@@ -583,8 +572,7 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
         msgToSend.payload.data['divider'] = 500  # use 500 here, because a '1' is rejected from some logs
         bytesToSend = msgToSend.to_bytes()
         self.send_and_wait_for_okay(bytesToSend)
-        self.wait_for_log(msgID)
-        return self.messageEvent.message
+        return self.wait_for_log(msgID)
 
     def wait_for_parameter(self):
         """Waits for reception of parameter
@@ -595,14 +583,14 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
             TimeoutError: Timeout while waiting for parameter from the XCOM server
         
         """
-        self.waiting.acquire()
-        if not self.parameterEvent.wait(WAIT_TIME_FOR_RESPONSE):
-            self.waiting.release()
-            self.parameterEvent.clear()
-            raise TimeoutError("Timed out while waiting for parameter")
-        else:
-            self.waiting.release()
-            self.parameterEvent.clear()
+        result = self.loop.run_until_complete(asyncio.wait_for(self.async_wait_for_parameter(), WAIT_TIME_FOR_RESPONSE))
+        return result
+        
+    async def async_wait_for_parameter(self):
+        await self.parameter_event.wait()
+        self.parameter_event.clear()
+        return self.parameter_event.parameter
+        
 
     def wait_for_log(self, msgID):
         """Waits for reception of log
@@ -616,15 +604,16 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
             TimeoutError: Timeout while waiting for message from the XCOM server
         
         """
-        self.waiting.acquire()
-        self.messageEvent.messageID = msgID
-        if not self.messageEvent.wait(WAIT_TIME_FOR_RESPONSE):
-            self.waiting.release()
-            self.messageEvent.clear()
-            raise TimeoutError("Timed out while waiting for message")
-        else:
-            self.waiting.release()
-            self.messageEvent.clear()
+        result = self.loop.run_until_complete(asyncio.wait_for(self.wait_for_log(msgID), WAIT_TIME_FOR_RESPONSE))
+        return result
+        
+    async def wait_for_log(self, msgID):
+        self.message_event.clear()
+        self.message_event.id = msgID
+        await self.message_event.wait()
+        self.message_event.clear()
+        return self.message_event.msg
+        
 
     def enable_recorder(self, channel, enable_autostart):
         msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PARREC_CONFIG)
@@ -886,18 +875,19 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
             ValueError: The response from the system was not "OK".
         
         """
-        self.waiting.acquire()
-        self.push(inBytes)
-        if not self.responseEvent.wait(WAIT_TIME_FOR_RESPONSE):
-            self.waiting.release()
-            self.responseEvent.clear()
-            raise TimeoutError("Timed out while waiting for okay")
-        else:
-            self.waiting.release()
-            self.responseEvent.clear()
-            if self.responseEvent.responseID != xcomdata.XcomResponse.OK:
-                raise ValueError(
-                    "Expected response %d, got %d" % (xcomdata.XcomResponse.OK, self.responseEvent.responseID))
+        self.transport.write(inBytes)
+
+        response = self.loop.run_until_complete(asyncio.wait_for(self.wait_for_response(), WAIT_TIME_FOR_RESPONSE))
+        
+        
+        if response.payload.data["responseID"] != xcomdata.XcomResponse.OK:
+            raise ValueError("Expected response %d, got %d" % (xcomdata.XcomResponse.OK, self.responseEvent.responseID))
+            
+    async def wait_for_response(self):
+        self.response_event.clear()
+        await self.response_event.wait()
+        self.response_event.clear()
+        return self.response_event.response
 
     def get_antoffset(self, antenna):
         """Convencie getter for antenna offset
@@ -917,8 +907,7 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
         msgToSend.payload.data['reserved'] = antenna
         bytesToSend = msgToSend.to_bytes()
         self.send_and_wait_for_okay(bytesToSend)
-        self.wait_for_parameter()
-        return self.parameterEvent.parameter
+        return self.wait_for_parameter()
 
     def set_antoffset(self, antenna=0, offset=[0, 0, 0], stdDev=[0.1, 0.1, 0.1]):
         """Convencie setter for antenna offset
@@ -963,12 +952,7 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
             ValueError: The response from the system was not "OK".
         
         """
-        msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PAREKF_VMP)
-        msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.REQUESTING
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
-        self.wait_for_parameter()
-        return self.parameterEvent.parameter
+        return self.get_parameter(self, PAREKF_VMP)
 
     def set_virtual_meas_pt(self, offset=[0, 0, 0], activationMask=0, cutOffFreq=0):
         """Convenience setter for virtual measpoint offset
@@ -996,9 +980,19 @@ class XcomClient(asynchat.async_chat, XcomMessageParser):
 
     def collect_incoming_data(self, data):
         self.messageSearcher.process_bytes(data)
+        
+    def connection_made(self, transport):
+        self.transport = transport
 
-    def found_terminator(self):
-        pass
+    def data_received(self, data):
+        self.messageSearcher.process_bytes(data)
+
+    def connection_lost(self, exc):
+        self.loop.stop()
+        
+    def eof_received(self):
+        return True
+
 
 
 def broadcast_search(timeout=0.1, port=BROADCAST_PORT, addr="<broadcast>"):
