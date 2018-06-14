@@ -334,6 +334,9 @@ class ParameterID(IntEnum):
 
 
 class MessageItem(object):
+    def __init__(self):
+        self.structString = ''
+
     def to_bytes(self):
         raise NotImplementedError()
 
@@ -360,7 +363,7 @@ class XcomProtocolHeader(MessageItem):
         self.timeOfWeek_usec     = 0
 
     def get_time(self):
-        return self.timeOfWeek_sec + 1.0e-6*self.timeOfWeek_usec;
+        return self.timeOfWeek_sec + 1.0e-6*self.timeOfWeek_usec
 
     def to_bytes(self):
         return bytearray(struct.pack(self.structString, self.sync, self.msgID, self.frameCounter, self.reserved, self.msgLength, self.week, self.timeOfWeek_sec, self.timeOfWeek_usec))
@@ -1135,12 +1138,6 @@ class PARREC_SUFFIX_Payload(XcomDefaultParameterPayload):
         super().__init__()
         self.structString += "128s"
         self.data['suffix'] = bytes(' '*128, 'utf-8')
-
-class PARREC_DISKSPACE_Payload(XcomDefaultParameterPayload):
-    def __init__(self):
-        super().__init__()
-        self.structString += "d"
-        self.data['freeSpace'] = 0
 
 """
 PAREKF
@@ -2400,16 +2397,6 @@ class WHEELDATA_Payload(XcomProtocolPayload):
         self.structString += "fi"
         self.data['odoSpeed']   = 0
         self.data['ticks']      = 0
-
-class WHEELDATADBG_Payload(XcomProtocolPayload):
-    def __init__(self):
-        super().__init__()
-        self.structString += "fiIII"
-        self.data['odoSpeed']       = 0
-        self.data['ticks']          = 0
-        self.data['interval']       = 0
-        self.data['trigEvent']      = 0
-        self.data['trigNextEvent']  = 0
 
 class WHEELDATADBG_Payload(XcomProtocolPayload):
     def __init__(self):

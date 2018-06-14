@@ -1,3 +1,4 @@
+import socket
 import asyncio
 import collections
 import crc16
@@ -236,7 +237,7 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         """
         msgToSend = xcomdata.getCommandWithID(xcomdata.CommandID.XCOM)
         msgToSend.payload.data['mode'] = xcomdata.XcomCommandParameter.channel_open
-        channelNumber = LAST_CHANNEL_NUMBER;
+        channelNumber = LAST_CHANNEL_NUMBER
         while channelNumber >= 0:
             msgToSend.payload.data['channelNumber'] = channelNumber
             bytesToSend = msgToSend.to_bytes()
@@ -264,7 +265,7 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         """
         msgToSend = xcomdata.getCommandWithID(xcomdata.CommandID.XCOM)
         msgToSend.payload.data['mode'] = xcomdata.XcomCommandParameter.channel_open
-        channelNumber = 0;
+        channelNumber = 0
         while channelNumber <= LAST_CHANNEL_NUMBER:
             msgToSend.payload.data['channelNumber'] = channelNumber
             bytesToSend = msgToSend.to_bytes()
@@ -433,8 +434,8 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         """
         msgToSend = xcomdata.getCommandWithID(xcomdata.CommandID.EKF)
         msgToSend.payload.data['subcommand'] = xcomdata.EkfCommand.SAVE_ANTOFFSET
-        msgToSend.structString += "f"
-        msgToSend.data['antenna'] = antenna
+        msgToSend.payload.structString += "f"
+        msgToSend.payload.data['antenna'] = antenna
         bytesToSend = msgToSend.to_bytes()
         self.send_and_wait_for_okay(bytesToSend)
 
@@ -604,10 +605,10 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
             TimeoutError: Timeout while waiting for message from the XCOM server
         
         """
-        result = self.loop.run_until_complete(asyncio.wait_for(self.wait_for_log(msgID), WAIT_TIME_FOR_RESPONSE))
+        result = self.loop.run_until_complete(asyncio.wait_for(self.async_wait_for_log(msgID), WAIT_TIME_FOR_RESPONSE))
         return result
         
-    async def wait_for_log(self, msgID):
+    async def async_wait_for_log(self, msgID):
         self.message_event.clear()
         self.message_event.id = msgID
         await self.message_event.wait()
@@ -804,18 +805,18 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         msgToSend.payload.data['timeMode'] = timeMode
         msgToSend.payload.data['cmdParamID'] = 3
         msgToSend.payload.structString += "dddddddddddd"
-        msgToSend.payload.data['lon'] = lonLatAlt[0];
-        msgToSend.payload.data['lat'] = lonLatAlt[1];
-        msgToSend.payload.data['alt'] = lonLatAlt[2];
-        msgToSend.payload.data['lonStdDev'] = llhStdDev[0];
-        msgToSend.payload.data['latStdDev'] = llhStdDev[1];
-        msgToSend.payload.data['altStdDev'] = llhStdDev[2];
-        msgToSend.payload.data['laX'] = leverarmXYZ[0];
-        msgToSend.payload.data['laY'] = leverarmXYZ[1];
-        msgToSend.payload.data['laZ'] = leverarmXYZ[2];
-        msgToSend.payload.data['laXStdDev'] = leverarmStdDev[0];
-        msgToSend.payload.data['laYStdDev'] = leverarmStdDev[1];
-        msgToSend.payload.data['laZStdDev'] = leverarmStdDev[2];
+        msgToSend.payload.data['lon'] = lonLatAlt[0]
+        msgToSend.payload.data['lat'] = lonLatAlt[1]
+        msgToSend.payload.data['alt'] = lonLatAlt[2]
+        msgToSend.payload.data['lonStdDev'] = llhStdDev[0]
+        msgToSend.payload.data['latStdDev'] = llhStdDev[1]
+        msgToSend.payload.data['altStdDev'] = llhStdDev[2]
+        msgToSend.payload.data['laX'] = leverarmXYZ[0]
+        msgToSend.payload.data['laY'] = leverarmXYZ[1]
+        msgToSend.payload.data['laZ'] = leverarmXYZ[2]
+        msgToSend.payload.data['laXStdDev'] = leverarmStdDev[0]
+        msgToSend.payload.data['laYStdDev'] = leverarmStdDev[1]
+        msgToSend.payload.data['laZStdDev'] = leverarmStdDev[2]
         bytesToSend = msgToSend.to_bytes()
         self.send_and_wait_for_okay(bytesToSend)
 
@@ -825,12 +826,12 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         msgToSend.payload.data['timeMode'] = timeMode
         msgToSend.payload.data['cmdParamID'] = 4
         msgToSend.payload.structString += "dddddd"
-        msgToSend.payload.data['vN'] = vNED[0];
-        msgToSend.payload.data['vE'] = vNED[1];
-        msgToSend.payload.data['vD'] = vNED[2];
-        msgToSend.payload.data['vNStdDev'] = vNEDStdDev[0];
-        msgToSend.payload.data['vEStdDev'] = vNEDStdDev[1];
-        msgToSend.payload.data['vDStdDev'] = vNEDStdDev[2];
+        msgToSend.payload.data['vN'] = vNED[0]
+        msgToSend.payload.data['vE'] = vNED[1]
+        msgToSend.payload.data['vD'] = vNED[2]
+        msgToSend.payload.data['vNStdDev'] = vNEDStdDev[0]
+        msgToSend.payload.data['vEStdDev'] = vNEDStdDev[1]
+        msgToSend.payload.data['vDStdDev'] = vNEDStdDev[2]
         # msgToSend.payload.data['laX'] = leverarmXYZ[0];
         # msgToSend.payload.data['laY'] = leverarmXYZ[1];
         # msgToSend.payload.data['laZ'] = leverarmXYZ[2];
@@ -881,10 +882,9 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         
         
         if response.payload.data["responseID"] != xcomdata.XcomResponse.OK:
-            raise ValueError("Expected response %d, got %d" % (xcomdata.XcomResponse.OK, self.responseEvent.responseID))
+            raise ValueError("Expected response %d, got %d" % (xcomdata.XcomResponse.OK, self.response_event.response.data["responseID"]))
             
     async def wait_for_response(self):
-        self.response_event.clear()
         await self.response_event.wait()
         self.response_event.clear()
         return self.response_event.response
@@ -952,7 +952,7 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
             ValueError: The response from the system was not "OK".
         
         """
-        return self.get_parameter(self, PAREKF_VMP)
+        return self.get_parameter(xcomdata.ParameterID.PAREKF_VMP)
 
     def set_virtual_meas_pt(self, offset=[0, 0, 0], activationMask=0, cutOffFreq=0):
         """Convenience setter for virtual measpoint offset
@@ -1002,12 +1002,17 @@ def broadcast_search(timeout=0.1, port=BROADCAST_PORT, addr="<broadcast>"):
 
     s.sendto("hello".encode('utf-8'), (addr, port))
     time.sleep(timeout)
-    result = dict()
+    result_ips = list()
+    result_names = list()
     while True:
         try:
-            data, (ip, port) = s.recvfrom(1024)  # buffer size is 1024 bytes
-            result[ip] = data[:-1].decode('utf-8')
+            data, (ip, port) = s.recvfrom(1024)  # buffer size is 1024 bytes   
+            name = data[:-1].decode('utf-8')
+            result_ips.append(ip)
+            result_names.append(name)
         except socket.timeout:
             s.close()
             break
+    result = {"ip": result_ips, "name": result_names}
     return result
+    
