@@ -158,7 +158,8 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
 
     def __init__(self, host, port=GENERAL_PORT):
         XcomMessageParser.__init__(self)
-        self.loop = asyncio.get_event_loop()
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
         
         self.response_event = asyncio.Event()
         self.response_event.response = None
@@ -584,7 +585,7 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
             TimeoutError: Timeout while waiting for parameter from the XCOM server
         
         """
-        result = self.loop.run_until_complete(asyncio.wait_for(self.async_wait_for_parameter(), WAIT_TIME_FOR_RESPONSE))
+        result = self.loop.run_until_complete(asyncio.wait_for(self.async_wait_for_parameter(), WAIT_TIME_FOR_RESPONSE, loop=self.loop))
         return result
         
     async def async_wait_for_parameter(self):
@@ -605,7 +606,7 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
             TimeoutError: Timeout while waiting for message from the XCOM server
         
         """
-        result = self.loop.run_until_complete(asyncio.wait_for(self.async_wait_for_log(msgID), WAIT_TIME_FOR_RESPONSE))
+        result = self.loop.run_until_complete(asyncio.wait_for(self.async_wait_for_log(msgID), WAIT_TIME_FOR_RESPONSE, loop=self.loop))
         return result
         
     async def async_wait_for_log(self, msgID):
@@ -878,7 +879,7 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         """
         self.transport.write(inBytes)
 
-        response = self.loop.run_until_complete(asyncio.wait_for(self.wait_for_response(), WAIT_TIME_FOR_RESPONSE))
+        response = self.loop.run_until_complete(asyncio.wait_for(self.wait_for_response(), WAIT_TIME_FOR_RESPONSE, loop=self.loop))
         
         
         if response.payload.data["responseID"] != xcomdata.XcomResponse.OK:
