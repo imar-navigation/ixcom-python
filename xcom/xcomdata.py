@@ -2011,7 +2011,7 @@ class SYSSTAT_Payload(XcomProtocolPayload):
 
     def from_bytes(self, inBytes):
         self.data['statMode'] = struct.unpack("I", inBytes[:4])[0]
-        print(self.data['statMode'])
+        print(hex(self.data['statMode']))
         if(self.data['statMode'] & (1 << 0)):
             self.structString += "I"
             self.data['imuStat'] = 0
@@ -2031,8 +2031,8 @@ class SYSSTAT_Payload(XcomProtocolPayload):
             self.structString += "I"
             self.data['ekfGeneralStat'] = 0
         if(self.data['statMode'] & (1 << 6)):
-            self.structString += "2I"
-            self.data['addStat'] = [0, 0]
+            self.structString += "4I"
+            self.data['addStat'] = [0, 0, 0 ,0]
         if(self.data['statMode'] & (1 << 7)):
             self.structString += "I"
             self.data['serviceStat'] = [0]
