@@ -58,7 +58,7 @@ class MessageID(IntEnum):
     EKFPOSCOVAR   = 0x29
 
     GNSSSOL       = 0x12
-    GNSSSTATUS    = 0x13
+    INSGNDSPEED   = 0x13
     GNSSTIME      = 0x14
     GNSSSOLCUST   = 0x15
     GNSSHDG       = 0x33
@@ -2356,12 +2356,6 @@ class GNSSHWMON_Payload(XcomProtocolPayload):
             self.data['status %d' % idx] = 0
             self.structString += "fI"
 
-class GNSSSTATUS_Payload(XcomProtocolPayload):
-    def __init__(self):
-        super().__init__()
-        self.structString += "I"
-        self.data['status']        = 0
-
 class GNSSSATINFO_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
@@ -2665,7 +2659,6 @@ MessagePayloadDictionary = {
     MessageID.EKFPOSCOVAR:EKFPOSCOVAR_Payload,
 
     MessageID.GNSSSOL:GNSSSOL_Payload,
-    MessageID.GNSSSTATUS:GNSSSTATUS_Payload,
     MessageID.GNSSTIME:GNSSTIME_Payload,
     MessageID.GNSSSOLCUST:GNSSSOLCUST_Payload,
     MessageID.GNSSHDG:GNSSHDG_Payload,
