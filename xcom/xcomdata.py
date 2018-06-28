@@ -2031,8 +2031,8 @@ class SYSSTAT_Payload(XcomProtocolPayload):
             self.structString += "I"
             self.data['ekfGeneralStat'] = 0
         if(self.data['statMode'] & (1 << 6)):
-            self.structString += "4I"
-            self.data['addStat'] = [0, 0, 0, 0]
+            self.structString += "2I"
+            self.data['addStat'] = [0, 0]
         if(self.data['statMode'] & (1 << 7)):
             self.structString += "I"
             self.data['serviceStat'] = [0]
