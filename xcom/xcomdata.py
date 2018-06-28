@@ -1927,9 +1927,11 @@ Messages
 class POSTPROC_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
-        self.structString += "3f3f4d3d3dI2IfiIII"
+        self.structString += "3f3f12f12f4d3d3dI2IfiIII"
         self.data['acc'] = [0, 0, 0]
         self.data['omg'] = [0, 0, 0]
+        self.data['delta_theta'] = [0]*12
+        self.data['delta_v'] = [0]*12
         self.data['q_nb'] = [0, 0, 0, 0]
         self.data['pos'] = [0, 0, 0]
         self.data['vel'] = [0, 0, 0]
