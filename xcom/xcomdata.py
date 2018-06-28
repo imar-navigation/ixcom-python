@@ -2032,6 +2032,12 @@ class SYSSTAT_Payload(XcomProtocolPayload):
         if(self.data['statMode'] & (1 << 6)):
             self.structString += "4I"
             self.data['addStat'] = [0, 0, 0, 0]
+        if(self.data['statMode'] & (1 << 7)):
+            self.structString += "I"
+            self.data['serviceStat'] = [0]
+        if(self.data['statMode'] & (1 << 8)):
+            self.structString += "f"
+            self.data['remainingAlignTime'] = [0]
         super().from_bytes(inBytes)
 
 class INSRPY_Payload(XcomProtocolPayload):
