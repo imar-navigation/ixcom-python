@@ -446,6 +446,18 @@ class XcomProtocolMessage(MessageItem):
         bottomBytes = inBytes[self.header.msgLength-4:self.header.msgLength]
         self.bottom.from_bytes(bottomBytes)
 
+    @property
+    def data(self):
+        result = dict()
+        result['gpstime'] = self.header.get_time()
+        result['gpsweek'] = self.header.week
+        result['msg_id'] = self.header.msgID
+        result['frame_cnt'] = self.header.frameCounter
+        result.update(self.payload.data)
+        result['global_status'] = self.bottom.gStatus
+        return result
+
+
     def __str__(self):
         tmp = str(self.header.frameCounter)+","+str(self.header.timeOfWeek_sec+1e-6*self.header.timeOfWeek_usec)
         for item in self.payload.data:
@@ -572,7 +584,7 @@ class PARSYS_CALDATE_Payload(XcomDefaultParameterPayload):
         self.structString += "HH32s"
         self.data['password'] = 0
         self.data['reserved2'] = 0
-        self.data['calDate'] = bytes(' '*32, 'utf-8')
+        self.data['str'] = bytes(' '*32, 'utf-8')
 
 class PARSYS_PRESCALER_Payload(XcomDefaultParameterPayload):
     def __init__(self):
@@ -2444,7 +2456,6 @@ class ADC24DATA_Payload(XcomProtocolPayload):
 
 
 ParameterPayloadDictionary = {
-    ParameterID.PARSYS_PRJNUM:PARSYS_STRING_Payload,
     ParameterID.PARSYS_PRJNUM:PARSYS_STRING_Payload,
     ParameterID.PARSYS_PARTNUM:PARSYS_STRING_Payload,
     ParameterID.PARSYS_SERIALNUM:PARSYS_STRING_Payload,
