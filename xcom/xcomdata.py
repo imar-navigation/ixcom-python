@@ -419,7 +419,7 @@ class XcomProtocolPayload(MessageItem):
         except Exception as e:
             pass
             from sys import stderr
-            stderr.write("Could not convert, %s, %s, %s" % ((inBytes), self.get_name(), str(e)))
+            stderr.write("Could not convert, %s, %s" % (self.get_name(), str(e)))
 
     def get_name(self):
         classname = self.__class__.__name__
