@@ -417,6 +417,7 @@ class XcomProtocolPayload(MessageItem):
                     valueList = valueList[1:]
                 self.data[key] = value
         except Exception as e:
+            pass
             from sys import stderr
             stderr.write("Could not convert, %s, %s, %s" % ((inBytes), self.get_name(), str(e)))
 
@@ -1719,7 +1720,6 @@ class PARXCOM_CLIENT_Payload(XcomDefaultParameterPayload):
         #self.structString += "B3B"
         #self.data['useUDPInterface'] = 0
         #self.data['reserved2'] = [0]*3
-        print(self.data)
 
 """
 PARFPGA
