@@ -733,7 +733,7 @@ class PARGNSS_ANTOFFSET_Payload(XcomDefaultParameterPayload):
         self.data['stdDev'] = [0,0,0]
 
     def get_name(self):
-        return super().get_name() + '_' + self.data['reserved']
+        return super().get_name() + '_' + str(self.data['reserved'])
 
 
 class PARGNSS_RTKMODE_Payload(XcomDefaultParameterPayload):
