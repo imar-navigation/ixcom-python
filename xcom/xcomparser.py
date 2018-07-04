@@ -115,7 +115,6 @@ class XcomMessageParser:
             self.publish(message)
         else:
             pass
-            print('Unknown parameter ID %s\n' % parameterID)
 
     def parse_command(self, inBytes):
         message = xcomdata.XcomProtocolMessage()

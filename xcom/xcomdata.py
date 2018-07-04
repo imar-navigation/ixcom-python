@@ -2023,7 +2023,6 @@ class SYSSTAT_Payload(XcomProtocolPayload):
 
     def from_bytes(self, inBytes):
         self.data['statMode'] = struct.unpack("I", inBytes[:4])[0]
-        print(hex(self.data['statMode']))
         if(self.data['statMode'] & (1 << 0)):
             self.structString += "I"
             self.data['imuStat'] = 0
