@@ -110,6 +110,8 @@ class MessageID(IntEnum):
     ADC24STATUS   = 0x36
     ADC24DATA     = 0x37
 
+    CSACDATA      = 0x42
+
     COMMAND       = 0xFD
     RESPONSE      = 0xFE
     PARAMETER     = 0xFF
@@ -160,6 +162,14 @@ class StartupHeadingMode(IntEnum):
     FORCEDHDG   = 2
     MAGHDG      = 3
     DUALANTHDG  = 4
+
+class CsacMode(IntEnum):
+    ENABLE         = 0
+    ENABLEATUNE    = 1
+    PPSAUTOSYNC    = 2
+    PPSDISCIPLINE  = 3
+    STARTSYNC      = 4
+    GNSSAUTOMODE   = 5
 
 class ParameterID(IntEnum):
     PARSYS_PRJNUM           = 0
@@ -321,6 +331,7 @@ class ParameterID(IntEnum):
     PARFPGA_ALARMTHR        = 1012
     PARFPGA_PPTCONFIG       = 1013
     PARFPGA_AUTOWAKEUP      = 1014
+    PARFPGA_CSAC            = 1016
 
     PARODO_SCF              = 1100
     PARODO_TIMEOUT          = 1101
@@ -554,10 +565,14 @@ class XcomProtocolMessage(MessageItem):
 
 
 class XcomCommandParameter(IntEnum):
-    update_svn    = 5
-    reboot        = 2
-    channel_open  = 1
-    channel_close = 0
+
+    reset_timebias = 6
+    update_svn        = 5
+    reset_omg_int  = 4
+    warmreset      = 3
+    reboot         = 2
+    channel_open   = 1
+    channel_close  = 0
 
 class XcomParameterAction(IntEnum):
     CHANGING = 0
@@ -1917,6 +1932,14 @@ class PARFPGA_AUTOWAKEUP_Payload(XcomDefaultParameterPayload):
         self.data['retries'] = 0
         self.data['reserved2'] = 0
 
+class PARFPGA_CSAC_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "III"
+        self.data['PPSdisciplineTimeConstant'] = 0
+        self.data['PPSdisciplineCableLengthComp'] = 0
+        self.data['PPSphaseThr'] = 0
+
 """
 PARNMEA
 """
@@ -2535,6 +2558,30 @@ class ADC24DATA_Payload(XcomProtocolPayload):
         self.data['errorStatus']    = [0]
         self.data['intervalCounter'] = [0]*3
 
+class CSACDATA_Payload(XcomProtocolPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "II32sIIfffffifiIIIBBH"
+        self.data['status'] = 0
+        self.data['alarm'] = 0
+        self.data['serialNum'] = b"\0"*32
+        self.data['mode'] = 0
+        self.data['contrast'] = 0
+        self.data['laserCurrent'] = 0.0
+        self.data['tcx0'] = 0.0
+        self.data['heatP'] = 0.0
+        self.data['sig'] = 0.0
+        self.data['temperature'] = 0.0
+        self.data['steer'] = 0
+        self.data['atune'] = 0.0
+        self.data['phase'] = 0
+        self.data['discOk'] = 0
+        self.data['timeSincePowerOn'] = 0
+        self.data['timeSinceLock'] = 0
+        self.data['dataValid'] = 0
+        self.data['reserved'] = 0
+        self.data['fwStatus'] = 0
+
 
 ParameterPayloadDictionary = {
     ParameterID.PARSYS_PRJNUM:PARSYS_STRING_Payload,
@@ -2690,6 +2737,7 @@ ParameterPayloadDictionary = {
     ParameterID.PARFPGA_ALARMTHR: PARFPGA_ALARMTHR_Payload,
     ParameterID.PARFPGA_PPTCONFIG: PARFPGA_PPTCONFIG_Payload,
     ParameterID.PARFPGA_AUTOWAKEUP: PARFPGA_AUTOWAKEUP_Payload,
+    ParameterID.PARFPGA_CSAC: PARFPGA_CSAC_Payload,
 
     ParameterID.PARODO_SCF: PARODO_SCF_Payload,
     ParameterID.PARODO_TIMEOUT: PARODO_TIMEOUT_Payload,
@@ -2787,7 +2835,8 @@ MessagePayloadDictionary = {
     MessageID.ADC24STATUS:ADC24STATUS_Payload,
     MessageID.ADC24DATA:ADC24DATA_Payload,
 
-    MessageID.WHEELDATADBG:WHEELDATADBG_Payload
+    MessageID.WHEELDATADBG:WHEELDATADBG_Payload,
+    MessageID.CSACDATA:CSACDATA_Payload
 }
 
 

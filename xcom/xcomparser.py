@@ -351,6 +351,26 @@ class XcomClient(XcomMessageParser):
         msgToSend.payload.data['channelNumber'] = channelNumber
         self.send_msg_and_waitfor_okay(msgToSend)
 
+    def reset_timebias(self):
+        '''Reset internal time bias
+
+        Reset the internial clock bias to zero and waits for an 'OK' response.
+        E.G. to snyc several device to a common time base
+
+        Args:
+            none
+
+        Raises:
+            TimeoutError: Timeout while waiting for response from the XCOM server
+            ValueError: The response from the system was not 'OK'
+        
+        '''
+        msgToSend = xcomdata.getCommandWithID(xcomdata.CommandID.XCOM)
+        msgToSend.payload.data['mode'] = xcomdata.XcomCommandParameter.reset_timebias
+        bytesToSend = msgToSend.to_bytes()
+        self.send_and_wait_for_okay(bytesToSend)
+
+
     def reboot(self):
         '''Reboots the system
 
@@ -577,6 +597,28 @@ class XcomClient(XcomMessageParser):
         msgToSend.payload.data['parameter'] = xcomdata.LogCommand.ADD
         msgToSend.payload.data['divider'] = divider
         self.send_msg_and_waitfor_okay(msgToSend)
+        
+    def add_log_event(self, msgID):
+        '''Add a log with specified event
+
+        Adds a log with a specific message ID to be sent at event.
+        
+        Args:
+            msgID: Mesage ID which should be requested.
+            
+ 
+        Raises:
+            TimeoutError: Timeout while waiting for response from the XCOM server
+            ValueError: The response from the system was not 'OK'.
+        
+        '''
+        msgToSend = xcomdata.getCommandWithID(xcomdata.CommandID.LOG)
+        msgToSend.payload.data['messageID'] = msgID
+        msgToSend.payload.data['trigger'] = xcomdata.LogTrigger.EVENT
+        msgToSend.payload.data['parameter'] = xcomdata.LogCommand.ADD
+        msgToSend.payload.data['divider'] = 500 # use 500 here, because a '1' is rejected from some logs
+        bytesToSend = msgToSend.to_bytes()
+        self.send_and_wait_for_okay(bytesToSend)
 
     def clear_all(self):
         '''Clears all logs
