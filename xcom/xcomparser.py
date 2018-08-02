@@ -1,9 +1,11 @@
 import socket
-import asyncio
+import select
+import threading
 import collections
 import crc16
 import math
 import time
+import struct
 from enum import IntEnum
 from xcom import xcomdata
 
@@ -15,10 +17,18 @@ BROADCAST_PORT = 4000
 LAST_CHANNEL_NUMBER = 31
 WAIT_TIME_FOR_RESPONSE = 10
 
-class ResponseError(ValueError):
+class XcomError(Exception):
+    def __init__(self, message = '', thrower = None):
+        super().__init__(message)
+        self.thrower = thrower
+
+class ResponseError(XcomError):
     pass
 
-class ClientTimeoutError(TimeoutError):
+class StatusError(XcomError):
+    pass
+
+class ClientTimeoutError(XcomError):
     pass
 
 
@@ -30,13 +40,15 @@ class XcomMessageSearcherState(IntEnum):
 
 
 class XcomMessageSearcher:
-    def __init__(self, parserDelegate):
-        self.parserDelegate = parserDelegate
+    def __init__(self, parserDelegate = None, disable_crc = False):
         self.searcherState = XcomMessageSearcherState.waiting_for_sync
         self.currentBytes = bytearray(b' ' * 512)
         self.currentByteIdx = 0
         self.remainingByteCount = 0
-        self.disableCRC = False
+        self.disableCRC = disable_crc
+        self.callbacks = []
+        if parserDelegate is not None:
+            self.callbacks.append(parserDelegate.parse)
 
     def process_bytes(self, inBytes):
         inByteIdx = 0
@@ -79,16 +91,25 @@ class XcomMessageSearcher:
                     inByteIdx = len(inBytes)
                 if self.remainingByteCount == 0:
                     if self.disableCRC:
-                        self.parserDelegate.parse(self.currentBytes[:self.currentByteIdx])
+                        self.publish(self.currentBytes[:self.currentByteIdx])
                     else:
                         crc = crc16.crc16xmodem(bytes(self.currentBytes[:self.currentByteIdx - 2]))
                         if crc == self.currentBytes[self.currentByteIdx - 2] + self.currentBytes[
                                     self.currentByteIdx - 1] * 256:
-                            if hasattr(self.parserDelegate, 'parse'):
-                                self.parserDelegate.parse(self.currentBytes[:self.currentByteIdx])
+                            self.publish(self.currentBytes[:self.currentByteIdx])
                         else:
                             pass
                     self.searcherState = XcomMessageSearcherState.waiting_for_sync
+
+    def publish(self, msg_bytes):
+        for callback in self.callbacks:
+            callback(msg_bytes)
+
+    def add_callback(self, callback):
+        self.callbacks.append(callback)
+
+    def remove_callback(self, callback):
+        self.callbacks.remove(callback)
 
 
 class XcomMessageParser:
@@ -162,7 +183,7 @@ class XcomMessageParser:
             callback(message, from_device=self)
 
 
-class XcomClient(XcomMessageParser, asyncio.Protocol):
+class XcomClient(XcomMessageParser):
     '''XCOM TCP Client
 
     Implements a TCP-socket based XCOM client and offers convenience methods to interact with the 
@@ -171,23 +192,23 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
 
     def __init__(self, host, port=GENERAL_PORT):
         XcomMessageParser.__init__(self)
-        self.loop = asyncio.get_event_loop()
         self.host = host
+        self.port = port
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.connect((self.host, self.port))
         
-        self.response_event = asyncio.Event()
+        self.response_event = threading.Event()
         self.response_event.response = None
-        self.parameter_event = asyncio.Event()
+        self.parameter_event = threading.Event()
         self.parameter_event.parameter = None
-        self.message_event = asyncio.Event()
+        self.message_event = threading.Event()
         self.message_event.msg = None
         self.message_event.id = None
+        self.okay_lock = threading.Lock()
+        self.thread = threading.Thread(target = self.update_data)
+        self.thread.start()
         
         self.add_subscriber(self)
-        
-        
-        coro = self.loop.create_connection(lambda: self,
-                                      host, port)
-        self.loop.run_until_complete(coro)
 
 
     def __hash__(self):
@@ -233,21 +254,22 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         msgToSend = xcomdata.getCommandWithID(xcomdata.CommandID.XCOM)
         msgToSend.payload.data['mode'] = xcomdata.XcomCommandParameter.channel_open
         msgToSend.payload.data['channelNumber'] = channelNumber
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
+
+    def update_data(self):
+        while True:
+            inputready, _, _ = select.select([self.sock], [],[], 0.1)
+            for _ in inputready:
+                self.messageSearcher.process_bytes(self.sock.recv(1024))
 
     def enable_calproc(self, rate, channel, pathname):
         msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PARXCOM_CALPROC)
         msgToSend.payload.data['enable'] = 1
         msgToSend.payload.data['channel'] = channel
-        msgToSend.payload.data['divider'] = self.get_divider_for_rate(rate)
-        if(len(pathname) >= 255):
-            msgToSend.payload.data['pathname'] = pathname[0:255] + b'\0'
-        else:
-            msgToSend.payload.data['pathname'][0:len(pathname)] = pathname
+        msgToSend.payload.data['divider'] = round(self.get_divider_for_rate(rate))
+        msgToSend.payload.data['pathName'] = pathname.ljust(256, '\0').encode('ascii')
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def disable_calproc(self):
         msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PARXCOM_CALPROC)
@@ -255,8 +277,7 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         msgToSend.payload.data['channel'] = 0
         msgToSend.payload.data['divider'] = 1
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
 
     def open_last_free_channel(self):
@@ -277,12 +298,11 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         channelNumber = LAST_CHANNEL_NUMBER
         while channelNumber >= 0:
             msgToSend.payload.data['channelNumber'] = channelNumber
-            bytesToSend = msgToSend.to_bytes()
             try:
-                self.send_and_wait_for_okay(bytesToSend)
+                self.send_msg_and_waitfor_okay(msgToSend)
                 self.clear_all()
                 return channelNumber
-            except:
+            except ResponseError:
                 channelNumber -= 1
                 if channelNumber == 0:
                     raise RuntimeError('No free channel on the system!')
@@ -305,9 +325,8 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         channelNumber = 0
         while channelNumber <= LAST_CHANNEL_NUMBER:
             msgToSend.payload.data['channelNumber'] = channelNumber
-            bytesToSend = msgToSend.to_bytes()
             try:
-                self.send_and_wait_for_okay(bytesToSend)
+                self.send_msg_and_waitfor_okay(msgToSend)
                 return channelNumber
             except:
                 channelNumber += 1
@@ -330,8 +349,7 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         msgToSend = xcomdata.getCommandWithID(xcomdata.CommandID.XCOM)
         msgToSend.payload.data['mode'] = xcomdata.XcomCommandParameter.channel_close
         msgToSend.payload.data['channelNumber'] = channelNumber
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def reboot(self):
         '''Reboots the system
@@ -345,8 +363,7 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         '''
         msgToSend = xcomdata.getCommandWithID(xcomdata.CommandID.XCOM)
         msgToSend.payload.data['mode'] = xcomdata.XcomCommandParameter.reboot
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def get_parameter(self, parameterID):
         '''Gets parameter from Server with specified ID
@@ -366,8 +383,7 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         '''
         msgToSend = xcomdata.getParameterWithID(parameterID)
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.REQUESTING
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
         return self.wait_for_parameter()
 
     def set_aligncomplete(self):
@@ -384,8 +400,7 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         '''
         msgToSend = xcomdata.getCommandWithID(xcomdata.CommandID.EKF)
         msgToSend.payload.data['subcommand'] = xcomdata.EkfCommand.ALIGN_COMPLETE
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def realign(self):
         '''Initiates a new alignment
@@ -401,8 +416,7 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         '''
         msgToSend = xcomdata.getCommandWithID(xcomdata.CommandID.EKF)
         msgToSend.payload.data['subcommand'] = xcomdata.EkfCommand.ALIGN
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def save_pos(self):
         '''Saves the current position
@@ -417,8 +431,7 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         '''
         msgToSend = xcomdata.getCommandWithID(xcomdata.CommandID.EKF)
         msgToSend.payload.data['subcommand'] = xcomdata.EkfCommand.SAVEPOS
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def save_hdg(self):
         '''Saves the current heading
@@ -433,8 +446,7 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         '''
         msgToSend = xcomdata.getCommandWithID(xcomdata.CommandID.EKF)
         msgToSend.payload.data['subcommand'] = xcomdata.EkfCommand.SAVE_HDG
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def forced_zupt(self, enable):
         '''Enables or disables forced Zero Velocity updates
@@ -453,8 +465,7 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         msgToSend.payload.data['subcommand'] = xcomdata.EkfCommand.FORCED_ZUPT
         msgToSend.payload.structString += 'f'
         msgToSend.payload.data['enable'] = enable
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def save_antoffset(self, antenna):
         '''Saves the currently estimated GNSS antenna offset
@@ -473,8 +484,7 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         msgToSend.payload.data['subcommand'] = xcomdata.EkfCommand.SAVE_ANTOFFSET
         msgToSend.payload.structString += 'f'
         msgToSend.payload.data['antenna'] = antenna
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def save_config(self):
         '''Saves the current configuration
@@ -488,8 +498,7 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         '''
         msgToSend = xcomdata.getCommandWithID(xcomdata.CommandID.CONF)
         msgToSend.payload.data['configAction'] = 0
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def load_config(self):
         '''Loads the configuration from ROM
@@ -503,8 +512,7 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         '''
         msgToSend = xcomdata.getCommandWithID(xcomdata.CommandID.CONF)
         msgToSend.payload.data['configAction'] = 1
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def factory_reset(self):
         '''Performs a factory reset
@@ -517,9 +525,8 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         
         '''
         msgToSend = xcomdata.getCommandWithID(xcomdata.CommandID.CONF)
-        msgToSend.payload.data['configAction'] = 2
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        msgToSend.payload.data['configAction'] = 4
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def add_log_with_rate(self, msgID, rate):
         '''Add a log with specified rate
@@ -569,8 +576,7 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         msgToSend.payload.data['trigger'] = xcomdata.LogTrigger.SYNC
         msgToSend.payload.data['parameter'] = xcomdata.LogCommand.ADD
         msgToSend.payload.data['divider'] = divider
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def clear_all(self):
         '''Clears all logs
@@ -587,8 +593,7 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         msgToSend.payload.data['trigger'] = xcomdata.LogTrigger.SYNC
         msgToSend.payload.data['parameter'] = xcomdata.LogCommand.CLEAR_ALL
         msgToSend.payload.data['divider'] = 1
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def poll_log(self, msgID):
         '''Polls a log
@@ -612,10 +617,9 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         msgToSend.payload.data['trigger'] = xcomdata.LogTrigger.POLLED
         msgToSend.payload.data['parameter'] = xcomdata.LogCommand.ADD
         msgToSend.payload.data['divider'] = 500  # use 500 here, because a '1' is rejected from some logs
-        bytesToSend = msgToSend.to_bytes()
         self.message_event.id = msgID
         self.message_event.clear()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
         return self.wait_for_log(msgID)
 
     def wait_for_parameter(self):
@@ -627,16 +631,16 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
             TimeoutError: Timeout while waiting for parameter from the XCOM server
         
         '''
-        try:
-            result = self.loop.run_until_complete(asyncio.wait_for(self.async_wait_for_parameter(), WAIT_TIME_FOR_RESPONSE))
-        except asyncio.TimeoutError as e:
-            raise ClientTimeoutError(e)
+        self.update_until_event(self.parameter_event, WAIT_TIME_FOR_RESPONSE)
+        result = self.parameter_event.parameter
         return result
-        
-    async def async_wait_for_parameter(self):
-        await self.parameter_event.wait()
-        self.parameter_event.clear()
-        return self.parameter_event.parameter
+
+    def update_until_event(self, event, timeout):
+        event.wait(timeout=timeout)
+        if event.is_set:
+            event.clear()
+            return
+        raise ClientTimeoutError('Timeout while waiting for event', thrower=self)
         
 
     def wait_for_log(self, msgID):
@@ -651,16 +655,10 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
             TimeoutError: Timeout while waiting for message from the XCOM server
         
         '''
-        try:
-            result = self.loop.run_until_complete(asyncio.wait_for(self.async_wait_for_log(msgID), WAIT_TIME_FOR_RESPONSE))
-        except asyncio.TimeoutError as e:
-            raise ClientTimeoutError(e)
+        self.update_until_event(self.message_event, WAIT_TIME_FOR_RESPONSE)
+        result = self.message_event.msg
         return result
-        
-    async def async_wait_for_log(self, msgID):
-        await self.message_event.wait()
-        self.message_event.clear()
-        return self.message_event.msg
+
         
 
     def enable_recorder(self, channel, enable_autostart):
@@ -669,42 +667,48 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         msgToSend.payload.data['autostart'] = enable_autostart
         msgToSend.payload.data['enable'] = 1
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def disable_recorder(self):
         msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PARREC_CONFIG)
         msgToSend.payload.data['enable'] = 0
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def start_recorder(self, path):
         msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PARREC_START)
-        msgToSend.payload.data['str'] = path.ljust(128, '\0')
+        msgToSend.payload.data['str'] = path.ljust(128, '\0').encode('ascii')
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
-    def stop_recorder(self, path):
+    def stop_recorder(self):
         msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PARREC_STOP)
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
+
+    def set_recorder_suffix(self, suffix):
+        msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PARREC_SUFFIX)
+        msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
+        msgToSend.payload.data['suffix'] = suffix.ljust(128, '\0')
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def enable_full_sysstatus(self):
         msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PARDAT_SYSSTAT)
         msgToSend.payload.data['statMode'] = 127
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def set_schulermode(self, enable_schuler):
         msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PAREKF_SCHULERMODE)
         msgToSend.payload.data['enable'] = enable_schuler
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
+
+    def update_firmware_svn(self):
+        msgToSend = xcomdata.getCommandWithID(xcomdata.CommandID.XCOM)
+        msgToSend.payload.data['mode'] = xcomdata.XcomCommandParameter.update_svn
+        msgToSend.payload.data['channelNumber'] = 0
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def get_device_info(self):
         result = dict()
@@ -721,16 +725,64 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         result['navparset'] = self.get_parameter(10).payload.data['str'].split(b'\0')[0].decode('ascii')
         result['sysname'] = self.get_parameter(19).payload.data['str'].split(b'\0')[0].decode('ascii')
         result['imutype'] = self.get_parameter(107).payload.data['type']
+        result['maintiming'] = self.get_parameter(xcomdata.ParameterID.PARSYS_MAINTIMING).payload.data['maintiming']
+        try:
+            result['gyro_range'] = self.get_parameter(xcomdata.ParameterID.PARIMU_RANGE).payload.data['range_gyro']
+        except:
+            pass
         result['ip'] = self.host
         return result
+
+    def set_caldate(self, caldate = time.strftime('%d.%m.%Y', time.gmtime())):
+        msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PARSYS_CALDATE)
+        msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
+        msgToSend.payload.data['str']= caldate.ljust(32,'\0').encode('ascii')
+        msgToSend.payload.data['password'] = self.get_password(xcomdata.ParameterID.PARSYS_CALDATE)
+        self.send_msg_and_waitfor_okay(msgToSend)
+
+    def set_imucalib(self, scf_acc, bias_acc, scf_omg, bias_omg):
+        msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PARIMU_CALIB)
+        msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
+        msgToSend.payload.data['sfAcc']= scf_acc
+        msgToSend.payload.data['biasAcc'] = bias_acc
+        msgToSend.payload.data['sfOmg']= scf_omg
+        msgToSend.payload.data['biasOmg'] = bias_omg
+        self.send_msg_and_waitfor_okay(msgToSend)
+
+    def get_imucalib(self):
+        return self.get_parameter(xcomdata.ParameterID.PARIMU_CALIB)
+
+    def set_acc_scf(self, scf_acc):
+        msgToSend = self.get_imucalib()
+        msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
+        msgToSend.payload.data['sfAcc']= scf_acc
+        self.send_msg_and_waitfor_okay(msgToSend)
+
+    def set_acc_bias(self, bias_acc):
+        msgToSend = self.get_imucalib()
+        msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
+        msgToSend.payload.data['biasAcc']= bias_acc
+        self.send_msg_and_waitfor_okay(msgToSend)
+
+    def set_gyro_bias(self, bias_omg):
+        msgToSend = self.get_imucalib()
+        msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
+        msgToSend.payload.data['biasOmg']= bias_omg
+        self.send_msg_and_waitfor_okay(msgToSend)
+    
+
+    def set_gyro_scf(self, scf_omg):
+        msgToSend = self.get_imucalib()
+        msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
+        msgToSend.payload.data['sfOmg']= scf_omg
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def set_broadcast(self, port=BROADCAST_PORT, hidden=0):
         msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PARXCOM_BROADCAST)
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
         msgToSend.payload.data['port'] = port
         msgToSend.payload.data['hidden_mode'] = hidden
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def set_zupt_parameters(self, thr_acc=1, thr_omg=1, thr_vel=0, cut_off=1, interval=3, final_std_dev=0.002,
                             start_std_dev=0.01, time_constant=1, delay_samples=300, activation_mask=0x0, auto_zupt=1):
@@ -747,8 +799,7 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         msgToSend.payload.data['delay'] = delay_samples
         msgToSend.payload.data['mask'] = activation_mask
         msgToSend.payload.data['autoZupt'] = auto_zupt
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def set_startup(self, initPos=PositionTuple(Lon=0.1249596927, Lat=0.8599914412, Alt=311.9),
                     initPosStdDev=[10, 10, 10], posMode=xcomdata.StartupPositionMode.GNSSPOS, initHdg=0,
@@ -771,57 +822,52 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         msgToSend.payload.data['inMotion'] = inMotion
         msgToSend.payload.data['autoRestart'] = autorestart
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def set_parekf_aiding(self, mode=0, mask=0):
         msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PAREKF_AIDING)
         msgToSend.payload.data['aidingMode'] = mode
         msgToSend.payload.data['aidingMask'] = mask
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
 
     def set_aligntime(self, levelling_time, zupt_time):
         msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PAREKF_ALIGNTIME)
         msgToSend.payload.data['aligntime'] = zupt_time
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
         msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PAREKF_COARSETIME)
         msgToSend.payload.data['coarsetime'] = levelling_time
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def set_alignmode(self, mode):
         msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PAREKF_ALIGNMODE)
         msgToSend.payload.data['alignmode'] = mode
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
-    def set_threshholds(self, pos_medium=1, pos_high=0.1, heading_good=0.001 * math.pi / 180.0):
+    def set_thresholds(self, pos_medium=1, pos_high=0.1, heading_good=0.001 * math.pi / 180.0):
         msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PAREKF_HDGPOSTHR)
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
         msgToSend.payload.data['hdgGoodThr'] = heading_good
         msgToSend.payload.data['posMedThr'] = pos_medium
         msgToSend.payload.data['posHighThr'] = pos_high
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def set_crosscoupling(self, CCAcc, CCOmg):
         msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PARIMU_CROSSCOUPLING)
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
         msgToSend.payload.data['CCAcc'] = CCAcc
         msgToSend.payload.data['CCOmg'] = CCOmg
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def send_msg_and_waitfor_okay(self, msg):
+        self.okay_lock.acquire()
         bytesToSend = msg.to_bytes()
         self.send_and_wait_for_okay(bytesToSend)
+        self.okay_lock.release()
 
     def get_crosscoupling(self):
         param = self.get_parameter(xcomdata.ParameterID.PARIMU_CROSSCOUPLING)
@@ -843,38 +889,33 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         msgToSend.payload.data['channel'] = channel
         msgToSend.payload.data['enable'] = 1
         msgToSend.payload.data['log_mode'] = copy_channel
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
         self.save_config()
 
     def disable_postproc(self):
         msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PARXCOM_POSTPROC)
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
         msgToSend.payload.data['enable'] = 0
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
         self.save_config()
 
     def set_elevationmask(self, mask_angle):
         msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PARGNSS_ELEVATIONMASK)
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
         msgToSend.payload.data['elevationMaskAngle'] = mask_angle
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def set_feedback(self, pos=1, vel=1, att=1, sensor_err=1):
         msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PAREKF_FEEDBACK)
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
         msgToSend.payload.data['feedbackMask'] = (pos << 0) | (vel << 1) | (att << 2) | (sensor_err << 3)
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def set_freeze(self, pos=0, vel=0, att=0, height=0):
         msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PAREKF_STATEFREEZE)
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
         msgToSend.payload.data['freezeMask'] = (pos << 0) | (vel << 1) | (att << 2) | (height << 3)
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def aid_pos(self, lonLatAlt, llhStdDev, leverarmXYZ, leverarmStdDev, time=0, timeMode=1):
         msgToSend = xcomdata.getCommandWithID(xcomdata.CommandID.EXTAID)
@@ -894,8 +935,7 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         msgToSend.payload.data['laXStdDev'] = leverarmStdDev[0]
         msgToSend.payload.data['laYStdDev'] = leverarmStdDev[1]
         msgToSend.payload.data['laZStdDev'] = leverarmStdDev[2]
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def aid_vel(self, vNED, vNEDStdDev, time=0, timeMode=1):
         msgToSend = xcomdata.getCommandWithID(xcomdata.CommandID.EXTAID)
@@ -915,8 +955,7 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         # msgToSend.payload.data['laXStdDev'] = leverarmStdDev[0];
         # msgToSend.payload.data['laYStdDev'] = leverarmStdDev[1];
         # msgToSend.payload.data['laZStdDev'] = leverarmStdDev[2];
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def aid_heading(self, heading, standard_dev, time=0, timeMode=1):
         msgToSend = xcomdata.getCommandWithID(xcomdata.CommandID.EXTAID)
@@ -926,8 +965,7 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         msgToSend.payload.structString += 'dd'
         msgToSend.payload.data['heading'] = heading
         msgToSend.payload.data['headingStdDev'] = standard_dev
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def aid_height(self, height, standard_dev, time=0, timeMode=1):
         msgToSend = xcomdata.getCommandWithID(xcomdata.CommandID.EXTAID)
@@ -937,8 +975,7 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         msgToSend.payload.structString += 'dd'
         msgToSend.payload.data['height'] = height
         msgToSend.payload.data['heightStdDev'] = standard_dev
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def send_and_wait_for_okay(self, inBytes):
         '''Waits for reception of OK response
@@ -953,22 +990,18 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
             ValueError: The response from the system was not 'OK'.
         
         '''
-        self.transport.write(inBytes)
-        try:
-            response = self.loop.run_until_complete(asyncio.wait_for(self.wait_for_response(), WAIT_TIME_FOR_RESPONSE))
-        except asyncio.TimeoutError as e:
-            raise ClientTimeoutError(e)
-        
+        self.sock.sendall(inBytes)
+        self.update_until_event(self.response_event, WAIT_TIME_FOR_RESPONSE)
+        response = self.response_event.response
         if response.payload.data['responseID'] != xcomdata.XcomResponse.OK:
-            raise ResponseError('Expected response %d, got %d' % (xcomdata.XcomResponse.OK, self.response_event.response.data['responseID']))
-            
-    async def wait_for_response(self):
-        await self.response_event.wait()
-        self.response_event.clear()
-        return self.response_event.response
+            raise ResponseError(self.response_event.response.data['responseText'].decode('ascii'), self)
+
+    def run_forever(self):
+        while True:
+            self.update_data()
 
     def get_antoffset(self, antenna):
-        '''Convencie getter for antenna offset
+        '''Convenience getter for antenna offset
 
         Gets the antenna offset for the specified antenna #
         
@@ -983,12 +1016,11 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PARGNSS_ANTOFFSET)
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.REQUESTING
         msgToSend.payload.data['reserved'] = antenna
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
         return self.wait_for_parameter()
 
     def set_antoffset(self, antenna=0, offset=[0, 0, 0], stdDev=[0.1, 0.1, 0.1]):
-        '''Convencie setter for antenna offset
+        '''Convenience setter for antenna offset
 
         Sets the antenna offset for the specified antenna #
         
@@ -1007,8 +1039,11 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         msgToSend.payload.data['reserved'] = antenna
         msgToSend.payload.data['antennaOffset'] = offset
         msgToSend.payload.data['stdDev'] = stdDev
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
+
+    def get_password(self, parameter_id):
+        tmp_buffer = struct.pack('=BBBBH', 11, 6, 19, 85, parameter_id)
+        return crc16.crc16xmodem(tmp_buffer)
         
     def set_gpspower(self, state):
         msgToSend = self.get_parameter(xcomdata.ParameterID.PARFPGA_POWER)
@@ -1017,8 +1052,7 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
             msgToSend.payload.data['powerSwitch'] |= 1
         elif state == 0:
             msgToSend.payload.data['powerSwitch'] &= ~(1 << 0)
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def get_virtual_meas_pt(self):
         '''Convenience getter for virtual measpoint offset
@@ -1053,20 +1087,12 @@ class XcomClient(XcomMessageParser, asyncio.Protocol):
         msgToSend.payload.data['leverArm'] = offset
         msgToSend.payload.data['mask'] = activationMask
         msgToSend.payload.data['cutoff'] = cutOffFreq
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
-    def collect_incoming_data(self, data):
-        self.messageSearcher.process_bytes(data)
         
-    def connection_made(self, transport):
-        self.transport = transport
 
-    def data_received(self, data):
-        self.messageSearcher.process_bytes(data)
 
-    def connection_lost(self, exc):
-        self.loop.stop()
+
         
     def eof_received(self):
         return True

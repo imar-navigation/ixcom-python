@@ -3,7 +3,28 @@ import struct
 import crc16
 from enum import IntEnum
 
+class msg_iterator:
+    def __init__(self, msg, in_bytes):
+        self.msg = msg
+        self.remaining_bytes = in_bytes
+        self.start_idx = 0
+        self.msg_size = self.msg.size()
 
+        
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        try:
+            byte_chunk = self.remaining_bytes[self.start_idx:self.start_idx+self.msg_size ]
+            self.start_idx += self.msg_size 
+            self.msg.from_bytes(byte_chunk)
+
+            return self.msg.data
+        except:
+            raise StopIteration()
+
+    
 class XcomResponse(IntEnum):
     OK                  = 0x0
     InvalidParameter    = 0x1
@@ -172,6 +193,7 @@ class ParameterID(IntEnum):
     PARIMU_COMPMETHOD       = 113
     PARIMU_ACCLEVERARM      = 114
     PARIMU_STRAPDOWNCONF    = 115
+    PARIMU_RANGE            = 117
 
     PARGNSS_PORT            = 200
     PARGNSS_BAUD            = 201
@@ -217,6 +239,7 @@ class ParameterID(IntEnum):
     PARREC_START            = 603
     PARREC_STOP             = 604
     PARREC_POWER            = 605
+    PARREC_SUFFIX           = 606
     PARREC_DISKSPACE        = 607
     PARREC_AUXILIARY        = 608
     
@@ -281,7 +304,7 @@ class ParameterID(IntEnum):
     PARXCOM_LOGLIST2        = 917
     PARXCOM_CALPROC         = 918
     PARXCOM_CLIENT          = 919
-    PARXCOM_FRAMEOUT        =	920
+    PARXCOM_FRAMEOUT        = 920
 
     PARFPGA_IMUSTATUSREG    = 1000
     PARFPGA_HDLCREG         = 1001
@@ -332,6 +355,38 @@ class ParameterID(IntEnum):
     PARIO_HW245             = 1500
     PARIO_HW288             = 1501
 
+class SysstatBit(IntEnum):
+    IMU_INVALID         =  0
+    IMU_CRC_ERROR       =  1
+    IMU_TIMEOUT         =  2
+    IMU_SAMPLE_LOST     =  3
+    ACC_X_OVERRANGE     =  4
+    ACC_Y_OVERRANGE     =  5
+    ACC_Z_OVERRANGE     =  6
+    OMG_X_OVERRANGE     =  8
+    OMG_Y_OVERRANGE     =  9
+    OMG_Z_OVERRANGE     = 10
+    INVALID_CAL         = 11
+    BIT_FAIL            = 12
+    DEFAULT_CONF        = 13
+    GNSS_INVALID        = 14
+    ZUPT_CALIB          = 15
+    GNSS_CRC_ERROR      = 16
+    GNSS_TIMEOUT        = 17
+    EKF_ERROR           = 18
+    SAVEDPOS_ERROR      = 19
+    SAVEDHDG_ERROR      = 20
+    MAG_TIMEOUT         = 21
+    MADC_TIMEOUT        = 22
+    LICENSE_EXPIRED     = 23
+    IN_MOTION           = 24
+    ODO_PLAUSIBILITY    = 25
+    ODO_HW_ERROR        = 26
+    WAITING_INITVAL     = 27
+    PPS_LOST            = 28
+    LIMITED_ACCURACY    = 29
+    REC_ENABLED         = 30
+    FPGA_NOGO           = 31
 
 class MessageItem(object):
     def __init__(self):
@@ -361,15 +416,16 @@ class XcomProtocolHeader(MessageItem):
         self.week               = 0
         self.timeOfWeek_sec     = 0
         self.timeOfWeek_usec     = 0
+        self.struct_inst = struct.Struct(self.structString)
 
     def get_time(self):
         return self.timeOfWeek_sec + 1.0e-6*self.timeOfWeek_usec
 
     def to_bytes(self):
-        return bytearray(struct.pack(self.structString, self.sync, self.msgID, self.frameCounter, self.reserved, self.msgLength, self.week, self.timeOfWeek_sec, self.timeOfWeek_usec))
+        return bytearray(self.struct_inst.pack(self.sync, self.msgID, self.frameCounter, self.reserved, self.msgLength, self.week, self.timeOfWeek_sec, self.timeOfWeek_usec))
 
     def from_bytes(self, inBytes):
-        self.sync, self.msgID, self.frameCounter, self.reserved, self.msgLength, self.week, self.timeOfWeek_sec, self.timeOfWeek_usec = struct.unpack(self.structString, inBytes[:16])
+        self.sync, self.msgID, self.frameCounter, self.reserved, self.msgLength, self.week, self.timeOfWeek_sec, self.timeOfWeek_usec = self.struct_inst.unpack(inBytes[:16])
 
 
 
@@ -379,20 +435,31 @@ class XcomProtocolBottom(MessageItem):
     def __init__(self):
         self.gStatus = 0
         self.crc = 0
+        self.struct_inst = struct.Struct(self.structString)
 
     def to_bytes(self):
-        return bytearray(struct.pack(self.structString, self.gStatus, self.crc))
+        return bytearray(self.struct_inst.pack(self.gStatus, self.crc))
 
     def from_bytes(self, inBytes):
-        self.gStatus, self.crc = struct.unpack(self.structString, inBytes)
+        self.gStatus, self.crc = self.struct_inst.unpack(inBytes)
 
 class XcomProtocolPayload(MessageItem):
     data = collections.OrderedDict()
 
     def __init__(self):
         super(XcomProtocolPayload, self).__init__()
-        self.structString = "="
+        self._structString = "="
+        self.struct_inst = struct.Struct(self._structString)
         self.data = collections.OrderedDict()
+
+    @property
+    def structString(self):
+        return self._structString
+
+    @structString.setter
+    def structString(self, value):
+        self._structString = value
+        self.struct_inst = struct.Struct(self._structString)
 
     def to_bytes(self):
         values = []
@@ -401,12 +468,12 @@ class XcomProtocolPayload(MessageItem):
                 values += value
             else:
                 values += [value]
-        return bytearray(struct.pack(self.structString, *values))
+        return bytearray(self.struct_inst.pack(*values))
 
     def from_bytes(self, inBytes):
         try:
             keyList = self.data.keys()
-            valueList = list(struct.unpack(self.structString, inBytes))
+            valueList = list(self.struct_inst.unpack(inBytes))
             for key in keyList:
                 if isinstance(self.data[key], list):
                     curLen = len(self.data[key])
@@ -458,6 +525,10 @@ class XcomProtocolMessage(MessageItem):
         result['global_status'] = self.bottom.gStatus
         return result
 
+    @property
+    def structString(self):
+        return self.header.structString + self.payload.structString[1:] + self.bottom.structString[1:]
+
 
     def __str__(self):
         tmp = str(self.header.frameCounter)+","+str(self.header.timeOfWeek_sec+1e-6*self.header.timeOfWeek_usec)
@@ -483,6 +554,7 @@ class XcomProtocolMessage(MessageItem):
 
 
 class XcomCommandParameter(IntEnum):
+    update_svn    = 5
     reboot        = 2
     channel_open  = 1
     channel_close = 0
@@ -698,6 +770,13 @@ class PARIMU_STRAPDOWNCONF_Payload(XcomDefaultParameterPayload):
         self.data['deltaVFrame'] = 0
         self.data['numberOfDeltaTheta'] = 0
         self.data['reserved2'] = 0
+
+class PARIMU_RANGE_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "ff"
+        self.data['range_accel'] = 0
+        self.data['range_gyro'] = 0
 
 """
 PARGNSS
@@ -1130,7 +1209,7 @@ class PARREC_POWER_Payload(XcomDefaultParameterPayload):
         super().__init__()
         self.structString += "I"
         self.data['enable'] = 0
-        
+
 class PARREC_DISKSPACE_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -2489,6 +2568,7 @@ ParameterPayloadDictionary = {
     ParameterID.PARIMU_COMPMETHOD:PARIMU_COMPMETHOD_Payload,
     ParameterID.PARIMU_ACCLEVERARM:PARIMU_ACCLEVERARM_Payload,
     ParameterID.PARIMU_STRAPDOWNCONF:PARIMU_STRAPDOWNCONF_Payload,
+    ParameterID.PARIMU_RANGE:PARIMU_RANGE_Payload,
 
     ParameterID.PARGNSS_PORT:PARGNSS_PORT_Payload,
     ParameterID.PARGNSS_BAUD:PARGNSS_BAUD_Payload,
@@ -2528,6 +2608,7 @@ ParameterPayloadDictionary = {
     ParameterID.PARREC_START:PARREC_START_Payload,
     ParameterID.PARREC_STOP:PARREC_STOP_Payload,
     ParameterID.PARREC_POWER:PARREC_POWER_Payload,
+    ParameterID.PARREC_SUFFIX:PARREC_SUFFIX_Payload,
     ParameterID.PARREC_DISKSPACE:PARREC_DISKSPACE_Payload,
     ParameterID.PARREC_AUXILIARY:PARREC_AUXILIARY_Payload,
     
