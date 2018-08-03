@@ -6,6 +6,7 @@ import crc16
 import math
 import time
 import struct
+import queue
 from enum import IntEnum
 from xcom import xcomdata
 
@@ -367,8 +368,7 @@ class XcomClient(XcomMessageParser):
         '''
         msgToSend = xcomdata.getCommandWithID(xcomdata.CommandID.XCOM)
         msgToSend.payload.data['mode'] = xcomdata.XcomCommandParameter.reset_timebias
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
 
     def reboot(self):
@@ -617,8 +617,7 @@ class XcomClient(XcomMessageParser):
         msgToSend.payload.data['trigger'] = xcomdata.LogTrigger.EVENT
         msgToSend.payload.data['parameter'] = xcomdata.LogCommand.ADD
         msgToSend.payload.data['divider'] = 500 # use 500 here, because a '1' is rejected from some logs
-        bytesToSend = msgToSend.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def clear_all(self):
         '''Clears all logs
@@ -662,7 +661,8 @@ class XcomClient(XcomMessageParser):
         self.message_event.id = msgID
         self.message_event.clear()
         self.send_msg_and_waitfor_okay(msgToSend)
-        return self.wait_for_log(msgID)
+        return self.wait_for_polled_log()
+
 
     def wait_for_parameter(self):
         '''Waits for reception of parameter
@@ -685,18 +685,30 @@ class XcomClient(XcomMessageParser):
         raise ClientTimeoutError('Timeout while waiting for event', thrower=self)
         
 
-    def wait_for_log(self, msgID):
+    def wait_for_polled_log(self):
         '''Waits for reception of log
 
         Blocks until a messageEvent is received.
-        
-        Args:
-            msgID: message ID of log to wait for.
         
         Raises:
             TimeoutError: Timeout while waiting for message from the XCOM server
         
         '''
+        self.update_until_event(self.message_event, WAIT_TIME_FOR_RESPONSE)
+        result = self.message_event.msg
+        return result
+
+    def wait_for_log(self, msgID):
+        '''Waits for reception of log
+
+        Blocks until a messageEvent is received.
+        
+        Raises:
+            TimeoutError: Timeout while waiting for message from the XCOM server
+        
+        '''
+        self.message_event.id = msgID
+        self.message_event.clear()
         self.update_until_event(self.message_event, WAIT_TIME_FOR_RESPONSE)
         result = self.message_event.msg
         return result
@@ -906,10 +918,9 @@ class XcomClient(XcomMessageParser):
         self.send_msg_and_waitfor_okay(msgToSend)
 
     def send_msg_and_waitfor_okay(self, msg):
-        self.okay_lock.acquire()
-        bytesToSend = msg.to_bytes()
-        self.send_and_wait_for_okay(bytesToSend)
-        self.okay_lock.release()
+        with self.okay_lock:
+            bytesToSend = msg.to_bytes()
+            self.send_and_wait_for_okay(bytesToSend)
 
     def get_crosscoupling(self):
         param = self.get_parameter(xcomdata.ParameterID.PARIMU_CROSSCOUPLING)
