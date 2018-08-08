@@ -197,7 +197,11 @@ class XcomClient(XcomMessageParser):
         self.port = port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((self.host, self.port))
-        
+        ''' 
+        this device_info is a static member variable it will be updated via update_static_deviceInfo
+        it may be used to identify the sending device while ading a callback funcion via from_device.deviceInfo and will not block
+        '''
+        self.device_info = dict()
         self.response_event = threading.Event()
         self.response_event.response = None
         self.parameter_event = threading.Event()
@@ -1142,7 +1146,19 @@ class XcomClient(XcomMessageParser):
         msgToSend.payload.data['cutoff'] = cutOffFreq
         self.send_msg_and_waitfor_okay(msgToSend)
 
+    def update_static_device_info(self):
+        '''Convenience updater for static device_info
+
+        Updates the module static deviceInfo
         
+        Args:
+            none
+        
+        Raises:
+            none
+        
+        '''
+        self.device_info=self.get_device_info()
 
 
 
