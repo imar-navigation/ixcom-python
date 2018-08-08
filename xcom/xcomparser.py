@@ -183,6 +183,14 @@ class XcomMessageParser:
         for callback in self.callbacks:
             callback(message, from_device=self)
 
+class MessageCallback:
+    def __init__(self, callback, msg, from_device):
+        self.callback = callback
+        self.msg = msg
+        self.device = from_device
+
+    def run(self):
+        self.callback(self.msg, self.device)
 
 class XcomClient(XcomMessageParser):
     '''XCOM TCP Client
@@ -197,11 +205,7 @@ class XcomClient(XcomMessageParser):
         self.port = port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((self.host, self.port))
-        ''' 
-        this device_info is a static member variable it will be updated via update_static_deviceInfo
-        it may be used to identify the sending device while ading a callback funcion via from_device.deviceInfo and will not block
-        '''
-        self.device_info = dict()
+        
         self.response_event = threading.Event()
         self.response_event.response = None
         self.parameter_event = threading.Event()
@@ -210,11 +214,20 @@ class XcomClient(XcomMessageParser):
         self.message_event.msg = None
         self.message_event.id = None
         self.okay_lock = threading.Lock()
-        self.thread = threading.Thread(target = self.update_data)
-        self.thread.start()
+        self.comm_thread = threading.Thread(target = self.update_data)
+        self.comm_thread.start()
+        self.callback_queue = queue.Queue()
+        self.callback_thread = threading.Thread(target = self.callback_worker)
+        self.callback_thread.start()
         
         self.add_subscriber(self)
 
+    def publish(self, message):
+        for subscriber in self.subscribers:
+            subscriber.handle_message(message, from_device=self)
+        for callback in self.callbacks:
+            cb = MessageCallback(callback, message, self)
+            self.callback_queue.put(cb)
 
     def __hash__(self):
         '''Hash function
@@ -230,6 +243,11 @@ class XcomClient(XcomMessageParser):
 
     def __eq__(self, other):
         return self is other
+
+    def callback_worker(self):
+        while True:
+            callback = self.callback_queue.get()
+            callback.run()
         
     def handle_message(self, message, from_device):
        if message.header.msgID == xcomdata.MessageID.RESPONSE:
@@ -1146,19 +1164,7 @@ class XcomClient(XcomMessageParser):
         msgToSend.payload.data['cutoff'] = cutOffFreq
         self.send_msg_and_waitfor_okay(msgToSend)
 
-    def update_static_device_info(self):
-        '''Convenience updater for static device_info
-
-        Updates the module static deviceInfo
         
-        Args:
-            none
-        
-        Raises:
-            none
-        
-        '''
-        self.device_info=self.get_device_info()
 
 
 
