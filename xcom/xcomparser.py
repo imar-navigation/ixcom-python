@@ -1128,7 +1128,17 @@ class XcomClient(XcomMessageParser):
         elif state == 0:
             msgToSend.payload.data['powerSwitch'] &= ~(1 << 0)
         self.send_msg_and_waitfor_okay(msgToSend)
-
+        
+    def set_csac_disc_parameter(self, mode, time_constant,line_delay,phase_thres):
+        msgToSend = self.get_parameter(xcomdata.ParameterID.PARFPGA_CSAC)
+        msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
+        if(mode < (xcomdata.CsacMode.ENABLE | xcomdata.CsacMode.ENABLEATUNE | xcomdata.CsacMode.PPSAUTOSYNC | xcomdata.CsacMode.PPSDISCIPLINE | xcomdata.CsacMode.STARTSYNC | xcomdata.CsacMode.GNSSAUTOMODE)):
+            msgToSend.payload.data['mode'] = mode
+        msgToSend.payload.data['PPSdisciplineTimeConstant'] = time_constant
+        msgToSend.payload.data['PPSdisciplineCableLengthComp'] = line_delay
+        msgToSend.payload.data['PPSphaseThr'] = phase_thres
+        self.send_msg_and_waitfor_okay(msgToSend)
+        
     def get_virtual_meas_pt(self):
         '''Convenience getter for virtual measpoint offset
 

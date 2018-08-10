@@ -164,12 +164,12 @@ class StartupHeadingMode(IntEnum):
     DUALANTHDG  = 4
 
 class CsacMode(IntEnum):
-    ENABLE         = 0
-    ENABLEATUNE    = 1
-    PPSAUTOSYNC    = 2
-    PPSDISCIPLINE  = 3
-    STARTSYNC      = 4
-    GNSSAUTOMODE   = 5
+    ENABLE         = 1
+    ENABLEATUNE    = 2
+    PPSAUTOSYNC    = 4
+    PPSDISCIPLINE  = 8
+    STARTSYNC      = 16
+    GNSSAUTOMODE   = 32
 
 class ParameterID(IntEnum):
     PARSYS_PRJNUM           = 0
@@ -1935,7 +1935,8 @@ class PARFPGA_AUTOWAKEUP_Payload(XcomDefaultParameterPayload):
 class PARFPGA_CSAC_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
-        self.structString += "III"
+        self.structString += "BIII"
+        self.data['mode'] = 0
         self.data['PPSdisciplineTimeConstant'] = 0
         self.data['PPSdisciplineCableLengthComp'] = 0
         self.data['PPSphaseThr'] = 0
