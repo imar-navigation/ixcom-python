@@ -1935,8 +1935,7 @@ class PARFPGA_AUTOWAKEUP_Payload(XcomDefaultParameterPayload):
 class PARFPGA_CSAC_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
-        self.structString += "BIII"
-        self.data['mode'] = 0
+        self.structString += "III"
         self.data['PPSdisciplineTimeConstant'] = 0
         self.data['PPSdisciplineCableLengthComp'] = 0
         self.data['PPSphaseThr'] = 0
@@ -2123,11 +2122,11 @@ class STATFPGA_Payload(XcomProtocolPayload):
 class SYSSTAT_Payload(XcomProtocolPayload):
     def __init__(self):
         super().__init__()
-        self.structString += "II"
         self.data['statMode']= 0
         self.data['sysStat'] = 0
 
     def from_bytes(self, inBytes):
+        self.structString = "II"
         self.data['statMode'] = struct.unpack("I", inBytes[:4])[0]
         if(self.data['statMode'] & (1 << 0)):
             self.structString += "I"
