@@ -214,10 +214,10 @@ class XcomClient(XcomMessageParser):
         self.message_event.msg = None
         self.message_event.id = None
         self.okay_lock = threading.Lock()
-        self.comm_thread = threading.Thread(target = self.update_data)
+        self.comm_thread = threading.Thread(target = self.update_data, daemon = True)
         self.comm_thread.start()
         self.callback_queue = queue.Queue()
-        self.callback_thread = threading.Thread(target = self.callback_worker)
+        self.callback_thread = threading.Thread(target = self.callback_worker, daemon = True)
         self.callback_thread.start()
         
         self.add_subscriber(self)
@@ -1138,7 +1138,7 @@ class XcomClient(XcomMessageParser):
         msgToSend.payload.data['PPSdisciplineCableLengthComp'] = line_delay
         msgToSend.payload.data['PPSphaseThr'] = phase_thres
         self.send_msg_and_waitfor_okay(msgToSend)
-        
+
     def get_virtual_meas_pt(self):
         '''Convenience getter for virtual measpoint offset
 
