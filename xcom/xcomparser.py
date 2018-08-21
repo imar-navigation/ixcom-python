@@ -1129,6 +1129,26 @@ class XcomClient(XcomMessageParser):
             msgToSend.payload.data['powerSwitch'] &= ~(1 << 0)
         self.send_msg_and_waitfor_okay(msgToSend)
         
+    def set_fpga_timer(self, colum_idx, row_idx):
+        if(colum_idx > 20 or colum_idx < 0):
+            raise RuntimeError('colum_idx out of bounds')
+        if(row_idx > 20 or row_idx < 0):
+            raise RuntimeError('row_idx out of bounds')
+        msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PARFPGA_TIMER)
+        msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.REQUESTING
+        self.send_msg_and_waitfor_okay(msgToSend)
+        dev_msg = self.wait_for_parameter()
+        
+        msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
+        timer = dev_msg.payload.data['timer']
+        timer[colum_idx] = (1 << row_idx)
+        msgToSend.payload.data['timer'] = timer
+        msgToSend.payload.data['password'] = self.get_password(xcomdata.ParameterID.PARFPGA_TIMER)
+        self.send_msg_and_waitfor_okay(msgToSend)
+        return self.wait_for_parameter()
+        
+        
+        
     def set_csac_disc_parameter(self, mode, time_constant,line_delay,phase_thres):
         msgToSend = self.get_parameter(xcomdata.ParameterID.PARFPGA_CSAC)
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
