@@ -1824,8 +1824,8 @@ PARFPGA
 class PARFPGA_TIMER_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
-        self.structString += "14HHH"
-        self.data['timer'] = [0]*14
+        self.structString += "20IHH"
+        self.data['timer'] = [0]*20
         self.data['reserved2'] = 0
         self.data['password'] = 0
 
@@ -1935,7 +1935,8 @@ class PARFPGA_AUTOWAKEUP_Payload(XcomDefaultParameterPayload):
 class PARFPGA_CSAC_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
-        self.structString += "III"
+        self.structString += "BIII"
+        self.data['mode'] = 0
         self.data['PPSdisciplineTimeConstant'] = 0
         self.data['PPSdisciplineCableLengthComp'] = 0
         self.data['PPSphaseThr'] = 0
