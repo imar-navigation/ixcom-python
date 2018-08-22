@@ -1157,7 +1157,7 @@ class PARARINC825_ENABLE_Payload(XcomDefaultParameterPayload):
 class PARARINC825_LOGLIST_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
-        for idx in range(0,29):
+        for idx in range(0,30):
             self.structString += "HHI"
             self.data["divider_%d" % idx] = 0
             self.data["reserved_%d" % idx] = 0
@@ -1180,7 +1180,7 @@ class PARARINC825_RESETSTATUS_Payload(XcomDefaultParameterPayload):
 class PARARINC825_SCALEFACTOR_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
-        self.structString += "dd3ddd3ddddd"
+        self.structString += "dd3ddd3dddddd"
         self.data['ScfAcc'] = 0
         self.data['ScfOmg'] = 0
         self.data['ScfRPY'] = [0, 0, 0]
@@ -1191,6 +1191,7 @@ class PARARINC825_SCALEFACTOR_Payload(XcomDefaultParameterPayload):
         self.data['ScfInsPosStdDev'] = 0
         self.data['ScfVelStdDev'] = 0
         self.data['ScfGnssPosStdDev'] = 0
+        self.data['ScfSideSlip'] = 0
 
 class PARARINC825_EVENTMASK_Payload(XcomDefaultParameterPayload):
     def __init__(self):
@@ -1814,9 +1815,9 @@ class PARXCOM_CLIENT_Payload(XcomDefaultParameterPayload):
                 self.data["messageId %d%d" % (idx, idx2)] = 0
                 self.data["trigger %d%d" % (idx, idx2)] = 0
                 self.data["dividerLogs %d%d" % (idx, idx2)] = 0
-        #self.structString += "B3B"
-        #self.data['useUDPInterface'] = 0
-        #self.data['reserved2'] = [0]*3
+        self.structString += "B3B"
+        self.data['useUDPInterface'] = 0
+        self.data['reserved2'] = [0]*3
 
 """
 PARFPGA
@@ -1832,10 +1833,10 @@ class PARFPGA_TIMER_Payload(XcomDefaultParameterPayload):
 class PARFPGA_TIMINGREG_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
-        self.structString += "BB2HH"
+        self.structString += "BB3HHH"
         self.data['timing_reg'] = 0
         self.data['reserved2'] = 0
-        self.data['userTimer'] = [0]*2
+        self.data['userTimer'] = [0]*3
         self.data['password'] = 0
 
 class PARFPGA_IMUSTATUSREG_Payload(XcomDefaultParameterPayload):
@@ -1860,8 +1861,8 @@ class PARFPGA_HDLCREG_Payload(XcomDefaultParameterPayload):
 class PARFPGA_INTERFACE_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
-        self.structString += "22IHH"
-        self.data['matrix'] = [0]*22
+        self.structString += "23IHH"
+        self.data['matrix'] = [0]*23
         self.data['reserved2'] = 0
         self.data['password'] = 0
 
@@ -1965,9 +1966,10 @@ class PARNMEA_ENABLE_Payload(XcomDefaultParameterPayload):
 class PARNMEA_TXMASK_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
-        self.structString += "I"
+        self.structString += "II"
         self.data['txMask'] = 0
-
+        self.data['txMaskUDP'] = 0
+        
 class PARNMEA_DECPLACES_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -1979,8 +1981,9 @@ class PARNMEA_DECPLACES_Payload(XcomDefaultParameterPayload):
 class PARNMEA_RATE_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
-        self.structString += "I"
+        self.structString += "2I"
         self.data['divisor'] = 0
+        self.data['divisorUDP'] = 0
 
 class PARNMEA_UDP_Payload(XcomDefaultParameterPayload):
     def __init__(self):
