@@ -963,7 +963,7 @@ class XcomClient(XcomMessageParser):
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
         msgToSend.payload.data['channel'] = channel
         msgToSend.payload.data['enable'] = 1
-        msgToSend.payload.data['log_mode'] = copy_channel
+        #msgToSend.payload.data['log_mode'] = copy_channel
         self.send_msg_and_waitfor_okay(msgToSend)
         self.save_config()
 
