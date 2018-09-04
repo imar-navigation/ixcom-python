@@ -184,13 +184,13 @@ class XcomMessageParser:
             callback(message, from_device=self)
 
 class MessageCallback:
-    def __init__(self, callback, msg, from_device):
+    def __init__(self, callback, msg, client):
         self.callback = callback
         self.msg = msg
-        self.device = from_device
+        self.client = client
 
     def run(self):
-        self.callback(self.msg, self.device)
+        self.callback(self.msg, self.client)
 
 class XcomClient(XcomMessageParser):
     '''XCOM TCP Client
@@ -705,8 +705,17 @@ class XcomClient(XcomMessageParser):
             event.clear()
             return
         raise ClientTimeoutError('Timeout while waiting for event', thrower=self)
-        
 
+    def set_gnss_gateway(self, udp_enable=False, udp_addr = '255.255.255.255', udp_port = 6000, tcp_port = 6000):
+        msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PARGNSS_GATEWAYCFG)
+        msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
+        msgToSend.payload.data['udpEnable'] = udp_enable
+        msgToSend.payload.data['udpAddr'] = struct.unpack('!I', socket.inet_aton(udp_addr))[0]
+        msgToSend.payload.data['udpPort'] = udp_port
+        msgToSend.payload.data['tcpPort'] = tcp_port
+        self.send_msg_and_waitfor_okay(msgToSend)
+
+        
     def wait_for_polled_log(self):
         '''Waits for reception of log
 
@@ -963,7 +972,7 @@ class XcomClient(XcomMessageParser):
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
         msgToSend.payload.data['channel'] = channel
         msgToSend.payload.data['enable'] = 1
-        #msgToSend.payload.data['log_mode'] = copy_channel
+        msgToSend.payload.data['log_mode'] = copy_channel
         self.send_msg_and_waitfor_okay(msgToSend)
         self.save_config()
 

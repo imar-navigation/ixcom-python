@@ -1,7 +1,7 @@
 import collections
 import struct
 import crc16
-from enum import IntEnum
+from enum import IntEnum, IntFlag, Flag, auto
 
 class msg_iterator:
     def __init__(self, msg, in_bytes):
@@ -226,6 +226,7 @@ class ParameterID(IntEnum):
     PARGNSS_FIXPOS          = 222
     PARGNSS_POSAVE          = 223
     PARGNSS_CORPORTCFG      = 224
+    PARGNSS_GATEWAYCFG      = 225
     
     PARMAG_COM              = 300
     PARMAG_PERIOD           = 302
@@ -366,38 +367,39 @@ class ParameterID(IntEnum):
     PARIO_HW245             = 1500
     PARIO_HW288             = 1501
 
-class SysstatBit(IntEnum):
-    IMU_INVALID         =  0
-    IMU_CRC_ERROR       =  1
-    IMU_TIMEOUT         =  2
-    IMU_SAMPLE_LOST     =  3
-    ACC_X_OVERRANGE     =  4
-    ACC_Y_OVERRANGE     =  5
-    ACC_Z_OVERRANGE     =  6
-    OMG_X_OVERRANGE     =  8
-    OMG_Y_OVERRANGE     =  9
-    OMG_Z_OVERRANGE     = 10
-    INVALID_CAL         = 11
-    BIT_FAIL            = 12
-    DEFAULT_CONF        = 13
-    GNSS_INVALID        = 14
-    ZUPT_CALIB          = 15
-    GNSS_CRC_ERROR      = 16
-    GNSS_TIMEOUT        = 17
-    EKF_ERROR           = 18
-    SAVEDPOS_ERROR      = 19
-    SAVEDHDG_ERROR      = 20
-    MAG_TIMEOUT         = 21
-    MADC_TIMEOUT        = 22
-    LICENSE_EXPIRED     = 23
-    IN_MOTION           = 24
-    ODO_PLAUSIBILITY    = 25
-    ODO_HW_ERROR        = 26
-    WAITING_INITVAL     = 27
-    PPS_LOST            = 28
-    LIMITED_ACCURACY    = 29
-    REC_ENABLED         = 30
-    FPGA_NOGO           = 31
+class SysstatBit(IntFlag):
+    IMU_INVALID         =  auto()
+    IMU_CRC_ERROR       =  auto()
+    IMU_TIMEOUT         =  auto()
+    IMU_SAMPLE_LOST     =  auto()
+    ACC_X_OVERRANGE     =  auto()
+    ACC_Y_OVERRANGE     =  auto()
+    ACC_Z_OVERRANGE     =  auto()
+    RESERVED            = auto()
+    OMG_X_OVERRANGE     =  auto()
+    OMG_Y_OVERRANGE     =  auto()
+    OMG_Z_OVERRANGE     =  auto()
+    INVALID_CAL         =  auto()
+    BIT_FAIL            =  auto()
+    DEFAULT_CONF        = auto()
+    GNSS_INVALID        = auto()
+    ZUPT_CALIB          = auto()
+    GNSS_CRC_ERROR      = auto()
+    GNSS_TIMEOUT        = auto()
+    EKF_ERROR           = auto()
+    SAVEDPOS_ERROR      = auto()
+    SAVEDHDG_ERROR      = auto()
+    MAG_TIMEOUT         = auto()
+    MADC_TIMEOUT        = auto()
+    LICENSE_EXPIRED     = auto()
+    IN_MOTION           = auto()
+    ODO_PLAUSIBILITY    = auto()
+    ODO_HW_ERROR        = auto()
+    WAITING_INITVAL     = auto()
+    PPS_LOST            = auto()
+    LIMITED_ACCURACY    = auto()
+    REC_ENABLED         = auto()
+    FPGA_NOGO           = auto()
 
 class MessageItem(object):
     def __init__(self):
@@ -950,6 +952,16 @@ class PARGNSS_CORPORTCFG_Payload(XcomDefaultParameterPayload):
         self.data['baud'] = 0
         self.data['enable'] = 0
         self.data['periodGGA'] = 0
+
+class PARGNSS_GATEWAYCFG_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "B3BIII"
+        self.data['udpEnable'] = 0
+        self.data['reserved2'] = [0, 0, 0]
+        self.data['udpAddr'] = 0
+        self.data['udpPort'] = 0
+        self.data['tcpPort'] = 0
 
 class PARGNSS_REFSTATION_Payload(XcomDefaultParameterPayload):
     def __init__(self):
@@ -1969,7 +1981,7 @@ class PARNMEA_TXMASK_Payload(XcomDefaultParameterPayload):
         self.structString += "II"
         self.data['txMask'] = 0
         self.data['txMaskUDP'] = 0
-        
+
 class PARNMEA_DECPLACES_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
@@ -2641,6 +2653,7 @@ ParameterPayloadDictionary = {
     ParameterID.PARGNSS_FIXPOS:PARGNSS_FIXPOS_Payload,
     ParameterID.PARGNSS_POSAVE:PARGNSS_POSAVE_Payload,
     ParameterID.PARGNSS_CORPORTCFG:PARGNSS_CORPORTCFG_Payload,
+    ParameterID.PARGNSS_GATEWAYCFG:PARGNSS_GATEWAYCFG_Payload,
     
     ParameterID.PARMAG_COM:PARMAG_COM_Payload,
     ParameterID.PARMAG_PERIOD:PARMAG_PERIOD_Payload,
