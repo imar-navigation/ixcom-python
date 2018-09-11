@@ -378,7 +378,8 @@ class XcomClient(XcomMessageParser):
         '''Reset internal time bias
 
         Reset the internial clock bias to zero and waits for an 'OK' response.
-        E.G. to snyc several device to a common time base
+        E.G. to snyc several device to a common time base, SyncMode == CSAC is required
+        see set_syncmode
 
         Args:
             none
@@ -392,6 +393,24 @@ class XcomClient(XcomMessageParser):
         msgToSend.payload.data['mode'] = xcomdata.XcomCommandParameter.reset_timebias
         self.send_msg_and_waitfor_okay(msgToSend)
 
+    def set_syncmode(self, mode = xcomdata.SyncMode.GPSPPS):
+        '''Reset internal time bias
+
+        Set internal SyncMode and waits for an 'OK' response.
+        see reset_timebias
+
+        Args:
+            mode per xcomdata.SyncMode
+
+        Raises:
+            TimeoutError: Timeout while waiting for response from the XCOM server
+            ValueError: The response from the system was not 'OK'
+        
+        '''
+        msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PARSYS_SYNCMODE)
+        msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
+        msgToSend.payload.data['mode'] = mode
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def reboot(self):
         '''Reboots the system

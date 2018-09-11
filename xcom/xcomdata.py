@@ -171,6 +171,10 @@ class CsacMode(IntEnum):
     STARTSYNC      = 16
     GNSSAUTOMODE   = 32
 
+class SyncMode(IntEnum):
+    GPSPPS = 0
+    CSAC = 1
+
 class ParameterID(IntEnum):
     PARSYS_PRJNUM           = 0
     PARSYS_PARTNUM          = 1
@@ -192,6 +196,8 @@ class ParameterID(IntEnum):
     PARSYS_CONFIGCRC        = 17
     PARSYS_OSVERSION        = 18
     PARSYS_SYSNAME          = 19
+    PARSYS_MINFPGAVER       = 20
+    PARSYS_SYNCMODE         = 21
 
     PARIMU_MISALIGN         = 105
     PARIMU_TYPE             = 107
@@ -716,6 +722,12 @@ class PARSYS_CONFIGCRC_Payload(XcomDefaultParameterPayload):
         self.data['romCRC'] = 0
         self.data['ramCRC'] = 0
 
+class PARSYS_SYNCMODE_Payload(XcomDefaultParameterPayload):
+    def __init__(self):
+        super().__init__()
+        self.structString += "HH"
+        self.data['mode'] = 0
+        self.data['reserved1'] = 0
 """
 PARIMU
 """
@@ -2620,6 +2632,7 @@ ParameterPayloadDictionary = {
     ParameterID.PARSYS_CONFIGCRC:PARSYS_CONFIGCRC_Payload,
     ParameterID.PARSYS_OSVERSION:PARSYS_STRING64_Payload,
     ParameterID.PARSYS_SYSNAME:PARSYS_STRING64_Payload,
+    ParameterID.PARSYS_SYNCMODE:PARSYS_SYNCMODE_Payload,
 
     ParameterID.PARIMU_MISALIGN:PARIMU_MISALIGN_Payload,
     ParameterID.PARIMU_TYPE:PARIMU_TYPE_Payload,
