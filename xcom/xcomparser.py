@@ -986,12 +986,11 @@ class XcomClient(XcomMessageParser):
         self.send_msg_and_waitfor_okay(msgToSend)
 
 
-    def enable_postproc(self, channel, copy_channel=0):
+    def enable_postproc(self, channel):
         msgToSend = xcomdata.getParameterWithID(xcomdata.ParameterID.PARXCOM_POSTPROC)
         msgToSend.payload.data['action'] = xcomdata.XcomParameterAction.CHANGING
         msgToSend.payload.data['channel'] = channel
         msgToSend.payload.data['enable'] = 1
-        msgToSend.payload.data['log_mode'] = copy_channel
         self.send_msg_and_waitfor_okay(msgToSend)
         self.save_config()
 
