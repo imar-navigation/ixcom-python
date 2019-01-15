@@ -1,2 +1,1 @@
-import xcom.xcomdata
-from .xcomparser import XcomClient
+from .parser import XcomClient, XcomCalibrationClient
