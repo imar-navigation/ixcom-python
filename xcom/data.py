@@ -868,8 +868,8 @@ class PARGNSS_REFSTATION_Payload(XcomDefaultParameterPayload):
 @parameter(222)
 class PARGNSS_FIXPOS_Payload(XcomDefaultParameterPayload):
     parameter_payload = Message([
-        PayloadItem(name = 'pos', dimension = 1, datatype = 'd'),
-        PayloadItem(name = 'posStdDev', dimension = 1, datatype = 'd'),
+        PayloadItem(name = 'pos', dimension = 3, datatype = 'd'),
+        PayloadItem(name = 'posStdDev', dimension = 3, datatype = 'f'),
     ])
 
 
@@ -881,8 +881,9 @@ class PARGNSS_POSAVE_Payload(XcomDefaultParameterPayload):
         PayloadItem(name = 'maxVertStdDev', dimension = 1, datatype = 'f'),
         PayloadItem(name = 'aveStatus', dimension = 1, datatype = 'I'),
         PayloadItem(name = 'aveTime', dimension = 1, datatype = 'I'),
-        PayloadItem(name = 'state', dimension = 1, datatype = 'I'),
-        PayloadItem(name = 'reserved2', dimension = 1, datatype = 'B'),
+        PayloadItem(name = 'aveSamples', dimension = 1, datatype = 'I'),
+        PayloadItem(name = 'state', dimension = 1, datatype = 'B'),
+        PayloadItem(name = 'reserved2', dimension = 3, datatype = 'B'),
     ])
 
         
@@ -1833,6 +1834,7 @@ class PARFPGA_TIMINGREG_Payload(XcomDefaultParameterPayload):
         PayloadItem(name = 'timing_reg', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'reserved2', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'userTimer', dimension = 3, datatype = 'H'),
+        PayloadItem(name = 'reserved3', dimension = 1, datatype = 'H'),
         PayloadItem(name = 'password', dimension = 1, datatype = 'H'),
     ])
 
