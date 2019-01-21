@@ -1088,7 +1088,7 @@ class PARARINC825_ENABLE_Payload(XcomDefaultParameterPayload):
 class PARARINC825_LOGLIST_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
-        for idx in range(0,30):
+        for idx in range(0,31):
             self.structString += "HHI"
             self.data["divider_%d" % idx] = 0
             self.data["reserved_%d" % idx] = 0
