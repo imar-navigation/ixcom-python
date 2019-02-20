@@ -2032,20 +2032,18 @@ class PARARINC429_CONFIG_Payload(XcomDefaultParameterPayload):
 
 @parameter(1401)
 class PARARINC429_LIST_Payload(XcomDefaultParameterPayload):
-    def __init__(self):
-        super().__init__()
-        for idx in range(0,32):
-            self.structString += "BBBBddBII"
-            self.data["channel %d" % idx] = 0
-            self.data["label %d" % idx] = 0
-            self.data["datIdx %d" % idx] = 0
-            self.data["enable %d" % idx] = 0
-            self.data["range %d" % idx] = 0
-            self.data["scf %d" % idx] = 0
-            self.data["width %d" % idx] = 0
-            self.data["period %d" % idx] = 0
-            self.data["timer %d" % idx] = 0
-
+    parameter_payload = Message([item for sublist in [ [
+                PayloadItem(name = "channel %d" % idx, dimension = 1, datatype = 'B'),
+                PayloadItem(name = "label %d" % idx, dimension = 1, datatype = 'B'),
+                PayloadItem(name = "datIdx %d" % idx, dimension = 1, datatype = 'B'),
+                PayloadItem(name = "enable %d" % idx, dimension = 1, datatype = 'B'),
+                PayloadItem(name = "range %d" % idx, dimension = 1, datatype = 'd'),
+                PayloadItem(name = "scf %d" % idx, dimension = 1, datatype = 'd'),
+                PayloadItem(name = "width %d" % idx, dimension = 1, datatype = 'B'),
+                PayloadItem(name = "period %d" % idx, dimension = 1, datatype = 'I'),
+                PayloadItem(name = "timer %d" % idx, dimension = 1, datatype = 'I')
+            ] for idx in range(0, 32) ] for item in sublist
+    ])
 """
 IO
 """
