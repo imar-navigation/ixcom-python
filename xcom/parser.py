@@ -1,4 +1,5 @@
 import socket
+import logging
 import select
 import threading
 import collections
@@ -75,7 +76,7 @@ class XcomMessageSearcher:
                 if self.remainingByteCount == 0:
                     self.remainingByteCount = self.currentBytes[self.currentByteIdx - 1] * 256 + self.currentBytes[
                         self.currentByteIdx - 2] - 6
-                    if self.remainingByteCount < 1000:
+                    if self.remainingByteCount < 600:
                         self.searcherState = XcomMessageSearcherState.fetching_bytes
                     else:
                         self.searcherState = XcomMessageSearcherState.waiting_for_sync
@@ -294,7 +295,11 @@ class XcomClient(XcomMessageParser):
         while not self.stop_event.is_set():
             inputready, _, _ = select.select([self.sock], [],[], 0.1)
             for _ in inputready:
-                self.messageSearcher.process_bytes(self.sock.recv(1024))
+                if self.sock.fileno() != -1:
+                    try:
+                        self.messageSearcher.process_bytes(self.sock.recv(1024))
+                    except OSError:
+                        pass
 
     def enable_calproc(self, rate, channel, pathname):
         msgToSend = data.getParameterWithID(data.PARXCOM_CALPROC_Payload.parameter_id)
@@ -336,7 +341,7 @@ class XcomClient(XcomMessageParser):
                 self.send_msg_and_waitfor_okay(msgToSend)
                 self.clear_all()
                 return channelNumber
-            except (ResponseError, ConnectionError):
+            except (ResponseError, ConnectionError) as ex:
                 channelNumber -= 1
                 self.create_socket_and_connect()
             finally:
