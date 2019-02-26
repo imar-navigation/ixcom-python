@@ -200,8 +200,7 @@ class XcomClient(XcomMessageParser):
         XcomMessageParser.__init__(self)
         self.host = host
         self.port = port
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.connect((self.host, self.port))
+        self.create_socket_and_connect()
         self.stop_event = threading.Event()
         self.response_event = threading.Event()
         self.response_event.response = None
@@ -219,6 +218,12 @@ class XcomClient(XcomMessageParser):
         self.callback_thread.start()
         
         self.add_subscriber(self)
+
+
+    def create_socket_and_connect(self):
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+        self.sock.connect((self.host, self.port))
 
     def stop(self):
         self.stop_event.set()
@@ -331,10 +336,13 @@ class XcomClient(XcomMessageParser):
                 self.send_msg_and_waitfor_okay(msgToSend)
                 self.clear_all()
                 return channelNumber
-            except ResponseError:
+            except (ResponseError, ConnectionError):
                 channelNumber -= 1
+                self.create_socket_and_connect()
+            finally:
                 if channelNumber == 0:
                     raise RuntimeError('No free channel on the system!')
+
 
     def open_first_free_channel(self):
         '''Opens an XCOM logical channel
@@ -356,9 +364,12 @@ class XcomClient(XcomMessageParser):
             msgToSend.payload.data['channelNumber'] = channelNumber
             try:
                 self.send_msg_and_waitfor_okay(msgToSend)
+                self.clear_all()
                 return channelNumber
-            except:
+            except (ResponseError, ConnectionError):
                 channelNumber += 1
+                self.create_socket_and_connect()
+            finally:
                 if channelNumber > LAST_CHANNEL_NUMBER:
                     raise RuntimeError('No free channel on the system!')
 

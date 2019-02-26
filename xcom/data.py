@@ -868,8 +868,8 @@ class PARGNSS_REFSTATION_Payload(XcomDefaultParameterPayload):
 @parameter(222)
 class PARGNSS_FIXPOS_Payload(XcomDefaultParameterPayload):
     parameter_payload = Message([
-        PayloadItem(name = 'pos', dimension = 3, datatype = 'd'),
-        PayloadItem(name = 'posStdDev', dimension = 3, datatype = 'f'),
+        PayloadItem(name = 'pos', dimension = 1, datatype = 'd'),
+        PayloadItem(name = 'posStdDev', dimension = 1, datatype = 'd'),
     ])
 
 
@@ -881,9 +881,8 @@ class PARGNSS_POSAVE_Payload(XcomDefaultParameterPayload):
         PayloadItem(name = 'maxVertStdDev', dimension = 1, datatype = 'f'),
         PayloadItem(name = 'aveStatus', dimension = 1, datatype = 'I'),
         PayloadItem(name = 'aveTime', dimension = 1, datatype = 'I'),
-        PayloadItem(name = 'aveSamples', dimension = 1, datatype = 'I'),
-        PayloadItem(name = 'state', dimension = 1, datatype = 'B'),
-        PayloadItem(name = 'reserved2', dimension = 3, datatype = 'B'),
+        PayloadItem(name = 'state', dimension = 1, datatype = 'I'),
+        PayloadItem(name = 'reserved2', dimension = 1, datatype = 'B'),
     ])
 
         
@@ -1089,7 +1088,7 @@ class PARARINC825_ENABLE_Payload(XcomDefaultParameterPayload):
 class PARARINC825_LOGLIST_Payload(XcomDefaultParameterPayload):
     def __init__(self):
         super().__init__()
-        for idx in range(0,31):
+        for idx in range(0,30):
             self.structString += "HHI"
             self.data["divider_%d" % idx] = 0
             self.data["reserved_%d" % idx] = 0
@@ -1834,7 +1833,6 @@ class PARFPGA_TIMINGREG_Payload(XcomDefaultParameterPayload):
         PayloadItem(name = 'timing_reg', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'reserved2', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'userTimer', dimension = 3, datatype = 'H'),
-        PayloadItem(name = 'reserved3', dimension = 1, datatype = 'H'),
         PayloadItem(name = 'password', dimension = 1, datatype = 'H'),
     ])
 
@@ -2685,6 +2683,12 @@ class CSACDATA_Payload(XcomProtocolPayload):
         PayloadItem(name = 'dataValid', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'reserved', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'fwStatus', dimension = 1, datatype = 'H'),
+    ])
+
+@message(0x57)
+class TAG_Payload(XcomProtocolPayload):
+    message_description = Message([
+        PayloadItem(name = 'tag', dimension = 128, datatype = 's')
     ])
 
 
