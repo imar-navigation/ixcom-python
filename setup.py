@@ -29,7 +29,7 @@ if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] 
 
 if __name__ == '__main__':
 
-    readmePath = os.path.join(os.path.dirname(__file__), 'README.txt')
+    readmePath = os.path.join(os.path.dirname(__file__), 'README.md')
     long_description = open(readmePath, "rt").read()
 
     setup(name='xcom',
