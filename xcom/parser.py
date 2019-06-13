@@ -47,13 +47,22 @@ class XcomMessageSearcherState(IntEnum):
 class XcomMessageSearcher:
     def __init__(self, parserDelegate = None, disable_crc = False):
         self.searcherState = XcomMessageSearcherState.waiting_for_sync
-        self.currentBytes = bytearray(b' ' * 512)
+        self.currentBytes = bytearray(512)
         self.currentByteIdx = 0
         self.remainingByteCount = 0
         self.disableCRC = disable_crc
         self.callbacks = []
         if parserDelegate is not None:
             self.callbacks.append(parserDelegate.parse)
+
+    def process_buffer_unsafe(self, buffer):
+        current_msg_start_idx = 0
+        inBytes = memoryview(buffer)
+        inbytelen = len(inBytes)
+        while current_msg_start_idx < inbytelen:
+            current_msg_length = inBytes[current_msg_start_idx + 4] + 256*inBytes[current_msg_start_idx + 5]
+            self.publish(inBytes[current_msg_start_idx:current_msg_start_idx+current_msg_length])
+            current_msg_start_idx += current_msg_length
 
     def process_bytes(self, inBytes):
         inByteIdx = 0
@@ -197,8 +206,9 @@ class XcomClient(XcomMessageParser):
     device. Other classes may subscribe to decoded messages.
     '''
 
-    def __init__(self, host, port=GENERAL_PORT):
+    def __init__(self, host, port=GENERAL_PORT, timeout = WAIT_TIME_FOR_RESPONSE):
         XcomMessageParser.__init__(self)
+        self.timeout = timeout
         self.host = host
         self.port = port
         self.create_socket_and_connect()
@@ -332,6 +342,7 @@ class XcomClient(XcomMessageParser):
             channelNumber: number of the opened channel
         
         '''
+        self.create_socket_and_connect()
         msgToSend = data.getCommandWithID(data.XcomCommandPayload.command_id)
         msgToSend.payload.data['mode'] = data.XcomCommandParameter.channel_open
         channelNumber = LAST_CHANNEL_NUMBER
@@ -341,7 +352,7 @@ class XcomClient(XcomMessageParser):
                 self.send_msg_and_waitfor_okay(msgToSend)
                 self.clear_all()
                 return channelNumber
-            except (ResponseError, ConnectionError) as ex:
+            except (ResponseError, ConnectionError):
                 channelNumber -= 1
                 self.create_socket_and_connect()
             finally:
@@ -509,7 +520,7 @@ class XcomClient(XcomMessageParser):
         
         '''
         msgToSend = data.getCommandWithID(data.CMD_EKF_Payload.command_id)
-        msgToSend.payload.data['subcommand'] = data.EkfCommand.SAVE_HDG
+        msgToSend.payload.data['subcommand'] = data.EkfCommand.SAVEHDG
         self.send_msg_and_waitfor_okay(msgToSend)
 
     def forced_zupt(self, enable):
@@ -545,7 +556,7 @@ class XcomClient(XcomMessageParser):
         
         '''
         msgToSend = data.getCommandWithID(data.CMD_EKF_Payload.command_id)
-        msgToSend.payload.data['subcommand'] = data.EkfCommand.SAVE_ANTOFFSET
+        msgToSend.payload.data['subcommand'] = data.EkfCommand.SAVEANTOFFSET
         msgToSend.payload.structString += 'f'
         msgToSend.payload.data['antenna'] = antenna
         self.send_msg_and_waitfor_okay(msgToSend)
@@ -717,7 +728,7 @@ class XcomClient(XcomMessageParser):
             TimeoutError: Timeout while waiting for parameter from the XCOM server
         
         '''
-        self.update_until_event(self.parameter_event, WAIT_TIME_FOR_RESPONSE)
+        self.update_until_event(self.parameter_event, self.timeout)
         result = self.parameter_event.parameter
         return result
 
@@ -747,7 +758,7 @@ class XcomClient(XcomMessageParser):
             TimeoutError: Timeout while waiting for message from the XCOM server
         
         '''
-        self.update_until_event(self.message_event, WAIT_TIME_FOR_RESPONSE)
+        self.update_until_event(self.message_event, self.timeout)
         result = self.message_event.msg
         return result
 
@@ -762,7 +773,7 @@ class XcomClient(XcomMessageParser):
         '''
         self.message_event.id = msgID
         self.message_event.clear()
-        self.update_until_event(self.message_event, WAIT_TIME_FOR_RESPONSE)
+        self.update_until_event(self.message_event, self.timeout)
         result = self.message_event.msg
         return result
 
@@ -772,13 +783,11 @@ class XcomClient(XcomMessageParser):
         msgToSend = data.getParameterWithID(data.PARREC_CONFIG_Payload.parameter_id)
         msgToSend.payload.data['channelNumber'] = channel
         msgToSend.payload.data['autostart'] = enable_autostart
-        msgToSend.payload.data['enable'] = 1
         msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
         self.send_msg_and_waitfor_okay(msgToSend)
 
     def disable_recorder(self):
         msgToSend = data.getParameterWithID(data.PARREC_CONFIG_Payload.parameter_id)
-        msgToSend.payload.data['enable'] = 0
         msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
         self.send_msg_and_waitfor_okay(msgToSend)
 
@@ -1087,7 +1096,7 @@ class XcomClient(XcomMessageParser):
         except socket.error:
             raise CommunicationError('Failed sending bytes to device {}'.format(self.host), self)
 
-        self.update_until_event(self.response_event, WAIT_TIME_FOR_RESPONSE)
+        self.update_until_event(self.response_event, self.timeout)
         response = self.response_event.response
         if response.payload.data['responseID'] != data.XcomResponse.OK:
             raise ResponseError(self.response_event.response.data['responseText'].decode('ascii'), self)
@@ -1170,6 +1179,7 @@ class XcomClient(XcomMessageParser):
         
         
         
+        
     def set_csac_disc_parameter(self, mode, time_constant,line_delay,phase_thres):
         msgToSend = self.get_parameter(data.PARFPGA_CSAC_Payload.parameter_id)
         msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
@@ -1215,8 +1225,11 @@ class XcomClient(XcomMessageParser):
         msgToSend.payload.data['cutoff'] = cutOffFreq
         self.send_msg_and_waitfor_okay(msgToSend)
 
-        
-
+    def set_outputframe(self, frame = 0):
+        msgToSend = data.getParameterWithID(data.PARXCOM_FRAMEOUT_Payload.parameter_id)
+        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
+        msgToSend.payload.data['outputframe'] = frame
+        self.send_msg_and_waitfor_okay(msgToSend)
 
 
         
@@ -1224,8 +1237,8 @@ class XcomClient(XcomMessageParser):
         return True
 
 class XcomCalibrationClient(XcomClient):
-    def __init__(self, host, port = GENERAL_PORT):
-        super().__init__(host, port)
+    def __init__(self, host, port = GENERAL_PORT, timeout = WAIT_TIME_FOR_RESPONSE):
+        super().__init__(host, port, timeout = timeout)
         self.calib_messages = dict()
 
     def open_last_free_channel(self):
@@ -1233,14 +1246,19 @@ class XcomCalibrationClient(XcomClient):
         self.device_info = self.get_device_info()
         return channel_number
 
+    def send_msg_and_waitfor_okay(self, msg):
+        super().send_msg_and_waitfor_okay(msg)
+        check_ids = (
+            data.PARIMU_CROSSCOUPLING_Payload.message_id, 
+            data.PARSYS_CALIBID_Payload.message_id,
+            data.PARSYS_CALDATE_Payload.message_id,
+            data.PARIMU_CALIB_Payload.message_id)
+        if msg.header.msgID in check_ids and msg.payload.data['action'] == data.XcomParameterAction.CHANGING:
+            self.calib_messages[msg.payload.get_name()] = msg.to_bytes()
+        
 
     def set_crosscoupling(self, CCAcc, CCOmg, calib_id = None):
-        msgToSend = data.getParameterWithID(data.PARIMU_CROSSCOUPLING_Payload.parameter_id)
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
-        msgToSend.payload.data['CCAcc'] = CCAcc
-        msgToSend.payload.data['CCOmg'] = CCOmg
-        self.send_msg_and_waitfor_okay(msgToSend)
-        self.calib_messages['PARIMU_CROSSCOUPLING'] = msgToSend.to_bytes()
+        super().set_crosscoupling(CCAcc, CCOmg)
         if calib_id is not None:
             self.set_calib_id(calib_id)
 
@@ -1249,7 +1267,6 @@ class XcomCalibrationClient(XcomClient):
         msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
         msgToSend.payload.data['calib_id'] = calib_id
         self.send_msg_and_waitfor_okay(msgToSend)
-        self.calib_messages['PARSYS_CALIBID'] = msgToSend.to_bytes()
 
     def set_caldate(self, caldate = time.strftime('%d.%m.%Y', time.gmtime())):
         msgToSend = data.getParameterWithID(data.PARSYS_CALDATE_Payload.parameter_id)
@@ -1257,17 +1274,9 @@ class XcomCalibrationClient(XcomClient):
         msgToSend.payload.data['str']= caldate.ljust(32,'\0').encode('ascii')
         msgToSend.payload.data['password'] = self.get_password(data.PARSYS_CALDATE_Payload.parameter_id)
         self.send_msg_and_waitfor_okay(msgToSend)
-        self.calib_messages['PARSYS_CALDATE'] = msgToSend.to_bytes()
 
     def set_imucalib(self, scf_acc, bias_acc, scf_omg, bias_omg, calib_id = None):
-        msgToSend = data.getParameterWithID(data.PARIMU_CALIB_Payload.parameter_id)
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
-        msgToSend.payload.data['sfAcc']= scf_acc
-        msgToSend.payload.data['biasAcc'] = bias_acc
-        msgToSend.payload.data['sfOmg']= scf_omg
-        msgToSend.payload.data['biasOmg'] = bias_omg
-        self.send_msg_and_waitfor_okay(msgToSend)
-        self.calib_messages['PARIMU_CALIB'] = msgToSend.to_bytes()
+        super().set_imucalib(scf_acc, bias_acc, scf_omg, bias_omg)
         if calib_id is not None:
             self.set_calib_id(calib_id)
     

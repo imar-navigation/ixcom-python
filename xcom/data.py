@@ -102,6 +102,43 @@ class CsacMode(IntEnum):
     STARTSYNC      = 16
     GNSSAUTOMODE   = 32
 
+class GlobalAlignStatus(IntEnum):
+    LEVELLING = 0
+    ALIGNING = 1
+    ALIGN_COMPLETE = 2
+    HDG_GOOD = 3
+
+class GlobalPositionStatus(IntEnum):
+    BAD = 0
+    MEDIUM = 1
+    HIGH = 2
+    UNDEFINED = 3
+
+class GlobalStatusBit(IntFlag):
+    HWERROR = auto()
+    COMERROR = auto()
+    NAVERROR = auto()
+    CALERROR = auto()
+
+    GYROOVR = auto()
+    ACCOVR = auto()
+    GNSSINVALID = auto()
+    STANDBY = auto()
+
+    DYNAMICALIGN = auto()
+    TIMEINVALID = auto()
+    NAVMODE = auto()
+    AHRSMODE = auto()
+
+    @property
+    def alignment_status(self):
+        return GlobalAlignStatus((self.value & 0x3000) >> 12)
+
+    @property
+    def position_status(self):
+        return GlobalPositionStatus((self.value & 0xc000) >> 14)
+
+
 class SysstatBit(IntFlag):
     IMU_INVALID         =  auto()
     IMU_CRC_ERROR       =  auto()
@@ -136,12 +173,94 @@ class SysstatBit(IntFlag):
     REC_ENABLED         = auto()
     FPGA_NOGO           = auto()
 
+class EKF_STATUS_LOW(IntFlag):
+    POSLLH_UPDATE = auto()
+    POSLLH_LAT_OUTLIER = auto()
+    POSLLH_LON_OUTLIER = auto()
+    POSLLH_ALT_OUTLIER = auto()
+    VNED_UPDATE = auto()
+    VNED_VN_OUTLIER = auto()
+    VNED_VE_OUTLIER = auto()
+    VNED_VD_OUTLIER = auto()
+    HEIGHT_UPDATE = auto()
+    HEIGHT_OUTLIER = auto()
+    BAROHEIGHT_UPDATE = auto()
+    BAROHEIGHT_OUTLIER = auto()
+    VBDY_UPDATE = auto()
+    VBDY_VX_OUTLIER = auto()
+    VBDY_VY_OUTLIER = auto()
+    VBDY_VZ_OUTLIER = auto()
+    VODO_UPDATE = auto()
+    VODO_OUTLIER = auto()
+    VAIR_UPDATE = auto()
+    VAIR_OUTLIER = auto()
+    HDGT_UPDATE = auto()
+    HDGT_OUTLIER = auto()
+    HDGM_UPDATE = auto()
+    HDGM_OUTLIER = auto()
+    MAGFIELD_UPDATE = auto()
+    MAGFIELD_HX_OUTLIER = auto()
+    MAGFIELD_HY_OUTLIER = auto()
+    MAGFIELD_HZ_OUTLIER = auto()
+    PSEUDORANGE_UPDATE = auto()
+    RANGERATE_UPDATE = auto()
+    TIME_UPDATE = auto()
+    ZUPT_UPDATE = auto()
+
+class EKF_STATUS_HIGH(IntFlag):
+    EKF_RTKLLH_UPDATE = 1 << 0
+    EKF_RTKLLH_LAT_OUTLIER = 1 << 1
+    EKF_RTKLLH_LON_OUTLIER = 1 << 2
+    EKF_RTKLLH_ALT_OUTLIER = 1 << 3
+
+    EKF_DUALANT_UPDATE = 1 << 4
+    EKF_DUALANT_OUTLIER = 1 << 5
+    EKF_COG_UPDATE = 1 << 6
+    EKF_COG_OUTLIER = 1 << 7
+
+    EKF_TDCP_UPDATE = 1 << 8
+    EKF_TDCP_DD_UPDATE = 1 << 9
+    EKF_ODO_ALONGTRACK_UPDATE = 1 << 10
+    EKF_ODO_ALONGTRACK_OUTLIER = 1 << 11        
+
+    EKF_ODO_CONSTRAINT_UPDATE = 1 << 12
+    EKF_ODO_CONSTRAINT_OUTLIER = 1 << 13
+    EKF_GRAVITY_UPDATE = 1 << 14
+    EKF_GRAVITY_OUTLIER = 1 << 15
+
+    EKF_EXTPOS_UPDATE = 1 << 16
+    EKF_EXTPOS_OUTLIER = 1 << 17
+    EKF_EXTVEL_UPDATE = 1 << 18
+    EKF_EXTVEL_OUTLIER = 1 << 19
+
+    EKF_ZARU_UPDATE = 1 << 20
+
+    EKF_WAHBA_UPDATE = 1 << 24
+    EKF_WAHBA_FILTER = 1 << 25
+    EKF_FILTER_MODE_1 = 1 << 26
+    EKF_FILTER_MODE_2 = 1 << 27
+
+    EKF_WAHBA_INTERNAL = 1 << 28
+    EKF_LEVELLING_COMPLETE = 1 << 29
+    EKF_STATIONARY_ALIGN_COMPLETE = 1 << 30
+    EKF_POSITION_VALID = 1 << 31
+
+class EkfStatus:
+    def __init__(self, value):
+        self.value = value
+
+    def __str__(self):
+        return f'Low Status: {str(EKF_STATUS_LOW(self.value[0]))}, High status: {str(EKF_STATUS_LOW(self.value[0]))}'
+
+    
+
 class PayloadItem(NamedTuple):
     name: str
     dimension: int
     datatype: str
     description: str = ''
     unit: str = ''
+    metatype = None
 
 class Message:
     def __init__(self, item_list: [PayloadItem]):
@@ -212,11 +331,27 @@ class XcomProtocolHeader(MessageItem):
     def get_time(self):
         return self.timeOfWeek_sec + 1.0e-6*self.timeOfWeek_usec
 
+    def set_time(self, time_of_week):
+        self.timeOfWeek_sec = int(time_of_week)
+        self.timeOfWeek_usec = int((time_of_week-self.timeOfWeek_sec)/1e-6)
+
     def to_bytes(self):
         return bytearray(self.struct_inst.pack(self.sync, self.msgID, self.frameCounter, self.reserved, self.msgLength, self.week, self.timeOfWeek_sec, self.timeOfWeek_usec))
 
     def from_bytes(self, inBytes):
         self.sync, self.msgID, self.frameCounter, self.reserved, self.msgLength, self.week, self.timeOfWeek_sec, self.timeOfWeek_usec = self.struct_inst.unpack(inBytes[:16])
+
+    def get_data(self):
+        d = {
+            'sync': self.sync, 
+            'msg_id': self.msgID, 
+            'frame_counter': self.frameCounter, 
+            'reserved': self.reserved,
+            'msg_length': self.msgLength,
+            'week': self.week,
+            'time_of_week_sec': self.timeOfWeek_sec,
+            'time_of_week_usec': self.timeOfWeek_usec}
+        return d
 
 
 
@@ -261,7 +396,7 @@ class XcomProtocolPayload(MessageItem):
     def to_bytes(self):
         values = []
         for value in self.data.values():
-            if isinstance(value, list):
+            if isinstance(value, (list, tuple)):
                 values += value
             else:
                 values += [value]
@@ -270,18 +405,18 @@ class XcomProtocolPayload(MessageItem):
     def from_bytes(self, inBytes):
         try:
             keyList = self.data.keys()
-            valueList = list(self.struct_inst.unpack(inBytes))
+            valueList = self.struct_inst.unpack(inBytes)
+            start_idx = 0
             for key in keyList:
-                if isinstance(self.data[key], list):
-                    curLen = len(self.data[key])
-                    value = valueList[:curLen]
-                    valueList = valueList[curLen:]
+                if isinstance(self.data[key], (list, tuple)):
+                    end_idx = start_idx + len(self.data[key])
+                    value = valueList[start_idx:end_idx]
+                    start_idx = end_idx
                 else:
-                    value = valueList[0]
-                    valueList = valueList[1:]
+                    value = valueList[start_idx]
+                    start_idx += 1
                 self.data[key] = value
         except Exception as e:
-            pass
             from sys import stderr
             stderr.write("Could not convert, %s, %s\n" % (self.get_name(), str(e)))
 
@@ -289,6 +424,10 @@ class XcomProtocolPayload(MessageItem):
     def get_name(cls):
         classname = cls.__name__
         return classname.split('_Payload')[0]
+
+    @classmethod
+    def construct_message(cls):
+        return getMessageWithID(cls.message_id)
 
 class XcomProtocolMessage(MessageItem):
     def __init__(self):
@@ -314,13 +453,10 @@ class XcomProtocolMessage(MessageItem):
 
     @property
     def data(self):
-        result = dict()
-        result['gpstime'] = self.header.get_time()
-        result['gpsweek'] = self.header.week
-        result['msg_id'] = self.header.msgID
-        result['frame_cnt'] = self.header.frameCounter
+        result = self.header.get_data()
         result.update(self.payload.data)
         result['global_status'] = self.bottom.gStatus
+        result['crc'] = self.bottom.crc
         return result
 
     @property
@@ -331,7 +467,7 @@ class XcomProtocolMessage(MessageItem):
     def __str__(self):
         tmp = str(self.header.frameCounter)+","+str(self.header.timeOfWeek_sec+1e-6*self.header.timeOfWeek_usec)
         for item in self.payload.data:
-            if isinstance(self.payload.data[item],list):
+            if isinstance(self.payload.data[item],(list, tuple)):
                 datastr = ','.join(map(str, self.payload.data[item]))
             else:
                 datastr = str(self.payload.data[item])
@@ -341,11 +477,70 @@ class XcomProtocolMessage(MessageItem):
     def to_double_array(self):
         tmp = [self.header.frameCounter, (self.header.timeOfWeek_sec+1e-6*self.header.timeOfWeek_usec)]
         for item in self.payload.data:
-            if isinstance(self.payload.data[item],list):
+            if isinstance(self.payload.data[item],(list, tuple)):
                 tmp += self.payload.data[item]
             else:
                 tmp += [self.payload.data[item]]
         return tmp
+
+    def iter_unpack(self, buffer):
+        struct_string = '=' + self.header.structString[1:] + self.payload.structString[1:] + self.bottom.structString[1:]
+        struct_inst = struct.Struct(struct_string)
+        return struct_inst.iter_unpack(buffer)
+
+    def get_numpy_dtype(self):
+        struct_string = self.header.structString[1:] + self.payload.structString[1:] + self.bottom.structString[1:]
+        current_item = ''
+        item_list = []
+        dtype_list = []
+        while len(struct_string) > 0:
+            while struct_string[0] not in 'fdsbBhHiI':
+                current_item += struct_string[0]
+                struct_string = struct_string[1:]
+            current_item += struct_string[0]
+            struct_string = struct_string[1:]
+            item_list.append(current_item)
+            current_item = ''
+
+        for idx, item in enumerate(item_list):
+            fieldname = list(self.data.keys())[idx]
+            cardinality = item.rstrip('fdsbBhHiI')
+            if len(cardinality) == 0:
+                cardinality = 1
+            else:
+                cardinality = int(cardinality)
+            dtype = item[-1]
+            if dtype in 'bB':
+                byte_size = '1'
+            elif dtype in 'hH':
+                byte_size = '2'
+            elif dtype in 'iIf':
+                byte_size = '4'
+            elif dtype in 'd':
+                byte_size = '8'
+            if dtype in 'bhi':
+                out_type = 'i'
+            elif dtype in 'BHI':
+                out_type = 'u'
+            elif dtype in 'fd':
+                out_type = 'f'
+            elif dtype in 's':
+                out_type = 'S'
+
+            if out_type == 'S':
+                out_type = 'S'+str(cardinality)
+                item_spec = (fieldname, out_type)
+            else:
+                out_type = out_type + byte_size
+                item_spec = (fieldname, out_type, cardinality)
+            dtype_list.append(item_spec)
+
+        return dtype_list
+        
+        
+
+
+        
 
     def size(self):
         return self.header.size()+self.payload.size()+self.bottom.size()
@@ -1141,7 +1336,7 @@ PARREC
 class PARREC_CONFIG_Payload(XcomDefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'channelNumber', dimension = 1, datatype = 'B'),
-        PayloadItem(name = 'enable', dimension = 1, datatype = 'B'),
+        PayloadItem(name = 'autostart', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'reserved2', dimension = 1, datatype = 'H'),
     ])
 
