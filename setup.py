@@ -24,8 +24,8 @@ from setuptools import setup
 import os
 import sys
 
-if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] < 3):
-    sys.exit('Sorry, Python < 3.3 is not supported')
+if sys.version_info[0] < 3 or (sys.version_info[0] == 3 and sys.version_info[1] < 6):
+    sys.exit('Sorry, Python < 3.6 is not supported')
 
 if __name__ == '__main__':
 
@@ -33,14 +33,18 @@ if __name__ == '__main__':
     long_description = open(readmePath, "rt").read()
 
     setup(name='xcom',
-          version='0.1',
-          description='Library for xcom',
+          version='1.0',
+          description='Library for communicating with xcom devices over network',
           author='Christian Reimer',
           author_email='c.reimer@imar-navigation.de',
-          license='LGPL',
           keywords=['XCOM'],
           packages=['xcom'],
           install_requires=[
                     'crc16>=0.1.1',
+                ],
+          classifiers=[
+                "Programming Language :: Python :: 3.6",
+                "License :: OSI Approved :: MIT License",
+                "Operating System :: OS Independent",
                 ],
           )
