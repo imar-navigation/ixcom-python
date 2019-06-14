@@ -1249,11 +1249,11 @@ class XcomCalibrationClient(XcomClient):
     def send_msg_and_waitfor_okay(self, msg):
         super().send_msg_and_waitfor_okay(msg)
         check_ids = (
-            data.PARIMU_CROSSCOUPLING_Payload.message_id, 
-            data.PARSYS_CALIBID_Payload.message_id,
-            data.PARSYS_CALDATE_Payload.message_id,
-            data.PARIMU_CALIB_Payload.message_id)
-        if msg.header.msgID in check_ids and msg.payload.data['action'] == data.XcomParameterAction.CHANGING:
+            data.PARIMU_CROSSCOUPLING_Payload.parameter_id, 
+            data.PARSYS_CALIBID_Payload.parameter_id,
+            data.PARSYS_CALDATE_Payload.parameter_id,
+            data.PARIMU_CALIB_Payload.parameter_id)
+        if msg.header.msgID == data.MessageID.PARAMETER and (msg.payload.parameter_id in check_ids) and msg.payload.data['action'] == data.XcomParameterAction.CHANGING:
             self.calib_messages[msg.payload.get_name()] = msg.to_bytes()
         
 
