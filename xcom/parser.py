@@ -910,6 +910,12 @@ class XcomClient(XcomMessageParser):
         msgToSend.payload.data['autoZupt'] = auto_zupt
         self.send_msg_and_waitfor_okay(msgToSend)
 
+    def set_autozupt(self, enable):
+        parekf_zupt = self.get_parameter(data.PAREKF_ZUPT_Payload.parameter_id)
+        parekf_zupt.payload.data['autoZupt'] = enable
+        parekf_zupt.payload.data['action']= data.XcomParameterAction.CHANGING
+        self.send_msg_and_waitfor_okay(parekf_zupt)
+
     def set_startup(self, initPos=PositionTuple(Lon=0.1249596927, Lat=0.8599914412, Alt=311.9),
                     initPosStdDev=[10, 10, 10], posMode=data.StartupPositionMode.GNSSPOS, initHdg=0,
                     initHdgStdDev=1, hdgMode=data.StartupHeadingMode.DEFAULT, realign=0, inMotion=0,
