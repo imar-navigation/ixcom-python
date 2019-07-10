@@ -997,7 +997,7 @@ class XcomClient(XcomMessageParser):
         self.send_msg_and_waitfor_okay(msgToSend)
 
 
-    def enable_postproc(self, channel, copy_channel=0):
+    def enable_postproc(self, channel):
         msgToSend = data.getParameterWithID(data.PARXCOM_POSTPROC_Payload.parameter_id)
         msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
         msgToSend.payload.data['channel'] = channel
@@ -1291,6 +1291,20 @@ class XcomCalibrationClient(XcomClient):
         for param in self.calib_messages:
             result += self.calib_messages[param]
         return result
+
+    def check_system_status(self):
+        self.enable_full_sysstatus()
+        msg = self.poll_log(data.SYSSTAT_Payload.message_id).data
+        if     (msg['sysStat'] & data.SysstatBit.IMU_INVALID or
+                msg['sysStat'] & data.SysstatBit.IMU_CRC_ERROR or
+                msg['sysStat'] & data.SysstatBit.IMU_CRC_ERROR or
+                msg['sysStat'] & data.SysstatBit.IMU_TIMEOUT or
+                msg['sysStat'] & data.SysstatBit.IMU_SAMPLE_LOST or
+                msg['sysStat'] & data.SysstatBit.BIT_FAIL or 
+                msg['sysStat'] & data.SysstatBit.FPGA_NOGO):
+            ex = StatusError('Illegal device status {!s}'.format(data.SysstatBit(msg['sysStat'])), thrower = self)
+            raise ex
+
 
 
 def broadcast_search(timeout=0.1, port=BROADCAST_PORT, addr='<broadcast>'):
