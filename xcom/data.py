@@ -3,6 +3,10 @@ import struct
 import crc16
 from enum import IntEnum, IntFlag, Flag, auto
 from typing import NamedTuple
+from .parser import XcomError
+
+class ParseError(XcomError):
+    pass
 
 class msg_iterator:
     def __init__(self, msg, in_bytes):
@@ -416,9 +420,8 @@ class XcomProtocolPayload(MessageItem):
                     value = valueList[start_idx]
                     start_idx += 1
                 self.data[key] = value
-        except Exception as e:
-            from sys import stderr
-            stderr.write("Could not convert, %s, %s\n" % (self.get_name(), str(e)))
+        except struct.error:
+            raise ParseError(f'Could not convert, {self.get_name()}, expected {self.size} bytes, got {len(inBytes)} bytes')
 
     @classmethod
     def get_name(cls):
