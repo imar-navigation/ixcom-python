@@ -3,7 +3,11 @@ import struct
 import crc16
 from enum import IntEnum, IntFlag, Flag, auto
 from typing import NamedTuple
-from .parser import XcomError
+
+class XcomError(Exception):
+    def __init__(self, message = '', thrower = None):
+        super().__init__(message)
+        self.thrower = thrower
 
 class ParseError(XcomError):
     pass

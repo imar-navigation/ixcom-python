@@ -10,6 +10,7 @@ import struct
 import queue
 from enum import IntEnum
 from . import data
+from .data import XcomError
 
 PositionTuple = collections.namedtuple('PositionTuple', 'Lon Lat Alt')
 
@@ -18,11 +19,6 @@ GENERAL_PORT = 3000
 BROADCAST_PORT = 4000
 LAST_CHANNEL_NUMBER = 31
 WAIT_TIME_FOR_RESPONSE = 10
-
-class XcomError(Exception):
-    def __init__(self, message = '', thrower = None):
-        super().__init__(message)
-        self.thrower = thrower
 
 class ResponseError(XcomError):
     pass
