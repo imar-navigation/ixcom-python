@@ -942,6 +942,13 @@ class XcomClient(XcomMessageParser):
         msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
         self.send_msg_and_waitfor_okay(msgToSend)
 
+    def set_alignment(self, mode, levelling_time, stationary_time):
+        msgToSend = data.getParameterWithID(data.PAREKF_ALIGNMENT_Payload.parameter_id)
+        msgToSend.payload.data['method'] = mode
+        msgToSend.payload.data['levellingDuration'] = levelling_time
+        msgToSend.payload.data['stationaryDuration'] = stationary_time        
+        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def set_aligntime(self, levelling_time, zupt_time):
         msgToSend = data.getParameterWithID(data.PAREKF_ALIGNTIME_Payload.parameter_id)
