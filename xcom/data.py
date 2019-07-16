@@ -273,7 +273,27 @@ class PayloadItem(NamedTuple):
 class Message:
     def __init__(self, item_list: [PayloadItem]):
         self.item_list = item_list
-        self.data = dict()
+        self.data = self.generate_data_dict()
+        self.struct_inst = struct.Struct(self.generate_struct_string())
+
+    def unpack_from(self, buffer, offset = 0):
+        try:
+            data = dict(self.data)
+            keyList = self.data.keys()
+            valueList = self.struct_inst.unpack_from(buffer, offset)
+            start_idx = 0
+            for key in keyList:
+                if isinstance(self.data[key], (list, tuple)):
+                    end_idx = start_idx + len(self.data[key])
+                    value = valueList[start_idx:end_idx]
+                    start_idx = end_idx
+                else:
+                    value = valueList[start_idx]
+                    start_idx += 1
+                data[key] = value
+            return data
+        except struct.error:
+            raise ParseError(f'Could not convert')
 
     def generate_struct_string(self):
         struct_string = '='
@@ -411,21 +431,7 @@ class XcomProtocolPayload(MessageItem):
         return bytearray(self.struct_inst.pack(*values))
 
     def from_bytes(self, inBytes):
-        try:
-            keyList = self.data.keys()
-            valueList = self.struct_inst.unpack(inBytes)
-            start_idx = 0
-            for key in keyList:
-                if isinstance(self.data[key], (list, tuple)):
-                    end_idx = start_idx + len(self.data[key])
-                    value = valueList[start_idx:end_idx]
-                    start_idx = end_idx
-                else:
-                    value = valueList[start_idx]
-                    start_idx += 1
-                self.data[key] = value
-        except struct.error:
-            raise ParseError(f'Could not convert, {self.get_name()}, expected {self.size} bytes, got {len(inBytes)} bytes')
+        self.data.update(self.message_description.unpack_from(inBytes))
 
     @classmethod
     def get_name(cls):
@@ -581,15 +587,6 @@ class XcomDefaultCommandPayload(XcomProtocolPayload):
         super().__init__()
 
 
-class XcomResponsePayload(XcomProtocolPayload):
-    message_id = MessageID.RESPONSE
-    def __init__(self, msgLength):
-        self.structString = "=HH%ds" % (msgLength-20-4)
-        self.data = collections.OrderedDict()
-        self.data['responseID'] = 0
-        self.data['repsonseLength'] = 0
-        self.data['responseText'] = ' '*(msgLength-24)
-
 class XcomDefaultParameterPayload(XcomProtocolPayload):
     message_id = MessageID.PARAMETER
     parameter_id = 0
@@ -605,6 +602,9 @@ class XcomDefaultParameterPayload(XcomProtocolPayload):
         if type(self).message_description is None:
             type(self).message_description = Message(type(self).parameter_header.item_list + type(self).parameter_payload.item_list)
         super().__init__()
+
+    def payload_from_bytes(self, in_bytes):
+        self.data.update(self.parameter_payload.unpack_from(in_bytes))
 
         
 
@@ -867,6 +867,23 @@ class PARIMU_RANGE_Payload(XcomDefaultParameterPayload):
         PayloadItem(name = 'range_gyro', dimension = 1, datatype = 'f'),
     ])
 
+@parameter(118)
+class PARIMU_CALIBDATA_Payload(XcomDefaultParameterPayload):
+    parameter_payload = Message([
+        PayloadItem(name = 'calib_version', dimension = 1, datatype = 'I'),
+        PayloadItem(name = 'calib_id', dimension = 1, datatype = 'I'),
+        PayloadItem(name = 'inat_id', dimension = 1, datatype = 'I'),
+        PayloadItem(name = 'caldate', dimension = 16, datatype = 's'),
+    ] + [
+        PayloadItem(name = f'cc_acc_{row}{col}', dimension = 11, datatype = 'd') for col in range(0,3) for row in range(0,3)
+    ] + [
+        PayloadItem(name = f'bias_acc_{row}', dimension = 11, datatype = 'd') for row in range(0,3)
+    ] + [
+        PayloadItem(name = f'cc_gyro_{row}{col}', dimension = 11, datatype = 'd') for col in range(0,3) for row in range(0,3)
+    ] + [
+        PayloadItem(name = f'bias_gyro_{row}', dimension = 11, datatype = 'd') for row in range(0,3)
+    ])
+
 """
 PARGNSS
 """
@@ -980,22 +997,21 @@ class PARGNSS_VOTER_Payload(XcomDefaultParameterPayload):
         PayloadItem(name = 'baudExt', dimension = 1, datatype = 'I'),
     ])
 
-
 @parameter(217)
 class PARGNSS_MODEL_Payload(XcomDefaultParameterPayload):
-    def __init__(self):
-        super().__init__()
-        modelstructstring = "16sIII"
-        self.structString += "BBH"
-        self.data['rtkCode'] = 0
-        self.data['reserved2'] = 0
-        self.data['reserved3'] = 0
-        for idx in range(6):
-            self.data['modelName_%d' % idx] = b"\0"*16
-            self.data['year_%d' % idx] = 0
-            self.data['month_%d' % idx] = 0
-            self.data['day_%d' % idx] = 0
-            self.structString += modelstructstring
+    __sub_payloads = [
+        [PayloadItem(name = f'modelName_{idx}', dimension = 16, datatype = 's'),
+        PayloadItem(name = f'year_{idx}', dimension = 1, datatype = 'I'),
+        PayloadItem(name = f'month_{idx}', dimension = 1, datatype = 'I'),
+        PayloadItem(name = f'day_{idx}', dimension = 1, datatype = 'I')] for idx in range(0, 6)
+    ]
+    parameter_payload = Message([
+        PayloadItem(name = 'rtkCode', dimension = 1, datatype = 'B'),
+        PayloadItem(name = 'reserved2', dimension = 1, datatype = 'B'),
+        PayloadItem(name = 'reserved3', dimension = 1, datatype = 'H'),
+    ] + [
+        payload_item for model in __sub_payloads for payload_item in model
+    ])
 
 @parameter(218)
 class PARGNSS_VERSION_Payload(XcomDefaultParameterPayload):
@@ -1285,16 +1301,15 @@ class PARARINC825_ENABLE_Payload(XcomDefaultParameterPayload):
         PayloadItem(name = 'enable', dimension = 1, datatype = 'H'),
     ])
 
-
 @parameter(1204)
 class PARARINC825_LOGLIST_Payload(XcomDefaultParameterPayload):
-    def __init__(self):
-        super().__init__()
-        for idx in range(0,30):
-            self.structString += "HHI"
-            self.data["divider_%d" % idx] = 0
-            self.data["reserved_%d" % idx] = 0
-            self.data["docnumber_%d" % idx] = 0
+    __sub_payload = [
+        [PayloadItem(name = f'divider_{idx}', dimension = 1, datatype = 'H'), PayloadItem(name = f'reserved_{idx}', dimension = 1, datatype = 'H'), PayloadItem(name = f'docnumber_{idx}', dimension = 1, datatype = 'H')] for idx in range(0, 30)
+    ]
+    parameter_payload = Message([
+        item for docitem in __sub_payload for item in docitem
+    ])
+
 
 @parameter(1205)
 class PARARINC825_BUSRECOVERY_Payload(XcomDefaultParameterPayload):
@@ -1851,15 +1866,15 @@ class PARXCOM_NETCONFIG_Payload(XcomDefaultParameterPayload):
         PayloadItem(name = 'gateway', dimension = 1, datatype = 'I'),
     ])
 
-
 @parameter(905)
 class PARXCOM_LOGLIST_Payload(XcomDefaultParameterPayload):
-    def __init__(self):
-        super().__init__()
-        for idx in range(0,16):
-            self.structString += "HH"
-            self.data["divider_%d" % idx] = 0
-            self.data["msgid_%d" % idx] = 0
+    __sub_payload = [
+        [PayloadItem(name = f'divider_{idx}', dimension = 1, datatype = 'H'), PayloadItem(name = f'msgid_{idx}', dimension = 1, datatype = 'H')] for idx in range(0, 16)
+    ]
+    parameter_payload = Message([
+        logitem for log in __sub_payload for logitem in log
+    ])
+
 
 @parameter(906)
 class PARXCOM_AUTOSTART_Payload(XcomDefaultParameterPayload):
@@ -1974,18 +1989,20 @@ class PARXCOM_ABDCONFIG_Payload(XcomDefaultParameterPayload):
         PayloadItem(name = 'sourcePort', dimension = 1, datatype = 'I'),
     ])
 
-
 @parameter(917)
 class PARXCOM_LOGLIST2_Payload(XcomDefaultParameterPayload):
-    def __init__(self):
-        super().__init__()
-        for idx in range(0,16):
-            self.structString += "HHBBH"
-            self.data["divider_%d" % idx] = 0
-            self.data["msgid_%d" % idx] = 0
-            self.data["running %d" % idx] = 0
-            self.data["reserved2 %d" % idx] = 0
-            self.data["reserved3 %d" % idx] = 0
+    __sub_payload = [
+        [
+            PayloadItem(name = f'divider_{idx}', dimension = 1, datatype = 'H'), 
+            PayloadItem(name = f'msgid_{idx}', dimension = 1, datatype = 'H'),
+            PayloadItem(name = f'running_{idx}', dimension = 1, datatype = 'B'),
+            PayloadItem(name = f'reserved2_{idx}', dimension = 1, datatype = 'B'),
+            PayloadItem(name = f'reserved3_{idx}', dimension = 1, datatype = 'H')
+        ] for idx in range(0, 16)
+    ]
+    parameter_payload = Message([
+        logitem for log in __sub_payload for logitem in log
+    ])
 
 @parameter(918)
 class PARXCOM_CALPROC_Payload(XcomDefaultParameterPayload):
@@ -1996,26 +2013,32 @@ class PARXCOM_CALPROC_Payload(XcomDefaultParameterPayload):
         PayloadItem(name = 'pathName', dimension = 256, datatype = 's'),
     ])
 
-
 @parameter(919)
 class PARXCOM_CLIENT_Payload(XcomDefaultParameterPayload):
     def __init__(self):
-        super().__init__()
-        for idx in range(0,8):
-            self.structString += "IIBBH"
-            self.data["ipAddress %d" % idx] = 0
-            self.data["port %d" % idx] = 0
-            self.data["enable %d" % idx] = 0
-            self.data["channel %d" % idx] = 0
-            self.data["connectionRetr %d" % idx] = 0
+        item_list = []
+        for idx in range(0, 8):
+            item_list += [
+                PayloadItem(name = f'ipAddress_{idx}', dimension = 1, datatype = 'I'),
+                PayloadItem(name = f'port_{idx}', dimension = 1, datatype = 'I'),
+                PayloadItem(name = f'enable_{idx}', dimension = 1, datatype = 'B'),
+                PayloadItem(name = f'channel_{idx}', dimension = 1, datatype = 'B'),
+                PayloadItem(name = f'connectionRetr_{idx}', dimension = 1, datatype = 'H'),
+            ]
             for idx2 in range(0, 8):
-                self.structString += "BBH"
-                self.data["messageId %d%d" % (idx, idx2)] = 0
-                self.data["trigger %d%d" % (idx, idx2)] = 0
-                self.data["dividerLogs %d%d" % (idx, idx2)] = 0
-        self.structString += "B3B"
-        self.data['useUDPInterface'] = 0
-        self.data['reserved2'] = [0]*3
+                item_list += [
+                    PayloadItem(name = f'messageId_{idx}{idx2}', dimension = 1, datatype = 'B'),
+                    PayloadItem(name = f'trigger_{idx}{idx2}', dimension = 1, datatype = 'B'),
+                    PayloadItem(name = f'dividerLogs_{idx}{idx2}', dimension = 1, datatype = 'H'),
+                ]
+        item_list += [
+            PayloadItem(name = 'useUDPInterface', dimension = 1, datatype = 'B'),
+            PayloadItem(name = 'reserved2', dimension = 3, datatype = 'B'),
+        ]
+
+        type(self).parameter_payload = Message(item_list)
+        super().__init__()
+
 
 """
 PARFPGA
@@ -2229,22 +2252,24 @@ class PARARINC429_CONFIG_Payload(XcomDefaultParameterPayload):
         PayloadItem(name = 'reserved4', dimension = 1, datatype = 'H'),
     ])
 
-
 @parameter(1401)
 class PARARINC429_LIST_Payload(XcomDefaultParameterPayload):
-    def __init__(self):
-        super().__init__()
-        for idx in range(0,32):
-            self.structString += "BBBBddBII"
-            self.data["channel %d" % idx] = 0
-            self.data["label %d" % idx] = 0
-            self.data["datIdx %d" % idx] = 0
-            self.data["enable %d" % idx] = 0
-            self.data["range %d" % idx] = 0
-            self.data["scf %d" % idx] = 0
-            self.data["width %d" % idx] = 0
-            self.data["period %d" % idx] = 0
-            self.data["timer %d" % idx] = 0
+    __sub_payload = [
+        [
+            PayloadItem(name = f'channel_{idx}', dimension = 1, datatype = 'B'), 
+            PayloadItem(name = f'label_{idx}', dimension = 1, datatype = 'B'),
+            PayloadItem(name = f'datIdx_{idx}', dimension = 1, datatype = 'B'),
+            PayloadItem(name = f'enable_{idx}', dimension = 1, datatype = 'B'),
+            PayloadItem(name = f'range_{idx}', dimension = 1, datatype = 'd'),
+            PayloadItem(name = f'scf_{idx}', dimension = 1, datatype = 'd'),
+            PayloadItem(name = f'width_{idx}', dimension = 1, datatype = 'B'),
+            PayloadItem(name = f'period_{idx}', dimension = 1, datatype = 'I'),
+            PayloadItem(name = f'timer{idx}', dimension = 1, datatype = 'I'),
+        ] for idx in range(0, 32)
+    ]
+    parameter_payload = Message([
+        logitem for log in __sub_payload for logitem in log
+    ])
 
 """
 IO
@@ -2274,6 +2299,17 @@ def message(message_id):
         return cls
 
     return decorator
+
+@message(MessageID.RESPONSE)
+class XcomResponsePayload(XcomProtocolPayload):
+    def __init__(self, msgLength):
+        self.message_description = Message([
+            PayloadItem(name = 'responseID', dimension = 1, datatype = 'H'),
+            PayloadItem(name = 'repsonseLength', dimension = 1, datatype = 'H'),
+            PayloadItem(name = 'responseText', dimension = msgLength-24, datatype = 's'),
+        ])
+        super().__init__()
+
 
 @message(0x40)
 class POSTPROC_Payload(XcomProtocolPayload):
@@ -2388,42 +2424,38 @@ class STATFPGA_Payload(XcomProtocolPayload):
 
 @message(0x19)
 class SYSSTAT_Payload(XcomProtocolPayload):
-    def __init__(self):
-        super().__init__()
-        self.data['statMode']= 0
-        self.data['sysStat'] = 0
-
     def from_bytes(self, inBytes):
-        self.structString = "II"
-        self.data['statMode'] = struct.unpack("I", inBytes[:4])[0]
-        if(self.data['statMode'] & (1 << 0)):
-            self.structString += "I"
-            self.data['imuStat'] = 0
-        if(self.data['statMode'] & (1 << 1)):
-            self.structString += "I"
-            self.data['gnssStat'] = 0
-        if(self.data['statMode'] & (1 << 2)):
-            self.structString += "I"
-            self.data['magStat'] = 0
-        if(self.data['statMode'] & (1 << 3)):
-            self.structString += "I"
-            self.data['madcStat'] = 0
-        if(self.data['statMode'] & (1 << 4)):
-            self.structString += "2I"
-            self.data['ekfStat'] = [0, 0]
-        if(self.data['statMode'] & (1 << 5)):
-            self.structString += "I"
-            self.data['ekfGeneralStat'] = 0
-        if(self.data['statMode'] & (1 << 6)):
-            self.structString += "4I"
-            self.data['addStat'] = [0, 0, 0 ,0]
-        if(self.data['statMode'] & (1 << 7)):
-            self.structString += "I"
-            self.data['serviceStat'] = [0]
-        if(self.data['statMode'] & (1 << 8)):
-            self.structString += "f"
-            self.data['remainingAlignTime'] = [0]
+        item_list = [
+            PayloadItem(name = 'statMode', dimension = 1, datatype = 'I'),
+            PayloadItem(name = 'sysStat', dimension = 1, datatype = 'I'),
+        ]
+        stat_mode = struct.unpack("I", inBytes[:4])[0]
+        item_list += self._get_payload(stat_mode)
+        self.message_description = Message(item_list)
         super().from_bytes(inBytes)
+
+    def _get_payload(self, stat_mode):
+        item_list = []
+        if(stat_mode & (1 << 0)):
+            item_list += [PayloadItem(name = 'imuStat', dimension = 1, datatype = 'I')]
+        if(stat_mode & (1 << 1)):
+            item_list += [PayloadItem(name = 'gnssStat', dimension = 1, datatype = 'I')]
+        if(stat_mode & (1 << 2)):
+            item_list += [PayloadItem(name = 'magStat', dimension = 1, datatype = 'I')]
+        if(stat_mode & (1 << 3)):
+            item_list += [PayloadItem(name = 'madcStat', dimension = 1, datatype = 'I')]
+        if(stat_mode & (1 << 4)):
+            item_list += [PayloadItem(name = 'ekfStat', dimension = 2, datatype = 'I')]
+        if(stat_mode & (1 << 5)):
+            item_list += [PayloadItem(name = 'ekfGeneralStat', dimension = 1, datatype = 'I')]
+        if(stat_mode & (1 << 6)):
+            item_list += [PayloadItem(name = 'addStat', dimension = 4, datatype = 'I')]
+        if(stat_mode & (1 << 7)):
+            item_list += [PayloadItem(name = 'serviceStat', dimension = 1, datatype = 'I')]
+        if(stat_mode & (1 << 8)):
+            item_list += [PayloadItem(name = 'remainingAlignTime', dimension = 1, datatype = 'f')]
+        return item_list
+
 
 @message(0x04)
 class INSRPY_Payload(XcomProtocolPayload):

@@ -1261,7 +1261,8 @@ class XcomCalibrationClient(XcomClient):
             data.PARIMU_CROSSCOUPLING_Payload.parameter_id, 
             data.PARSYS_CALIBID_Payload.parameter_id,
             data.PARSYS_CALDATE_Payload.parameter_id,
-            data.PARIMU_CALIB_Payload.parameter_id)
+            data.PARIMU_CALIB_Payload.parameter_id,
+            data.PARIMU_CALIBDATA_Payload.parameter_id)
         if msg.header.msgID == data.MessageID.PARAMETER and (msg.payload.parameter_id in check_ids) and msg.payload.data['action'] == data.XcomParameterAction.CHANGING:
             self.calib_messages[msg.payload.get_name()] = msg.to_bytes()
         
@@ -1288,6 +1289,12 @@ class XcomCalibrationClient(XcomClient):
         super().set_imucalib(scf_acc, bias_acc, scf_omg, bias_omg)
         if calib_id is not None:
             self.set_calib_id(calib_id)
+
+    def set_calib_data(self, calib_model):
+        msgToSend = data.getParameterWithID(data.PARIMU_CALIBDATA_Payload.parameter_id)
+        msgToSend.payload.payload_from_bytes(calib_model.dump_binary())
+        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
+        self.send_msg_and_waitfor_okay(msgToSend)
     
     def get_calib_bytes(self):
         result = b''
