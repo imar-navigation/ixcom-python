@@ -1248,12 +1248,36 @@ class XcomClient(XcomMessageParser):
 class XcomCalibrationClient(XcomClient):
     def __init__(self, host, port = GENERAL_PORT, timeout = WAIT_TIME_FOR_RESPONSE):
         super().__init__(host, port, timeout = timeout)
+        self.device_id = None
+        self._device_info = None
         self.calib_messages = dict()
+        self.measurement_data = list()
+        self.current_temp_data = None
+
+    def __hash__(self):
+        return hash(self.host)
+
+    def __eq__(self, other):
+        return self.host == other.host
+
 
     def open_last_free_channel(self):
         channel_number = super().open_last_free_channel()
-        self.device_info = self.get_device_info()
+        self._device_info = self.get_device_info()
         return channel_number
+
+    def add_temperature_object(self, temperature, obj_factory):
+        obj = obj_factory()
+        self.measurement_data.append(obj)
+        obj['temperature'] = temperature
+        self.current_temp_data = obj
+
+    @property
+    def device_info(self):
+        if not self._device_info:
+            self._device_info = self.get_device_info()
+        return self._device_info
+            
 
     def send_msg_and_waitfor_okay(self, msg):
         super().send_msg_and_waitfor_okay(msg)
