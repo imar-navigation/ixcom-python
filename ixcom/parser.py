@@ -77,7 +77,7 @@ class XcomMessageSearcher:
                 if self.remainingByteCount == 0:
                     self.remainingByteCount = self.currentBytes[self.currentByteIdx - 1] * 256 + self.currentBytes[
                         self.currentByteIdx - 2] - 6
-                    if self.remainingByteCount < 600:
+                    if self.remainingByteCount < 600 and self.remainingByteCount > 0:
                         self.searcherState = XcomMessageSearcherState.fetching_bytes
                     else:
                         self.searcherState = XcomMessageSearcherState.waiting_for_sync
