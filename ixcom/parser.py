@@ -37,13 +37,14 @@ class XcomMessageSearcherState(IntEnum):
 
 
 class XcomMessageSearcher:
-    def __init__(self, parserDelegate = None, disable_crc = False):
+    def __init__(self, parserDelegate = None, disable_crc = False, nothrow = False):
         self.searcherState = XcomMessageSearcherState.waiting_for_sync
         self.currentBytes = bytearray(512)
         self.currentByteIdx = 0
         self.remainingByteCount = 0
         self.disableCRC = disable_crc
         self.callbacks = []
+        self.nothrow = nothrow
         if parserDelegate is not None:
             self.callbacks.append(parserDelegate.parse)
 
@@ -102,7 +103,13 @@ class XcomMessageSearcher:
                         crc = crc16.crc16xmodem(bytes(self.currentBytes[:self.currentByteIdx - 2]))
                         if crc == self.currentBytes[self.currentByteIdx - 2] + self.currentBytes[
                                     self.currentByteIdx - 1] * 256:
-                            self.publish(self.currentBytes[:self.currentByteIdx])
+                            try:
+                                self.publish(self.currentBytes[:self.currentByteIdx])
+                            except data.ParseError as e:
+                                if self.nothrow:
+                                    print(e)
+                                else:
+                                    raise
                         else:
                             pass
                     self.searcherState = XcomMessageSearcherState.waiting_for_sync

@@ -38,6 +38,7 @@ def read_config(filename='config.dump'):
         if msg.header.msgID == data.MessageID.PARAMETER:
             config[msg.payload.get_name()] = msg.data
     parser = XcomMessageParser()
+    parser.messageSearcher.nothrow = True
     parser.add_callback(parameter_callback)
     with open(filename, 'rb') as f:
         parser.messageSearcher.process_bytes(f.read())
@@ -46,7 +47,7 @@ def read_config(filename='config.dump'):
 def read_file(filename='iXCOMstream.bin'):
     message_bytes_dict = dict()
     result = dict()
-    message_searcher = XcomMessageSearcher(disable_crc = True)
+    message_searcher = XcomMessageSearcher(disable_crc = True, nothrow=True)
 
     def message_callback(in_bytes):
         message_id = int(in_bytes[1])
