@@ -37,14 +37,13 @@ class XcomMessageSearcherState(IntEnum):
 
 
 class XcomMessageSearcher:
-    def __init__(self, parserDelegate = None, disable_crc = False, nothrow = False):
+    def __init__(self, parserDelegate = None, disable_crc = False):
         self.searcherState = XcomMessageSearcherState.waiting_for_sync
         self.currentBytes = bytearray(512)
         self.currentByteIdx = 0
         self.remainingByteCount = 0
         self.disableCRC = disable_crc
         self.callbacks = []
-        self.nothrow = nothrow
         if parserDelegate is not None:
             self.callbacks.append(parserDelegate.parse)
 
@@ -103,13 +102,7 @@ class XcomMessageSearcher:
                         crc = crc16.crc16xmodem(bytes(self.currentBytes[:self.currentByteIdx - 2]))
                         if crc == self.currentBytes[self.currentByteIdx - 2] + self.currentBytes[
                                     self.currentByteIdx - 1] * 256:
-                            try:
-                                self.publish(self.currentBytes[:self.currentByteIdx])
-                            except data.ParseError as e:
-                                if self.nothrow:
-                                    print(e)
-                                else:
-                                    raise
+                            self.publish(self.currentBytes[:self.currentByteIdx])
                         else:
                             pass
                     self.searcherState = XcomMessageSearcherState.waiting_for_sync
@@ -130,6 +123,7 @@ class XcomMessageParser:
         self.subscribers = set()
         self.callbacks = list()
         self.messageSearcher = XcomMessageSearcher(self)
+        self.nothrow = False
 
     def parse_response(self, inBytes):
         message = data.XcomProtocolMessage()
@@ -159,17 +153,23 @@ class XcomMessageParser:
     def parse(self, inBytes):
         header = data.XcomProtocolHeader()
         header.from_bytes(inBytes)
-        if header.msgID == data.MessageID.RESPONSE:
-            self.parse_response(inBytes)
-        elif header.msgID == data.MessageID.PARAMETER:
-            self.parse_parameter(inBytes)
-        elif header.msgID == data.MessageID.COMMAND:
-            self.parse_command(inBytes)
-        else:
-            message = data.getMessageWithID(header.msgID)
-            if message is not None:
-                message.from_bytes(inBytes)
-                self.publish(message)
+        try:
+            if header.msgID == data.MessageID.RESPONSE:
+                self.parse_response(inBytes)
+            elif header.msgID == data.MessageID.PARAMETER:
+                self.parse_parameter(inBytes)
+            elif header.msgID == data.MessageID.COMMAND:
+                self.parse_command(inBytes)
+            else:
+                message = data.getMessageWithID(header.msgID)
+                if message is not None:
+                    message.from_bytes(inBytes)
+                    self.publish(message)
+        except data.ParseError as err:
+            if self.nothrow:
+                print(err)
+            else:
+                raise
 
     def add_subscriber(self, subscriber):
         self.subscribers.add(subscriber)
