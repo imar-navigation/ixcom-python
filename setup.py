@@ -33,14 +33,15 @@ if __name__ == '__main__':
     long_description = open(readmePath, "rt").read()
 
     setup(name='xcom',
-          version='1.0',
+          version='1.0.0',
           description='Library for communicating with xcom devices over network',
-          author='Christian Reimer',
-          author_email='c.reimer@imar-navigation.de',
+          author='iMAR Navigation GmbH',
+          author_email='support@imar-navigation.de',
+          url='http://www.imar-navigation.de',
           keywords=['XCOM'],
           packages=['xcom'],
           install_requires=[
-                    'crc16>=0.1.1',
+                    'numpy>=1.16.2',
                 ],
           classifiers=[
                 "Programming Language :: Python :: 3.6",

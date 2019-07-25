@@ -2,13 +2,15 @@ import socket
 import select
 import threading
 import collections
-import crc16
+
 import math
 import time
 import struct
 import queue
 from enum import IntEnum
+
 from . import data
+from . import crc16
 from .data import XcomError
 from .data import SYNC_BYTE, GENERAL_PORT, BROADCAST_PORT, LAST_CHANNEL_NUMBER, WAIT_TIME_FOR_RESPONSE
 
