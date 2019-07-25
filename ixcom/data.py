@@ -276,10 +276,11 @@ class PayloadItem(NamedTuple):
     metatype = None
 
 class Message:
-    def __init__(self, item_list: [PayloadItem]):
+    def __init__(self, item_list: [PayloadItem], name = ''):
         self.item_list = item_list
         self.data = self.generate_data_dict()
         self.struct_inst = struct.Struct(self.generate_struct_string())
+        self.name = name
 
     def unpack_from(self, buffer, offset = 0):
         try:
@@ -298,7 +299,7 @@ class Message:
                 data[key] = value
             return data
         except struct.error:
-            raise ParseError(f'Could not convert')
+            raise ParseError(f'Could not convert {self.name}')
 
     def generate_struct_string(self):
         struct_string = '='
@@ -415,6 +416,7 @@ class XcomProtocolPayload(MessageItem):
                 type(self)._structString = type(self).message_description.generate_struct_string()
                 type(self).struct_inst = struct.Struct(self._structString)
         if type(self).message_description is not None:
+            self.message_description.name = self.get_name()
             self.data = type(self).message_description.generate_data_dict()
 
     @property
