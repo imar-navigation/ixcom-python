@@ -1,1 +1,1 @@
-from .parser import XcomClient, XcomCalibrationClient
+from .parser import XcomClient
