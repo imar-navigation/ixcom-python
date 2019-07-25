@@ -1,5 +1,4 @@
 import socket
-import logging
 import select
 import threading
 import collections
@@ -11,14 +10,9 @@ import queue
 from enum import IntEnum
 from . import data
 from .data import XcomError
+from .data import SYNC_BYTE, GENERAL_PORT, BROADCAST_PORT, LAST_CHANNEL_NUMBER, WAIT_TIME_FOR_RESPONSE
 
 PositionTuple = collections.namedtuple('PositionTuple', 'Lon Lat Alt')
-
-SYNC_BYTE = 0x7E
-GENERAL_PORT = 3000
-BROADCAST_PORT = 4000
-LAST_CHANNEL_NUMBER = 31
-WAIT_TIME_FOR_RESPONSE = 10
 
 class ResponseError(XcomError):
     pass
@@ -1059,12 +1053,6 @@ class XcomClient(XcomMessageParser):
         msgToSend.payload.data['vNStdDev'] = vNEDStdDev[0]
         msgToSend.payload.data['vEStdDev'] = vNEDStdDev[1]
         msgToSend.payload.data['vDStdDev'] = vNEDStdDev[2]
-        # msgToSend.payload.data['laX'] = leverarmXYZ[0];
-        # msgToSend.payload.data['laY'] = leverarmXYZ[1];
-        # msgToSend.payload.data['laZ'] = leverarmXYZ[2];
-        # msgToSend.payload.data['laXStdDev'] = leverarmStdDev[0];
-        # msgToSend.payload.data['laYStdDev'] = leverarmStdDev[1];
-        # msgToSend.payload.data['laZStdDev'] = leverarmStdDev[2];
         self.send_msg_and_waitfor_okay(msgToSend)
 
     def aid_heading(self, heading, standard_dev, time=0, timeMode=1):
@@ -1239,107 +1227,9 @@ class XcomClient(XcomMessageParser):
         msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
         msgToSend.payload.data['outputframe'] = frame
         self.send_msg_and_waitfor_okay(msgToSend)
-
-
         
     def eof_received(self):
         return True
-
-class XcomCalibrationClient(XcomClient):
-    def __init__(self, host, port = GENERAL_PORT, timeout = WAIT_TIME_FOR_RESPONSE):
-        super().__init__(host, port, timeout = timeout)
-        self.device_id = None
-        self._device_info = None
-        self.calib_messages = dict()
-        self.measurement_data = list()
-        self.current_temp_data = None
-
-    def __hash__(self):
-        return hash(self.host)
-
-    def __eq__(self, other):
-        return self.host == other.host
-
-
-    def open_last_free_channel(self):
-        channel_number = super().open_last_free_channel()
-        self._device_info = self.get_device_info()
-        return channel_number
-
-    def add_temperature_object(self, temperature, obj_factory):
-        obj = obj_factory()
-        self.measurement_data.append(obj)
-        obj['temperature'] = temperature
-        self.current_temp_data = obj
-
-    @property
-    def device_info(self):
-        if not self._device_info:
-            self._device_info = self.get_device_info()
-        return self._device_info
-            
-
-    def send_msg_and_waitfor_okay(self, msg):
-        super().send_msg_and_waitfor_okay(msg)
-        check_ids = (
-            data.PARIMU_CROSSCOUPLING_Payload.parameter_id, 
-            data.PARSYS_CALIBID_Payload.parameter_id,
-            data.PARSYS_CALDATE_Payload.parameter_id,
-            data.PARIMU_CALIB_Payload.parameter_id,
-            data.PARIMU_CALIBDATA_Payload.parameter_id)
-        if msg.header.msgID == data.MessageID.PARAMETER and (msg.payload.parameter_id in check_ids) and msg.payload.data['action'] == data.XcomParameterAction.CHANGING:
-            self.calib_messages[msg.payload.get_name()] = msg.to_bytes()
-        
-
-    def set_crosscoupling(self, CCAcc, CCOmg, calib_id = None):
-        super().set_crosscoupling(CCAcc, CCOmg)
-        if calib_id is not None:
-            self.set_calib_id(calib_id)
-
-    def set_calib_id(self, calib_id):
-        msgToSend = data.getParameterWithID(data.PARSYS_CALIBID_Payload.parameter_id)
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
-        msgToSend.payload.data['calib_id'] = calib_id
-        self.send_msg_and_waitfor_okay(msgToSend)
-
-    def set_caldate(self, caldate = time.strftime('%d.%m.%Y', time.gmtime())):
-        msgToSend = data.getParameterWithID(data.PARSYS_CALDATE_Payload.parameter_id)
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
-        msgToSend.payload.data['str']= caldate.ljust(32,'\0').encode('ascii')
-        msgToSend.payload.data['password'] = self.get_password(data.PARSYS_CALDATE_Payload.parameter_id)
-        self.send_msg_and_waitfor_okay(msgToSend)
-
-    def set_imucalib(self, scf_acc, bias_acc, scf_omg, bias_omg, calib_id = None):
-        super().set_imucalib(scf_acc, bias_acc, scf_omg, bias_omg)
-        if calib_id is not None:
-            self.set_calib_id(calib_id)
-
-    def set_calib_data(self, calib_model):
-        msgToSend = data.getParameterWithID(data.PARIMU_CALIBDATA_Payload.parameter_id)
-        msgToSend.payload.payload_from_bytes(calib_model.dump_binary())
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
-        self.send_msg_and_waitfor_okay(msgToSend)
-    
-    def get_calib_bytes(self):
-        result = b''
-        for param in self.calib_messages:
-            result += self.calib_messages[param]
-        return result
-
-    def check_system_status(self):
-        self.enable_full_sysstatus()
-        msg = self.poll_log(data.SYSSTAT_Payload.message_id).data
-        if     (msg['sysStat'] & data.SysstatBit.IMU_INVALID or
-                msg['sysStat'] & data.SysstatBit.IMU_CRC_ERROR or
-                msg['sysStat'] & data.SysstatBit.IMU_CRC_ERROR or
-                msg['sysStat'] & data.SysstatBit.IMU_TIMEOUT or
-                msg['sysStat'] & data.SysstatBit.IMU_SAMPLE_LOST or
-                msg['sysStat'] & data.SysstatBit.BIT_FAIL or 
-                msg['sysStat'] & data.SysstatBit.FPGA_NOGO):
-            ex = StatusError('Illegal device status {!s}'.format(data.SysstatBit(msg['sysStat'])), thrower = self)
-            raise ex
-
-
 
 def broadcast_search(timeout=0.1, port=BROADCAST_PORT, addr='<broadcast>'):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)

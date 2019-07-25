@@ -33,6 +33,11 @@ class msg_iterator:
         except:
             raise StopIteration()
 
+SYNC_BYTE = 0x7E
+GENERAL_PORT = 3000
+BROADCAST_PORT = 4000
+LAST_CHANNEL_NUMBER = 31
+WAIT_TIME_FOR_RESPONSE = 10
     
 class XcomResponse(IntEnum):
     OK                  = 0x0
