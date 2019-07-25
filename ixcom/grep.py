@@ -74,6 +74,7 @@ def read_file(filename='iXCOMstream.bin'):
             result[msg.payload.get_name()] = parse_message_from_buffer(msg_id, message_bytes_dict[msg_id])
         elif msg_id == data.MessageID.PARAMETER:
             parser = XcomMessageParser()
+            parser.messageSearcher.nothrow = True
             parser.add_callback(parameter_callback)
             parser.messageSearcher.process_bytes(message_bytes_dict[msg_id].read())
             result['config'] = config
