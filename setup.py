@@ -20,7 +20,7 @@ if __name__ == '__main__':
           author_email='support@imar-navigation.de',
           url='http://www.imar-navigation.de',
           keywords=['XCOM'],
-          packages=['xcom'],
+          packages=['ixcom'],
           install_requires=[
                     'numpy>=1.16.2',
                 ],
