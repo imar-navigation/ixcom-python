@@ -925,7 +925,8 @@ class PARGNSS_ANTOFFSET_Payload(XcomDefaultParameterPayload):
     ])
 
     def get_name(self):
-        return super().get_name() + '_' + str(self.data['reserved_paramheader'])
+        
+        return super().get_name() + '_' + str(self.data.get(['reserved_paramheader'], default = ''))
 
 @parameter(207)
 class PARGNSS_RTKMODE_Payload(XcomDefaultParameterPayload):
