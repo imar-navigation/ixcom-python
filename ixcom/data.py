@@ -2659,8 +2659,16 @@ class POWER_Payload(XcomProtocolPayload):
 
 @message(0x22)
 class TEMP_Payload(XcomProtocolPayload):
+    
     message_description = Message([
-        PayloadItem(name = 'temperatures', dimension = 16, datatype = 'f'),
+        PayloadItem(name = 'temp_power_pcb', dimension = 1, datatype = 'f'),
+        PayloadItem(name = 'temp_switcher', dimension = 1, datatype = 'f'),
+        PayloadItem(name = 'temp_oem628', dimension = 1, datatype = 'f'),
+        PayloadItem(name = 'temp_oem615', dimension = 1, datatype = 'f'),
+        PayloadItem(name = 'temp_cpu', dimension = 1, datatype = 'f'),
+        PayloadItem(name = 'temp_acc', dimension = 3, datatype = 'f'),
+        PayloadItem(name = 'temp_omg', dimension = 3, datatype = 'f'),
+        PayloadItem(name = 'temp_other', dimension = 5, datatype = 'f'),
     ])
 
 

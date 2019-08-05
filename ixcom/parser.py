@@ -1183,9 +1183,6 @@ class XcomClient(XcomMessageParser):
         self.send_msg_and_waitfor_okay(msgToSend)
         return self.wait_for_parameter()
         
-        
-        
-        
     def set_csac_disc_parameter(self, mode, time_constant,line_delay,phase_thres):
         msgToSend = self.get_parameter(data.PARFPGA_CSAC_Payload.parameter_id)
         msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
