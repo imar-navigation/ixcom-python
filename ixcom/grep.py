@@ -5,7 +5,7 @@ import io
 import numpy as np
 from numpy.lib.recfunctions import append_fields
 
-from .parser import XcomMessageParser, XcomMessageSearcher
+from .parser import MessageParser, MessageSearcher
 from . import data
 
 def get_item_len(item):
@@ -17,7 +17,7 @@ def get_item_len(item):
 
 def grep_file(filename='iXCOMstream.bin'):
     message_files_dict = dict()
-    message_searcher = XcomMessageSearcher(disable_crc = True)
+    message_searcher = MessageSearcher(disable_crc = True)
 
     def message_callback(in_bytes):
         message_id = int(in_bytes[1])
@@ -37,7 +37,7 @@ def read_config(filename='config.dump'):
     def parameter_callback(msg, from_device):
         if msg.header.msgID == data.MessageID.PARAMETER:
             config[msg.payload.get_name()] = msg.data
-    parser = XcomMessageParser()
+    parser = MessageParser()
     parser.nothrow = True
     parser.add_callback(parameter_callback)
     with open(filename, 'rb') as f:
@@ -47,7 +47,7 @@ def read_config(filename='config.dump'):
 def read_file(filename='iXCOMstream.bin'):
     message_bytes_dict = dict()
     result = dict()
-    message_searcher = XcomMessageSearcher(disable_crc = True)
+    message_searcher = MessageSearcher(disable_crc = True)
 
     def message_callback(in_bytes):
         message_id = int(in_bytes[1])
@@ -73,7 +73,7 @@ def read_file(filename='iXCOMstream.bin'):
             msg = data.getMessageWithID(msg_id)
             result[msg.payload.get_name()] = parse_message_from_buffer(msg_id, message_bytes_dict[msg_id])
         elif msg_id == data.MessageID.PARAMETER:
-            parser = XcomMessageParser()
+            parser = MessageParser()
             parser.nothrow = True
             parser.add_callback(parameter_callback)
             parser.messageSearcher.process_bytes(message_bytes_dict[msg_id].read())
