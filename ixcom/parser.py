@@ -310,24 +310,6 @@ class XcomClient(XcomMessageParser):
                     except OSError:
                         pass
 
-    def enable_calproc(self, rate, channel, pathname):
-        msgToSend = data.getParameterWithID(data.PARXCOM_CALPROC_Payload.parameter_id)
-        msgToSend.payload.data['enable'] = 1
-        msgToSend.payload.data['channel'] = channel
-        msgToSend.payload.data['divider'] = round(self.get_divider_for_rate(rate))
-        msgToSend.payload.data['pathName'] = pathname.ljust(256, '\0').encode('ascii')
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
-        self.send_msg_and_waitfor_okay(msgToSend)
-
-    def disable_calproc(self):
-        msgToSend = data.getParameterWithID(data.PARXCOM_CALPROC_Payload.parameter_id)
-        msgToSend.payload.data['enable'] = 0
-        msgToSend.payload.data['channel'] = 0
-        msgToSend.payload.data['divider'] = 1
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
-        self.send_msg_and_waitfor_okay(msgToSend)
-
-
     def open_last_free_channel(self):
         '''Opens an XCOM logical channel
 
