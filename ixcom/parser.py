@@ -765,12 +765,6 @@ class Client(MessageParser):
         msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
         self.send_msg_and_waitfor_okay(msgToSend)
 
-    def update_firmware_svn(self):
-        msgToSend = data.getCommandWithID(data.XcomCommandPayload.command_id)
-        msgToSend.payload.data['mode'] = data.XcomCommandParameter.update_svn
-        msgToSend.payload.data['channelNumber'] = 0
-        self.send_msg_and_waitfor_okay(msgToSend)
-
     def get_device_info(self):
         result = dict()
         result['prjnumber'] = self.get_parameter(0).payload.data['str'].split(b'\0')[0].decode('ascii')
@@ -781,11 +775,9 @@ class Client(MessageParser):
         result['fwversion'] = self.get_parameter(5).payload.data['str'].split(b'\0')[0].decode('ascii')
         result['navversion'] = self.get_parameter(6).payload.data['str'].split(b'\0')[0].decode('ascii')
         result['ekfversion'] = self.get_parameter(7).payload.data['str'].split(b'\0')[0].decode('ascii')
-        result['ekfparset'] = self.get_parameter(8).payload.data['str'].split(b'\0')[0].decode('ascii')
         result['navnum'] = self.get_parameter(9).payload.data['str'].split(b'\0')[0].decode('ascii')
         result['navparset'] = self.get_parameter(10).payload.data['str'].split(b'\0')[0].decode('ascii')
         result['sysname'] = self.get_parameter(19).payload.data['str'].split(b'\0')[0].decode('ascii')
-        result['imutype'] = self.get_parameter(107).payload.data['type']
         result['maintiming'] = self.get_parameter(data.PARSYS_MAINTIMING_Payload.parameter_id).payload.data['maintiming']
         try:
             result['gyro_range'] = self.get_parameter(data.PARIMU_RANGE_Payload.parameter_id).payload.data['range_gyro']
