@@ -780,12 +780,6 @@ class PARSYS_OSVERSION_Payload(PARSYS_STRING64_Payload):
 class PARSYS_SYSNAME_Payload(PARSYS_STRING64_Payload):
     pass
 
-@parameter(22)
-class PARSYS_CALIBID_Payload(DefaultParameterPayload):
-    parameter_payload = Message([
-        PayloadItem(name = 'calib_id', dimension = 1, datatype = 'I'),
-    ])
-
 """
 PARIMU
 """
@@ -849,22 +843,7 @@ class PARIMU_RANGE_Payload(DefaultParameterPayload):
         PayloadItem(name = 'range_gyro', dimension = 1, datatype = 'f'),
     ])
 
-@parameter(118)
-class PARIMU_CALIBDATA_Payload(DefaultParameterPayload):
-    parameter_payload = Message([
-        PayloadItem(name = 'calib_version', dimension = 1, datatype = 'I'),
-        PayloadItem(name = 'calib_id', dimension = 1, datatype = 'I'),
-        PayloadItem(name = 'inat_id', dimension = 1, datatype = 'I'),
-        PayloadItem(name = 'caldate', dimension = 16, datatype = 's'),
-    ] + [
-        PayloadItem(name = f'cc_acc_{row}{col}', dimension = 11, datatype = 'd') for col in range(0,3) for row in range(0,3)
-    ] + [
-        PayloadItem(name = f'bias_acc_{row}', dimension = 11, datatype = 'd') for row in range(0,3)
-    ] + [
-        PayloadItem(name = f'cc_gyro_{row}{col}', dimension = 11, datatype = 'd') for col in range(0,3) for row in range(0,3)
-    ] + [
-        PayloadItem(name = f'bias_gyro_{row}', dimension = 11, datatype = 'd') for row in range(0,3)
-    ])
+
 
 """
 PARGNSS
