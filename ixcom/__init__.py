@@ -1,1 +1,1 @@
-from .parser import XcomClient
+from .parser import Client
