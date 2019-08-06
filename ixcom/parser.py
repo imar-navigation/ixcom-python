@@ -28,17 +28,15 @@ class ClientTimeoutError(XcomError):
 class CommunicationError(XcomError):
     pass
 
-
-
-class XcomMessageSearcherState(IntEnum):
+class MessageSearcherState(IntEnum):
     waiting_for_sync = 0
     waiting_for_msglength = 1
     fetching_bytes = 2
 
 
-class XcomMessageSearcher:
+class MessageSearcher:
     def __init__(self, parserDelegate = None, disable_crc = False):
-        self.searcherState = XcomMessageSearcherState.waiting_for_sync
+        self.searcherState = MessageSearcherState.waiting_for_sync
         self.currentBytes = bytearray(512)
         self.currentByteIdx = 0
         self.remainingByteCount = 0
@@ -60,15 +58,15 @@ class XcomMessageSearcher:
         inByteIdx = 0
         while inByteIdx < len(inBytes):
 
-            if self.searcherState == XcomMessageSearcherState.waiting_for_sync:
+            if self.searcherState == MessageSearcherState.waiting_for_sync:
                 poppedByte = inBytes[inByteIdx]
                 inByteIdx += 1
                 if poppedByte == SYNC_BYTE:
                     self.currentBytes[0] = SYNC_BYTE
                     self.currentByteIdx = 1
                     self.remainingByteCount = 5
-                    self.searcherState = XcomMessageSearcherState.waiting_for_msglength
-            elif self.searcherState == XcomMessageSearcherState.waiting_for_msglength:
+                    self.searcherState = MessageSearcherState.waiting_for_msglength
+            elif self.searcherState == MessageSearcherState.waiting_for_msglength:
                 poppedByte = inBytes[inByteIdx]
                 inByteIdx += 1
                 self.currentBytes[self.currentByteIdx] = poppedByte
@@ -78,10 +76,10 @@ class XcomMessageSearcher:
                     self.remainingByteCount = self.currentBytes[self.currentByteIdx - 1] * 256 + self.currentBytes[
                         self.currentByteIdx - 2] - 6
                     if self.remainingByteCount < 600 and self.remainingByteCount > 0:
-                        self.searcherState = XcomMessageSearcherState.fetching_bytes
+                        self.searcherState = MessageSearcherState.fetching_bytes
                     else:
-                        self.searcherState = XcomMessageSearcherState.waiting_for_sync
-            elif self.searcherState == XcomMessageSearcherState.fetching_bytes:
+                        self.searcherState = MessageSearcherState.waiting_for_sync
+            elif self.searcherState == MessageSearcherState.fetching_bytes:
                 if len(
                         inBytes) - 1 >= self.remainingByteCount + inByteIdx - 1:  # Der Buffer ist Länger als der Rest der Nachricht.
                     self.currentBytes[self.currentByteIdx:self.currentByteIdx + self.remainingByteCount] = inBytes[
@@ -105,7 +103,7 @@ class XcomMessageSearcher:
                             self.publish(self.currentBytes[:self.currentByteIdx])
                         else:
                             pass
-                    self.searcherState = XcomMessageSearcherState.waiting_for_sync
+                    self.searcherState = MessageSearcherState.waiting_for_sync
 
     def publish(self, msg_bytes):
         for callback in self.callbacks:
@@ -118,17 +116,17 @@ class XcomMessageSearcher:
         self.callbacks.remove(callback)
 
 
-class XcomMessageParser:
+class MessageParser:
     def __init__(self):
         self.subscribers = set()
         self.callbacks = list()
-        self.messageSearcher = XcomMessageSearcher(self)
+        self.messageSearcher = MessageSearcher(self)
         self.nothrow = False
 
     def parse_response(self, inBytes):
-        message = data.XcomProtocolMessage()
+        message = data.ProtocolMessage()
         message.header.from_bytes(inBytes[:16])
-        message.payload = data.XcomResponsePayload(message.header.msgLength)
+        message.payload = data.ResponsePayload(message.header.msgLength)
         message.from_bytes(inBytes)
         self.publish(message)
 
@@ -151,7 +149,7 @@ class XcomMessageParser:
             pass
 
     def parse(self, inBytes):
-        header = data.XcomProtocolHeader()
+        header = data.ProtocolHeader()
         header.from_bytes(inBytes)
         try:
             if header.msgID == data.MessageID.RESPONSE:
@@ -198,7 +196,7 @@ class MessageCallback:
     def run(self):
         self.callback(self.msg, self.client)
 
-class XcomClient(XcomMessageParser):
+class Client(MessageParser):
     '''XCOM TCP Client
 
     Implements a TCP-socket based XCOM client and offers convenience methods to interact with the 
@@ -206,7 +204,7 @@ class XcomClient(XcomMessageParser):
     '''
 
     def __init__(self, host, port=GENERAL_PORT, timeout = WAIT_TIME_FOR_RESPONSE):
-        XcomMessageParser.__init__(self)
+        MessageParser.__init__(self)
         self.timeout = timeout
         self.host = host
         self.port = port
@@ -388,25 +386,6 @@ class XcomClient(XcomMessageParser):
         msgToSend.payload.data['channelNumber'] = channelNumber
         self.send_msg_and_waitfor_okay(msgToSend)
 
-    def reset_timebias(self):
-        '''Reset internal time bias
-
-        Reset the internial clock bias to zero and waits for an 'OK' response.
-        E.G. to snyc several device to a common time base
-
-        Args:
-            none
-
-        Raises:
-            TimeoutError: Timeout while waiting for response from the XCOM server
-            ValueError: The response from the system was not 'OK'
-        
-        '''
-        msgToSend = data.getCommandWithID(data.XcomCommandPayload.command_id)
-        msgToSend.payload.data['mode'] = data.XcomCommandParameter.reset_timebias
-        self.send_msg_and_waitfor_okay(msgToSend)
-
-
     def reboot(self):
         '''Reboots the system
 
@@ -438,7 +417,7 @@ class XcomClient(XcomMessageParser):
         
         '''
         msgToSend = data.getParameterWithID(parameterID)
-        msgToSend.payload.data['action'] = data.XcomParameterAction.REQUESTING
+        msgToSend.payload.data['action'] = data.ParameterAction.REQUESTING
         self.send_msg_and_waitfor_okay(msgToSend)
         return self.wait_for_parameter()
 
@@ -720,15 +699,6 @@ class XcomClient(XcomMessageParser):
             return
         raise ClientTimeoutError('Timeout while waiting for event', thrower=self)
 
-    def set_gnss_gateway(self, udp_enable=False, udp_addr = '255.255.255.255', udp_port = 6000, tcp_port = 6000):
-        msgToSend = data.getParameterWithID(data.PARGNSS_GATEWAYCFG_Payload.parameter_id)
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
-        msgToSend.payload.data['udpEnable'] = udp_enable
-        msgToSend.payload.data['udpAddr'] = struct.unpack('!I', socket.inet_aton(udp_addr))[0]
-        msgToSend.payload.data['udpPort'] = udp_port
-        msgToSend.payload.data['tcpPort'] = tcp_port
-        self.send_msg_and_waitfor_okay(msgToSend)
-
         
     def wait_for_polled_log(self):
         '''Waits for reception of log
@@ -764,41 +734,35 @@ class XcomClient(XcomMessageParser):
         msgToSend = data.getParameterWithID(data.PARREC_CONFIG_Payload.parameter_id)
         msgToSend.payload.data['channelNumber'] = channel
         msgToSend.payload.data['autostart'] = enable_autostart
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
+        msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
         self.send_msg_and_waitfor_okay(msgToSend)
 
     def disable_recorder(self):
         msgToSend = data.getParameterWithID(data.PARREC_CONFIG_Payload.parameter_id)
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
+        msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
         self.send_msg_and_waitfor_okay(msgToSend)
 
     def start_recorder(self, path):
         msgToSend = data.getParameterWithID(data.PARREC_START_Payload.parameter_id)
         msgToSend.payload.data['str'] = path.ljust(128, '\0').encode('ascii')
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
+        msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
         self.send_msg_and_waitfor_okay(msgToSend)
 
     def stop_recorder(self):
         msgToSend = data.getParameterWithID(data.PARREC_STOP_Payload.parameter_id)
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
+        msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
         self.send_msg_and_waitfor_okay(msgToSend)
 
     def set_recorder_suffix(self, suffix):
         msgToSend = data.getParameterWithID(data.PARREC_SUFFIX_Payload.parameter_id)
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
+        msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
         msgToSend.payload.data['suffix'] = suffix.ljust(128, '\0')
         self.send_msg_and_waitfor_okay(msgToSend)
 
     def enable_full_sysstatus(self):
         msgToSend = data.getParameterWithID(data.PARDAT_SYSSTAT_Payload.parameter_id)
         msgToSend.payload.data['statMode'] = 127
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
-        self.send_msg_and_waitfor_okay(msgToSend)
-
-    def set_schulermode(self, enable_schuler):
-        msgToSend = data.getParameterWithID(data.PAREKF_SCHULERMODE_Payload.parameter_id)
-        msgToSend.payload.data['enable'] = enable_schuler
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
+        msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
         self.send_msg_and_waitfor_okay(msgToSend)
 
     def update_firmware_svn(self):
@@ -830,54 +794,10 @@ class XcomClient(XcomMessageParser):
         result['ip'] = self.host
         return result
 
-    def set_imucalib(self, scf_acc, bias_acc, scf_omg, bias_omg):
-        msgToSend = data.getParameterWithID(data.PARIMU_CALIB_Payload.parameter_id)
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
-        msgToSend.payload.data['sfAcc']= scf_acc
-        msgToSend.payload.data['biasAcc'] = bias_acc
-        msgToSend.payload.data['sfOmg']= scf_omg
-        msgToSend.payload.data['biasOmg'] = bias_omg
-        self.send_msg_and_waitfor_okay(msgToSend)
-
-    def get_imucalib(self):
-        return self.get_parameter(data.PARIMU_CALIB_Payload.parameter_id)
-
-    def set_acc_scf(self, scf_acc):
-        msgToSend = self.get_imucalib()
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
-        msgToSend.payload.data['sfAcc']= scf_acc
-        self.send_msg_and_waitfor_okay(msgToSend)
-
-    def set_acc_bias(self, bias_acc):
-        msgToSend = self.get_imucalib()
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
-        msgToSend.payload.data['biasAcc']= bias_acc
-        self.send_msg_and_waitfor_okay(msgToSend)
-
-    def set_gyro_bias(self, bias_omg):
-        msgToSend = self.get_imucalib()
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
-        msgToSend.payload.data['biasOmg']= bias_omg
-        self.send_msg_and_waitfor_okay(msgToSend)
-    
-
-    def set_gyro_scf(self, scf_omg):
-        msgToSend = self.get_imucalib()
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
-        msgToSend.payload.data['sfOmg']= scf_omg
-        self.send_msg_and_waitfor_okay(msgToSend)
-
-    def set_broadcast(self, port=BROADCAST_PORT, hidden=0):
-        msgToSend = data.getParameterWithID(data.PARXCOM_BROADCAST_Payload.parameter_id)
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
-        msgToSend.payload.data['port'] = port
-        msgToSend.payload.data['hidden_mode'] = hidden
-        self.send_msg_and_waitfor_okay(msgToSend)
-
     def set_zupt_parameters(self, thr_acc=1, thr_omg=1, thr_vel=0, cut_off=1, interval=3, final_std_dev=0.002,
                             start_std_dev=0.01, time_constant=1, delay_samples=300, activation_mask=0x0, auto_zupt=1):
         msgToSend = data.getParameterWithID(data.PAREKF_ZUPT_Payload.parameter_id)
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
+        msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
         msgToSend.payload.data['accThr'] = thr_acc
         msgToSend.payload.data['omgThr'] = thr_omg
         msgToSend.payload.data['velThr'] = thr_vel
@@ -894,7 +814,7 @@ class XcomClient(XcomMessageParser):
     def set_autozupt(self, enable):
         parekf_zupt = self.get_parameter(data.PAREKF_ZUPT_Payload.parameter_id)
         parekf_zupt.payload.data['autoZupt'] = enable
-        parekf_zupt.payload.data['action']= data.XcomParameterAction.CHANGING
+        parekf_zupt.payload.data['action']= data.ParameterAction.CHANGING
         self.send_msg_and_waitfor_okay(parekf_zupt)
 
     def set_startup(self, initPos=PositionTuple(Lon=0.1249596927, Lat=0.8599914412, Alt=311.9),
@@ -917,14 +837,7 @@ class XcomClient(XcomMessageParser):
         msgToSend.payload.data['realign'] = realign
         msgToSend.payload.data['inMotion'] = inMotion
         msgToSend.payload.data['autoRestart'] = autorestart
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
-        self.send_msg_and_waitfor_okay(msgToSend)
-
-    def set_parekf_aiding(self, mode=0, mask=0):
-        msgToSend = data.getParameterWithID(data.PAREKF_AIDING_Payload.parameter_id)
-        msgToSend.payload.data['aidingMode'] = mode
-        msgToSend.payload.data['aidingMask'] = mask
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
+        msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
         self.send_msg_and_waitfor_okay(msgToSend)
 
     def set_alignment(self, mode, levelling_time, stationary_time):
@@ -932,38 +845,31 @@ class XcomClient(XcomMessageParser):
         msgToSend.payload.data['method'] = mode
         msgToSend.payload.data['levellingDuration'] = levelling_time
         msgToSend.payload.data['stationaryDuration'] = stationary_time        
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
+        msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
         self.send_msg_and_waitfor_okay(msgToSend)
 
     def set_aligntime(self, levelling_time, zupt_time):
         msgToSend = data.getParameterWithID(data.PAREKF_ALIGNTIME_Payload.parameter_id)
         msgToSend.payload.data['aligntime'] = zupt_time
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
+        msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
         self.send_msg_and_waitfor_okay(msgToSend)
         msgToSend = data.getParameterWithID(data.PAREKF_COARSETIME_Payload.parameter_id)
         msgToSend.payload.data['coarsetime'] = levelling_time
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
+        msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
         self.send_msg_and_waitfor_okay(msgToSend)
 
     def set_alignmode(self, mode):
         msgToSend = data.getParameterWithID(data.PAREKF_ALIGNMODE_Payload.parameter_id)
         msgToSend.payload.data['alignmode'] = mode
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
+        msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
         self.send_msg_and_waitfor_okay(msgToSend)
 
     def set_thresholds(self, pos_medium=1, pos_high=0.1, heading_good=0.001 * math.pi / 180.0):
         msgToSend = data.getParameterWithID(data.PAREKF_HDGPOSTHR_Payload.parameter_id)
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
+        msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
         msgToSend.payload.data['hdgGoodThr'] = heading_good
         msgToSend.payload.data['posMedThr'] = pos_medium
         msgToSend.payload.data['posHighThr'] = pos_high
-        self.send_msg_and_waitfor_okay(msgToSend)
-
-    def set_crosscoupling(self, CCAcc, CCOmg):
-        msgToSend = data.getParameterWithID(data.PARIMU_CROSSCOUPLING_Payload.parameter_id)
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
-        msgToSend.payload.data['CCAcc'] = CCAcc
-        msgToSend.payload.data['CCOmg'] = CCOmg
         self.send_msg_and_waitfor_okay(msgToSend)
 
     def send_msg_and_waitfor_okay(self, msg):
@@ -971,23 +877,17 @@ class XcomClient(XcomMessageParser):
             bytesToSend = msg.to_bytes()
             self.send_and_wait_for_okay(bytesToSend)
 
-    def get_crosscoupling(self):
-        param = self.get_parameter(data.PARIMU_CROSSCOUPLING_Payload.parameter_id)
-        returnDict = dict()
-        returnDict['CCAcc'] = param.payload.data['CCAcc']
-        returnDict['CCOmg'] = param.payload.data['CCOmg']
-        return returnDict
 
     def set_imu_misalign(self, x, y, z):
         msgToSend = data.getParameterWithID(data.PARIMU_MISALIGN_Payload.parameter_id)
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
+        msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
         msgToSend.payload.data['rpy'] = [x, y, z]
         self.send_msg_and_waitfor_okay(msgToSend)
 
 
     def enable_postproc(self, channel):
         msgToSend = data.getParameterWithID(data.PARXCOM_POSTPROC_Payload.parameter_id)
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
+        msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
         msgToSend.payload.data['channel'] = channel
         msgToSend.payload.data['enable'] = 1
         self.send_msg_and_waitfor_okay(msgToSend)
@@ -995,22 +895,10 @@ class XcomClient(XcomMessageParser):
 
     def disable_postproc(self):
         msgToSend = data.getParameterWithID(data.PARXCOM_POSTPROC_Payload.parameter_id)
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
+        msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
         msgToSend.payload.data['enable'] = 0
         self.send_msg_and_waitfor_okay(msgToSend)
         self.save_config()
-
-    def set_feedback(self, pos=1, vel=1, att=1, sensor_err=1):
-        msgToSend = data.getParameterWithID(data.PAREKF_FEEDBACK_Payload.parameter_id)
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
-        msgToSend.payload.data['feedbackMask'] = (pos << 0) | (vel << 1) | (att << 2) | (sensor_err << 3)
-        self.send_msg_and_waitfor_okay(msgToSend)
-
-    def set_freeze(self, pos=0, vel=0, att=0, height=0):
-        msgToSend = data.getParameterWithID(data.PAREKF_STATEFREEZE_Payload.parameter_id)
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
-        msgToSend.payload.data['freezeMask'] = (pos << 0) | (vel << 1) | (att << 2) | (height << 3)
-        self.send_msg_and_waitfor_okay(msgToSend)
 
     def aid_pos(self, lonLatAlt, llhStdDev, leverarmXYZ, leverarmStdDev, time=0, timeMode=1):
         msgToSend = data.getCommandWithID(data.CMD_EXT_Payload.command_id)
@@ -1086,7 +974,7 @@ class XcomClient(XcomMessageParser):
 
         self.update_until_event(self.response_event, self.timeout)
         response = self.response_event.response
-        if response.payload.data['responseID'] != data.XcomResponse.OK:
+        if response.payload.data['responseID'] != data.Response.OK:
             raise ResponseError(self.response_event.response.data['responseText'].decode('ascii'), self)
 
     def run_forever(self):
@@ -1107,7 +995,7 @@ class XcomClient(XcomMessageParser):
         
         '''
         msgToSend = data.getParameterWithID(data.PARGNSS_ANTOFFSET_Payload.parameter_id)
-        msgToSend.payload.data['action'] = data.XcomParameterAction.REQUESTING
+        msgToSend.payload.data['action'] = data.ParameterAction.REQUESTING
         msgToSend.payload.data['reserved'] = antenna
         self.send_msg_and_waitfor_okay(msgToSend)
         return self.wait_for_parameter()
@@ -1128,51 +1016,10 @@ class XcomClient(XcomMessageParser):
         
         '''
         msgToSend = data.getParameterWithID(data.PARGNSS_ANTOFFSET_Payload.parameter_id)
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
+        msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
         msgToSend.payload.data['reserved'] = antenna
         msgToSend.payload.data['antennaOffset'] = offset
         msgToSend.payload.data['stdDev'] = stdDev
-        self.send_msg_and_waitfor_okay(msgToSend)
-
-    def get_password(self, parameter_id):
-        tmp_buffer = struct.pack('=BBBBH', 11, 6, 19, 85, parameter_id)
-        return crc16.crc16xmodem(tmp_buffer)
-        
-    def set_gpspower(self, state):
-        msgToSend = self.get_parameter(data.PARFPGA_POWER_Payload.parameter_id)
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
-        if state == 1:
-            msgToSend.payload.data['powerSwitch'] |= 1
-        elif state == 0:
-            msgToSend.payload.data['powerSwitch'] &= ~(1 << 0)
-        self.send_msg_and_waitfor_okay(msgToSend)
-        
-    def set_fpga_timer(self, colum_idx, row_idx):
-        if(colum_idx > 20 or colum_idx < 0):
-            raise RuntimeError('colum_idx out of bounds')
-        if(row_idx > 20 or row_idx < 0):
-            raise RuntimeError('row_idx out of bounds')
-        msgToSend = data.getParameterWithID(data.PARFPGA_TIMER_Payload.parameter_id)
-        msgToSend.payload.data['action'] = data.XcomParameterAction.REQUESTING
-        self.send_msg_and_waitfor_okay(msgToSend)
-        dev_msg = self.wait_for_parameter()
-        
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
-        timer = dev_msg.payload.data['timer']
-        timer[colum_idx] = (1 << row_idx)
-        msgToSend.payload.data['timer'] = timer
-        msgToSend.payload.data['password'] = self.get_password(data.PARFPGA_TIMER_Payload.parameter_id)
-        self.send_msg_and_waitfor_okay(msgToSend)
-        return self.wait_for_parameter()
-        
-    def set_csac_disc_parameter(self, mode, time_constant,line_delay,phase_thres):
-        msgToSend = self.get_parameter(data.PARFPGA_CSAC_Payload.parameter_id)
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
-        if(mode < (data.CsacMode.ENABLE | data.CsacMode.ENABLEATUNE | data.CsacMode.PPSAUTOSYNC | data.CsacMode.PPSDISCIPLINE | data.CsacMode.STARTSYNC | data.CsacMode.GNSSAUTOMODE)):
-            msgToSend.payload.data['mode'] = mode
-        msgToSend.payload.data['PPSdisciplineTimeConstant'] = time_constant
-        msgToSend.payload.data['PPSdisciplineCableLengthComp'] = line_delay
-        msgToSend.payload.data['PPSphaseThr'] = phase_thres
         self.send_msg_and_waitfor_okay(msgToSend)
 
     def get_virtual_meas_pt(self):
@@ -1204,16 +1051,10 @@ class XcomClient(XcomMessageParser):
         
         '''
         msgToSend = data.getParameterWithID(data.PAREKF_VMP_Payload.parameter_id)
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
+        msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
         msgToSend.payload.data['leverArm'] = offset
         msgToSend.payload.data['mask'] = activationMask
         msgToSend.payload.data['cutoff'] = cutOffFreq
-        self.send_msg_and_waitfor_okay(msgToSend)
-
-    def set_outputframe(self, frame = 0):
-        msgToSend = data.getParameterWithID(data.PARXCOM_FRAMEOUT_Payload.parameter_id)
-        msgToSend.payload.data['action'] = data.XcomParameterAction.CHANGING
-        msgToSend.payload.data['outputframe'] = frame
         self.send_msg_and_waitfor_okay(msgToSend)
         
     def eof_received(self):

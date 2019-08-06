@@ -39,7 +39,7 @@ BROADCAST_PORT = 4000
 LAST_CHANNEL_NUMBER = 31
 WAIT_TIME_FOR_RESPONSE = 10
     
-class XcomResponse(IntEnum):
+class Response(IntEnum):
     OK                  = 0x0
     InvalidParameter    = 0x1
     InvalidChecksum     = 0x2
@@ -107,14 +107,6 @@ class StartupHeadingMode(IntEnum):
     MAGHDG      = 3
     DUALANTHDG  = 4
 
-class CsacMode(IntEnum):
-    ENABLE         = 1
-    ENABLEATUNE    = 2
-    PPSAUTOSYNC    = 4
-    PPSDISCIPLINE  = 8
-    STARTSYNC      = 16
-    GNSSAUTOMODE   = 32
-
 class GlobalAlignStatus(IntEnum):
     LEVELLING = 0
     ALIGNING = 1
@@ -150,7 +142,6 @@ class GlobalStatusBit(IntFlag):
     @property
     def position_status(self):
         return GlobalPositionStatus((self.value & 0xc000) >> 14)
-
 
 class SysstatBit(IntFlag):
     IMU_INVALID         =  auto()
@@ -348,7 +339,7 @@ class MessageItem:
         except:
             raise NotImplementedError()
 
-class XcomProtocolHeader(MessageItem):
+class ProtocolHeader(MessageItem):
     structString = "=BBBBHHII"
 
     def __init__(self):
@@ -389,7 +380,7 @@ class XcomProtocolHeader(MessageItem):
 
 
 
-class XcomProtocolBottom(MessageItem):
+class ProtocolBottom(MessageItem):
     structString = "=HH"
 
     def __init__(self):
@@ -403,7 +394,7 @@ class XcomProtocolBottom(MessageItem):
     def from_bytes(self, inBytes):
         self.gStatus, self.crc = self.struct_inst.unpack(inBytes)
 
-class XcomProtocolPayload(MessageItem):
+class ProtocolPayload(MessageItem):
     message_id = 0
     message_description = None
     _structString = None
@@ -449,11 +440,11 @@ class XcomProtocolPayload(MessageItem):
     def construct_message(cls):
         return getMessageWithID(cls.message_id)
 
-class XcomProtocolMessage(MessageItem):
+class ProtocolMessage(MessageItem):
     def __init__(self):
-        self.header  =  XcomProtocolHeader()
-        self.payload =  XcomProtocolPayload()
-        self.bottom  =  XcomProtocolBottom()
+        self.header  =  ProtocolHeader()
+        self.payload =  ProtocolPayload()
+        self.bottom  =  ProtocolBottom()
 
     def to_bytes(self):
         self.header.msgLength = self.size()
@@ -575,11 +566,11 @@ class XcomCommandParameter(IntEnum):
     channel_open   = 1
     channel_close  = 0
 
-class XcomParameterAction(IntEnum):
+class ParameterAction(IntEnum):
     CHANGING = 0
     REQUESTING = 1
 
-class XcomDefaultCommandPayload(XcomProtocolPayload):
+class DefaultCommandPayload(ProtocolPayload):
     message_id = MessageID.COMMAND
     command_id = 0
     command_header = Message([
@@ -594,7 +585,7 @@ class XcomDefaultCommandPayload(XcomProtocolPayload):
         super().__init__()
 
 
-class XcomDefaultParameterPayload(XcomProtocolPayload):
+class DefaultParameterPayload(ProtocolPayload):
     message_id = MessageID.PARAMETER
     parameter_id = 0
     parameter_header = Message([
@@ -628,7 +619,7 @@ def command(command_id):
     return decorator
 
 @command(0x0)
-class CMD_LOG_Payload(XcomDefaultCommandPayload):
+class CMD_LOG_Payload(DefaultCommandPayload):
     command_payload = Message([
         PayloadItem(name = 'messageID', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'trigger', dimension = 1, datatype = 'B'),
@@ -637,20 +628,20 @@ class CMD_LOG_Payload(XcomDefaultCommandPayload):
     ])
 
 @command(0x4)
-class CMD_EKF_Payload(XcomDefaultCommandPayload):
+class CMD_EKF_Payload(DefaultCommandPayload):
     command_payload = Message([
         PayloadItem(name = 'subcommand', dimension = 1, datatype = 'H'),
         PayloadItem(name = 'numberOfParams', dimension = 1, datatype = 'H'),
     ])
 
 @command(0x3)
-class CMD_CONF_Payload(XcomDefaultCommandPayload):
+class CMD_CONF_Payload(DefaultCommandPayload):
     command_payload = Message([
         PayloadItem(name = 'configAction', dimension = 1, datatype = 'I'),
     ])
 
 @command(0x1)
-class CMD_EXT_Payload(XcomDefaultCommandPayload):
+class CMD_EXT_Payload(DefaultCommandPayload):
     command_payload = Message([
         PayloadItem(name = 'time', dimension = 1, datatype = 'd'),
         PayloadItem(name = 'timeMode', dimension = 1, datatype = 'H'),
@@ -658,7 +649,7 @@ class CMD_EXT_Payload(XcomDefaultCommandPayload):
     ])
 
 @command(0x5)
-class XcomCommandPayload(XcomDefaultCommandPayload):
+class XcomCommandPayload(DefaultCommandPayload):
     command_payload = Message([
         PayloadItem(name = 'mode', dimension = 1, datatype = 'H'),
         PayloadItem(name = 'channelNumber', dimension = 1, datatype = 'H'),
@@ -676,12 +667,12 @@ def parameter(parameter_id):
 
     return decorator
 
-class PARSYS_STRING_Payload(XcomDefaultParameterPayload):
+class PARSYS_STRING_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'str', dimension = 32, datatype = 's')
     ])
 
-class PARSYS_STRING64_Payload(XcomDefaultParameterPayload):
+class PARSYS_STRING64_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'str', dimension = 64, datatype = 's')
     ])
@@ -727,14 +718,14 @@ class PARSYS_NAVPARSET_Payload(PARSYS_STRING_Payload):
     pass
 
 @parameter(11)
-class PARSYS_MAINTIMING_Payload(XcomDefaultParameterPayload):
+class PARSYS_MAINTIMING_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'maintiming', dimension = 1, datatype = 'H'),
         PayloadItem(name = 'password', dimension = 1, datatype = 'H'),
     ])
 
 @parameter(4)
-class PARSYS_CALDATE_Payload(XcomDefaultParameterPayload):
+class PARSYS_CALDATE_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'password', dimension = 1, datatype = 'H'),
         PayloadItem(name = 'reserved2', dimension = 1, datatype = 'H'),
@@ -742,32 +733,32 @@ class PARSYS_CALDATE_Payload(XcomDefaultParameterPayload):
     ])
 
 @parameter(12)
-class PARSYS_PRESCALER_Payload(XcomDefaultParameterPayload):
+class PARSYS_PRESCALER_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'prescaler', dimension = 1, datatype = 'H'),
         PayloadItem(name = 'password', dimension = 1, datatype = 'H'),
     ])
 
 @parameter(13)
-class PARSYS_UPTIME_Payload(XcomDefaultParameterPayload):
+class PARSYS_UPTIME_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'uptime', dimension = 1, datatype = 'f'),
     ])
 
 @parameter(14)
-class PARSYS_OPHOURCOUNT_Payload(XcomDefaultParameterPayload):
+class PARSYS_OPHOURCOUNT_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'ophours', dimension = 1, datatype = 'I'),
     ])
 
 @parameter(15)
-class PARSYS_BOOTMODE_Payload(XcomDefaultParameterPayload):
+class PARSYS_BOOTMODE_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'bootmode', dimension = 1, datatype = 'I'),
     ])
 
 @parameter(16)
-class PARSYS_FPGAVER_Payload(XcomDefaultParameterPayload):
+class PARSYS_FPGAVER_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'major', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'minor', dimension = 1, datatype = 'B'),
@@ -775,7 +766,7 @@ class PARSYS_FPGAVER_Payload(XcomDefaultParameterPayload):
     ])
 
 @parameter(17)
-class PARSYS_CONFIGCRC_Payload(XcomDefaultParameterPayload):
+class PARSYS_CONFIGCRC_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'romCRC', dimension = 1, datatype = 'H'),
         PayloadItem(name = 'ramCRC', dimension = 1, datatype = 'H'),
@@ -790,7 +781,7 @@ class PARSYS_SYSNAME_Payload(PARSYS_STRING64_Payload):
     pass
 
 @parameter(22)
-class PARSYS_CALIBID_Payload(XcomDefaultParameterPayload):
+class PARSYS_CALIBID_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'calib_id', dimension = 1, datatype = 'I'),
     ])
@@ -799,67 +790,51 @@ class PARSYS_CALIBID_Payload(XcomDefaultParameterPayload):
 PARIMU
 """
 @parameter(105)
-class PARIMU_MISALIGN_Payload(XcomDefaultParameterPayload):
+class PARIMU_MISALIGN_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'rpy', dimension = 3, datatype = 'f'),
     ])
 
 @parameter(107)
-class PARIMU_TYPE_Payload(XcomDefaultParameterPayload):
+class PARIMU_TYPE_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'type', dimension = 1, datatype = 'I'),
     ])
 
 @parameter(108)
-class PARIMU_LATENCY_Payload(XcomDefaultParameterPayload):
+class PARIMU_LATENCY_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'latency', dimension = 1, datatype = 'd'),
     ])
 
 
-@parameter(109)
-class PARIMU_CALIB_Payload(XcomDefaultParameterPayload):
-    parameter_payload = Message([
-        PayloadItem(name = 'sfAcc', dimension = 3, datatype = 'f'),
-        PayloadItem(name = 'biasAcc', dimension = 3, datatype = 'f'),
-        PayloadItem(name = 'sfOmg', dimension = 3, datatype = 'f'),
-        PayloadItem(name = 'biasOmg', dimension = 3, datatype = 'f'),
-    ])
-
-@parameter(110)
-class PARIMU_CROSSCOUPLING_Payload(XcomDefaultParameterPayload):
-    parameter_payload = Message([
-        PayloadItem(name = 'CCAcc', dimension = 9, datatype = 'd'),
-        PayloadItem(name = 'CCOmg', dimension = 9, datatype = 'd'),
-    ])
-
 @parameter(111)
-class PARIMU_REFPOINTOFFSET_Payload(XcomDefaultParameterPayload):
+class PARIMU_REFPOINTOFFSET_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'offset', dimension = 3, datatype = 'd'),
     ])
 
 @parameter(112)
-class PARIMU_BANDSTOP_Payload(XcomDefaultParameterPayload):
+class PARIMU_BANDSTOP_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'bandwidth', dimension = 1, datatype = 'f'),
         PayloadItem(name = 'center', dimension = 1, datatype = 'f'),
     ])
 
 @parameter(113)
-class PARIMU_COMPMETHOD_Payload(XcomDefaultParameterPayload):
+class PARIMU_COMPMETHOD_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'method', dimension = 1, datatype = 'I'),
     ])
 
 @parameter(114)
-class PARIMU_ACCLEVERARM_Payload(XcomDefaultParameterPayload):
+class PARIMU_ACCLEVERARM_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'leverarms', dimension = 9, datatype = 'd'),
     ])
 
 @parameter(115)
-class PARIMU_STRAPDOWNCONF_Payload(XcomDefaultParameterPayload):
+class PARIMU_STRAPDOWNCONF_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'isIncType', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'deltaVFrame', dimension = 1, datatype = 'B'),
@@ -868,14 +843,14 @@ class PARIMU_STRAPDOWNCONF_Payload(XcomDefaultParameterPayload):
     ])
 
 @parameter(117)
-class PARIMU_RANGE_Payload(XcomDefaultParameterPayload):
+class PARIMU_RANGE_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'range_accel', dimension = 1, datatype = 'f'),
         PayloadItem(name = 'range_gyro', dimension = 1, datatype = 'f'),
     ])
 
 @parameter(118)
-class PARIMU_CALIBDATA_Payload(XcomDefaultParameterPayload):
+class PARIMU_CALIBDATA_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'calib_version', dimension = 1, datatype = 'I'),
         PayloadItem(name = 'calib_id', dimension = 1, datatype = 'I'),
@@ -895,7 +870,7 @@ class PARIMU_CALIBDATA_Payload(XcomDefaultParameterPayload):
 PARGNSS
 """
 @parameter(200)
-class PARGNSS_PORT_Payload(XcomDefaultParameterPayload):
+class PARGNSS_PORT_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'port', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'reserved2', dimension = 1, datatype = 'B'),
@@ -903,7 +878,7 @@ class PARGNSS_PORT_Payload(XcomDefaultParameterPayload):
     ])
 
 @parameter(201)
-class PARGNSS_BAUD_Payload(XcomDefaultParameterPayload):
+class PARGNSS_BAUD_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'baud', dimension = 1, datatype = 'I'),
         PayloadItem(name = 'reserved2', dimension = 1, datatype = 'H'),
@@ -911,14 +886,14 @@ class PARGNSS_BAUD_Payload(XcomDefaultParameterPayload):
     ])
 
 @parameter(203)
-class PARGNSS_LATENCY_Payload(XcomDefaultParameterPayload):
+class PARGNSS_LATENCY_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'baud', dimension = 1, datatype = 'f'),
         PayloadItem(name = 'reserved2', dimension = 1, datatype = 'H'),
     ])
 
 @parameter(204)
-class PARGNSS_ANTOFFSET_Payload(XcomDefaultParameterPayload):
+class PARGNSS_ANTOFFSET_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'antennaOffset', dimension = 3, datatype = 'f'),
         PayloadItem(name = 'stdDev', dimension = 3, datatype = 'f'),
@@ -929,28 +904,28 @@ class PARGNSS_ANTOFFSET_Payload(XcomDefaultParameterPayload):
         return super().get_name() + '_' + str(self.data.get('reserved_paramheader', ''))
 
 @parameter(207)
-class PARGNSS_RTKMODE_Payload(XcomDefaultParameterPayload):
+class PARGNSS_RTKMODE_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'rtkMode', dimension = 1, datatype = 'I'),
     ])
 
 
 @parameter(209)
-class PARGNSS_AIDFRAME_Payload(XcomDefaultParameterPayload):
+class PARGNSS_AIDFRAME_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'aidingFrame', dimension = 1, datatype = 'I'),
     ])
 
 
 @parameter(211)
-class PARGNSS_DUALANTMODE_Payload(XcomDefaultParameterPayload):
+class PARGNSS_DUALANTMODE_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'dualAntMode', dimension = 1, datatype = 'I'),
     ])
 
 
 @parameter(212)
-class PARGNSS_LOCKOUTSYSTEM_Payload(XcomDefaultParameterPayload):
+class PARGNSS_LOCKOUTSYSTEM_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'lockoutMask', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'reserved2', dimension = 1, datatype = 'B'),
@@ -959,7 +934,7 @@ class PARGNSS_LOCKOUTSYSTEM_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(213)
-class PARGNSS_RTCMV3CONFIG_Payload(XcomDefaultParameterPayload):
+class PARGNSS_RTCMV3CONFIG_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'port', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'enable', dimension = 1, datatype = 'B'),
@@ -969,7 +944,7 @@ class PARGNSS_RTCMV3CONFIG_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(214)
-class PARGNSS_NAVCONFIG_Payload(XcomDefaultParameterPayload):
+class PARGNSS_NAVCONFIG_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'elevationCutoff', dimension = 1, datatype = 'f'),
         PayloadItem(name = 'CN0ThreshSVs', dimension = 1, datatype = 'B'),
@@ -979,7 +954,7 @@ class PARGNSS_NAVCONFIG_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(215)
-class PARGNSS_STDDEV_Payload(XcomDefaultParameterPayload):
+class PARGNSS_STDDEV_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'stdDevScalingPos', dimension = 1, datatype = 'f'),
         PayloadItem(name = 'minStdDevPos', dimension = 1, datatype = 'f'),
@@ -991,7 +966,7 @@ class PARGNSS_STDDEV_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(216)
-class PARGNSS_VOTER_Payload(XcomDefaultParameterPayload):
+class PARGNSS_VOTER_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'enable', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'debugEnable', dimension = 1, datatype = 'B'),
@@ -1006,7 +981,7 @@ class PARGNSS_VOTER_Payload(XcomDefaultParameterPayload):
     ])
 
 @parameter(217)
-class PARGNSS_MODEL_Payload(XcomDefaultParameterPayload):
+class PARGNSS_MODEL_Payload(DefaultParameterPayload):
     __sub_payloads = [
         [PayloadItem(name = f'modelName_{idx}', dimension = 16, datatype = 's'),
         PayloadItem(name = f'year_{idx}', dimension = 1, datatype = 'I'),
@@ -1022,7 +997,7 @@ class PARGNSS_MODEL_Payload(XcomDefaultParameterPayload):
     ])
 
 @parameter(218)
-class PARGNSS_VERSION_Payload(XcomDefaultParameterPayload):
+class PARGNSS_VERSION_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'type', dimension = 1, datatype = 'I'),
         PayloadItem(name = 'model', dimension = 16, datatype = 's'),
@@ -1036,14 +1011,14 @@ class PARGNSS_VERSION_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(219)
-class PARGNSS_RTKSOLTHR_Payload(XcomDefaultParameterPayload):
+class PARGNSS_RTKSOLTHR_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'positionType', dimension = 1, datatype = 'I'),
     ])
 
 
 @parameter(220)
-class PARGNSS_TERRASTAR_Payload(XcomDefaultParameterPayload):
+class PARGNSS_TERRASTAR_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'PPPPosition', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'reserved2', dimension = 7, datatype = 'B'),
@@ -1051,7 +1026,7 @@ class PARGNSS_TERRASTAR_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(224)
-class PARGNSS_CORPORTCFG_Payload(XcomDefaultParameterPayload):
+class PARGNSS_CORPORTCFG_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'rxType', dimension = 1, datatype = 'I'),
         PayloadItem(name = 'txType', dimension = 1, datatype = 'I'),
@@ -1061,19 +1036,8 @@ class PARGNSS_CORPORTCFG_Payload(XcomDefaultParameterPayload):
     ])
 
 
-@parameter(225)
-class PARGNSS_GATEWAYCFG_Payload(XcomDefaultParameterPayload):
-    parameter_payload = Message([
-        PayloadItem(name = 'udpEnable', dimension = 1, datatype = 'B'),
-        PayloadItem(name = 'reserved2', dimension = 3, datatype = 'B'),
-        PayloadItem(name = 'udpAddr', dimension = 1, datatype = 'I'),
-        PayloadItem(name = 'udpPort', dimension = 1, datatype = 'I'),
-        PayloadItem(name = 'tcpPort', dimension = 1, datatype = 'I'),
-    ])
-
-
 @parameter(226)
-class PARGNSS_SWITCHER_Payload(XcomDefaultParameterPayload):
+class PARGNSS_SWITCHER_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'enable', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'switcher', dimension = 1, datatype = 'B'),
@@ -1082,7 +1046,7 @@ class PARGNSS_SWITCHER_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(221)
-class PARGNSS_REFSTATION_Payload(XcomDefaultParameterPayload):
+class PARGNSS_REFSTATION_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'enableNTRIP', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'useFIXPOS', dimension = 1, datatype = 'B'),
@@ -1092,7 +1056,7 @@ class PARGNSS_REFSTATION_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(222)
-class PARGNSS_FIXPOS_Payload(XcomDefaultParameterPayload):
+class PARGNSS_FIXPOS_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'pos', dimension = 1, datatype = 'd'),
         PayloadItem(name = 'posStdDev', dimension = 1, datatype = 'd'),
@@ -1100,7 +1064,7 @@ class PARGNSS_FIXPOS_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(223)
-class PARGNSS_POSAVE_Payload(XcomDefaultParameterPayload):
+class PARGNSS_POSAVE_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'maxTime', dimension = 1, datatype = 'f'),
         PayloadItem(name = 'maxHorStdDev', dimension = 1, datatype = 'f'),
@@ -1116,7 +1080,7 @@ class PARGNSS_POSAVE_Payload(XcomDefaultParameterPayload):
 PARMAG
 """
 @parameter(300)
-class PARMAG_COM_Payload(XcomDefaultParameterPayload):
+class PARMAG_COM_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'port', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'reserved3', dimension = 3, datatype = 'B'),
@@ -1125,21 +1089,21 @@ class PARMAG_COM_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(302)
-class PARMAG_PERIOD_Payload(XcomDefaultParameterPayload):
+class PARMAG_PERIOD_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'period', dimension = 1, datatype = 'I'),
     ])
 
 
 @parameter(304)
-class PARMAG_MISALIGN_Payload(XcomDefaultParameterPayload):
+class PARMAG_MISALIGN_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'rpy', dimension = 3, datatype = 'f'),
     ])
 
 
 @parameter(307)
-class PARMAG_CAL_Payload(XcomDefaultParameterPayload):
+class PARMAG_CAL_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'C', dimension = 9, datatype = 'f'),
         PayloadItem(name = 'bias', dimension = 3, datatype = 'f'),
@@ -1148,14 +1112,14 @@ class PARMAG_CAL_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(308)
-class PARMAG_CALSTATE_Payload(XcomDefaultParameterPayload):
+class PARMAG_CALSTATE_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'calstate', dimension = 1, datatype = 'i'),
     ])
 
 
 @parameter(310)
-class PARMAG_CFG_Payload(XcomDefaultParameterPayload):
+class PARMAG_CFG_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'configbitfield', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'paramIdx', dimension = 1, datatype = 'B'),
@@ -1164,14 +1128,14 @@ class PARMAG_CFG_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(311)
-class PARMAG_ENABLE_Payload(XcomDefaultParameterPayload):
+class PARMAG_ENABLE_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'enable', dimension = 1, datatype = 'I'),
     ])
 
 
 @parameter(309)
-class PARMAG_FOM_Payload(XcomDefaultParameterPayload):
+class PARMAG_FOM_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'FOM', dimension = 1, datatype = 'f'),
     ])
@@ -1181,14 +1145,14 @@ class PARMAG_FOM_Payload(XcomDefaultParameterPayload):
 PARMADC
 """
 @parameter(400)
-class PARMADC_ENABLE_Payload(XcomDefaultParameterPayload):
+class PARMADC_ENABLE_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'enable', dimension = 1, datatype = 'I'),
     ])
 
 
 @parameter(401)
-class PARMADC_LEVERARM_Payload(XcomDefaultParameterPayload):
+class PARMADC_LEVERARM_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'leverArm', dimension = 3, datatype = 'f'),
         PayloadItem(name = 'leverArmStdDev', dimension = 3, datatype = 'f'),
@@ -1196,7 +1160,7 @@ class PARMADC_LEVERARM_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(402)
-class PARMADC_LOWPASS_Payload(XcomDefaultParameterPayload):
+class PARMADC_LOWPASS_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'cutoff', dimension = 1, datatype = 'f'),
         PayloadItem(name = 'enableFilter', dimension = 1, datatype = 'I'),
@@ -1207,7 +1171,7 @@ class PARMADC_LOWPASS_Payload(XcomDefaultParameterPayload):
 PARODO
 """
 @parameter(1100)
-class PARODO_SCF_Payload(XcomDefaultParameterPayload):
+class PARODO_SCF_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'scfOdo', dimension = 1, datatype = 'f'),
         PayloadItem(name = 'scfEst', dimension = 1, datatype = 'f'),
@@ -1216,14 +1180,14 @@ class PARODO_SCF_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(1101)
-class PARODO_TIMEOUT_Payload(XcomDefaultParameterPayload):
+class PARODO_TIMEOUT_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'timeout', dimension = 1, datatype = 'f'),
     ])
 
 
 @parameter(1102)
-class PARODO_MODE_Payload(XcomDefaultParameterPayload):
+class PARODO_MODE_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'enable', dimension = 1, datatype = 'H'),
         PayloadItem(name = 'mode', dimension = 1, datatype = 'H'),
@@ -1233,28 +1197,28 @@ class PARODO_MODE_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(1103)
-class PARODO_LEVERARM_Payload(XcomDefaultParameterPayload):
+class PARODO_LEVERARM_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'leverArm', dimension = 3, datatype = 'f'),
     ])
 
 
 @parameter(1104)
-class PARODO_VELSTDDEV_Payload(XcomDefaultParameterPayload):
+class PARODO_VELSTDDEV_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'stdDev', dimension = 1, datatype = 'f'),
     ])
 
 
 @parameter(1105)
-class PARODO_DIRECTION_Payload(XcomDefaultParameterPayload):
+class PARODO_DIRECTION_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'direction', dimension = 3, datatype = 'f'),
     ])
 
 
 @parameter(1106)
-class PARODO_CONSTRAINTS_Payload(XcomDefaultParameterPayload):
+class PARODO_CONSTRAINTS_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'enable', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'reserved2', dimension = 1, datatype = 'B'),
@@ -1264,14 +1228,14 @@ class PARODO_CONSTRAINTS_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(1107)
-class PARODO_RATE_Payload(XcomDefaultParameterPayload):
+class PARODO_RATE_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'rate', dimension = 1, datatype = 'f'),
     ])
 
 
 @parameter(1108)
-class PARODO_THR_Payload(XcomDefaultParameterPayload):
+class PARODO_THR_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'thrAcc', dimension = 1, datatype = 'f'),
         PayloadItem(name = 'thrOmg', dimension = 1, datatype = 'f'),
@@ -1279,7 +1243,7 @@ class PARODO_THR_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(1109)
-class PARODO_EQEP_Payload(XcomDefaultParameterPayload):
+class PARODO_EQEP_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'mode', dimension = 1, datatype = 'I'),
     ])
@@ -1289,28 +1253,28 @@ class PARODO_EQEP_Payload(XcomDefaultParameterPayload):
 PARARINC
 """
 @parameter(1200)
-class PARARINC825_PORT_Payload(XcomDefaultParameterPayload):
+class PARARINC825_PORT_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'port', dimension = 1, datatype = 'I'),
     ])
 
 
 @parameter(1201)
-class PARARINC825_BAUD_Payload(XcomDefaultParameterPayload):
+class PARARINC825_BAUD_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'baud', dimension = 1, datatype = 'I'),
     ])
 
 
 @parameter(1202)
-class PARARINC825_ENABLE_Payload(XcomDefaultParameterPayload):
+class PARARINC825_ENABLE_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'reserved2', dimension = 1, datatype = 'H'),
         PayloadItem(name = 'enable', dimension = 1, datatype = 'H'),
     ])
 
 @parameter(1204)
-class PARARINC825_LOGLIST_Payload(XcomDefaultParameterPayload):
+class PARARINC825_LOGLIST_Payload(DefaultParameterPayload):
     __sub_payload = [
         [PayloadItem(name = f'divider_{idx}', dimension = 1, datatype = 'H'), PayloadItem(name = f'reserved_{idx}', dimension = 1, datatype = 'H'), PayloadItem(name = f'docnumber_{idx}', dimension = 1, datatype = 'H')] for idx in range(0, 30)
     ]
@@ -1320,7 +1284,7 @@ class PARARINC825_LOGLIST_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(1205)
-class PARARINC825_BUSRECOVERY_Payload(XcomDefaultParameterPayload):
+class PARARINC825_BUSRECOVERY_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'enable', dimension = 1, datatype = 'H'),
         PayloadItem(name = 'reserved2', dimension = 1, datatype = 'H'),
@@ -1328,7 +1292,7 @@ class PARARINC825_BUSRECOVERY_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(1206)
-class PARARINC825_RESETSTATUS_Payload(XcomDefaultParameterPayload):
+class PARARINC825_RESETSTATUS_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'reset', dimension = 1, datatype = 'H'),
         PayloadItem(name = 'busStatus', dimension = 1, datatype = 'H'),
@@ -1336,7 +1300,7 @@ class PARARINC825_RESETSTATUS_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(1207)
-class PARARINC825_SCALEFACTOR_Payload(XcomDefaultParameterPayload):
+class PARARINC825_SCALEFACTOR_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'ScfAcc', dimension = 1, datatype = 'd'),
         PayloadItem(name = 'ScfOmg', dimension = 1, datatype = 'd'),
@@ -1353,7 +1317,7 @@ class PARARINC825_SCALEFACTOR_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(1208)
-class PARARINC825_EVENTMASK_Payload(XcomDefaultParameterPayload):
+class PARARINC825_EVENTMASK_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'eventMask', dimension = 1, datatype = 'I'),
     ])
@@ -1363,7 +1327,7 @@ class PARARINC825_EVENTMASK_Payload(XcomDefaultParameterPayload):
 PARREC
 """
 @parameter(600)
-class PARREC_CONFIG_Payload(XcomDefaultParameterPayload):
+class PARREC_CONFIG_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'channelNumber', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'autostart', dimension = 1, datatype = 'B'),
@@ -1372,32 +1336,32 @@ class PARREC_CONFIG_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(603)
-class PARREC_START_Payload(XcomDefaultParameterPayload):
+class PARREC_START_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'str', dimension = 128, datatype = 's'),
     ])
 
 
 @parameter(604)
-class PARREC_STOP_Payload(XcomDefaultParameterPayload):
+class PARREC_STOP_Payload(DefaultParameterPayload):
     pass
 
 @parameter(605)
-class PARREC_POWER_Payload(XcomDefaultParameterPayload):
+class PARREC_POWER_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'enable', dimension = 1, datatype = 'I'),
     ])
 
 
 @parameter(607)
-class PARREC_DISKSPACE_Payload(XcomDefaultParameterPayload):
+class PARREC_DISKSPACE_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'freespace', dimension = 1, datatype = 'd'),
     ])
 
 
 @parameter(608)
-class PARREC_AUXILIARY_Payload(XcomDefaultParameterPayload):
+class PARREC_AUXILIARY_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'port', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'enable', dimension = 1, datatype = 'B'),
@@ -1409,7 +1373,7 @@ class PARREC_AUXILIARY_Payload(XcomDefaultParameterPayload):
 
         
 @parameter(606)
-class PARREC_SUFFIX_Payload(XcomDefaultParameterPayload):
+class PARREC_SUFFIX_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'suffix', dimension = 128, datatype = 's'),
     ])
@@ -1419,14 +1383,14 @@ class PARREC_SUFFIX_Payload(XcomDefaultParameterPayload):
 PAREKF
 """
 @parameter(700)
-class PAREKF_ALIGNMODE_Payload(XcomDefaultParameterPayload):
+class PAREKF_ALIGNMODE_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'alignmode', dimension = 1, datatype = 'I'),
     ])
 
 
 @parameter(708)
-class PAREKF_HDGPOSTHR_Payload(XcomDefaultParameterPayload):
+class PAREKF_HDGPOSTHR_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'hdgGoodThr', dimension = 1, datatype = 'f'),
         PayloadItem(name = 'posMedThr', dimension = 1, datatype = 'f'),
@@ -1435,21 +1399,21 @@ class PAREKF_HDGPOSTHR_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(701)
-class PAREKF_ALIGNTIME_Payload(XcomDefaultParameterPayload):
+class PAREKF_ALIGNTIME_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'aligntime', dimension = 1, datatype = 'I'),
     ])
 
 
 @parameter(702)
-class PAREKF_COARSETIME_Payload(XcomDefaultParameterPayload):
+class PAREKF_COARSETIME_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'coarsetime', dimension = 1, datatype = 'I'),
     ])
 
 
 @parameter(703)
-class PAREKF_VMP_Payload(XcomDefaultParameterPayload):
+class PAREKF_VMP_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'leverArm', dimension = 3, datatype = 'f'),
         PayloadItem(name = 'mask', dimension = 1, datatype = 'H'),
@@ -1457,23 +1421,16 @@ class PAREKF_VMP_Payload(XcomDefaultParameterPayload):
     ])
 
 
-@parameter(704)
-class PAREKF_AIDING_Payload(XcomDefaultParameterPayload):
-    parameter_payload = Message([
-        PayloadItem(name = 'aidingMode', dimension = 1, datatype = 'I'),
-        PayloadItem(name = 'aidingMask', dimension = 1, datatype = 'I'),
-    ])
-
 
 @parameter(706)
-class PAREKF_DELAY_Payload(XcomDefaultParameterPayload):
+class PAREKF_DELAY_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'delay', dimension = 1, datatype = 'I'),
     ])
 
 
 @parameter(716)
-class PAREKF_OUTLIER_Payload(XcomDefaultParameterPayload):
+class PAREKF_OUTLIER_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'outlierMode', dimension = 1, datatype = 'I'),
         PayloadItem(name = 'outlierMask', dimension = 1, datatype = 'I'),
@@ -1481,7 +1438,7 @@ class PAREKF_OUTLIER_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(707)
-class PAREKF_STARTUP_Payload(XcomDefaultParameterPayload):
+class PAREKF_STARTUP_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'initLon', dimension = 1, datatype = 'd'),
         PayloadItem(name = 'initLat', dimension = 1, datatype = 'd'),
@@ -1500,7 +1457,7 @@ class PAREKF_STARTUP_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(731)
-class PAREKF_STARTUPV2_Payload(XcomDefaultParameterPayload):
+class PAREKF_STARTUPV2_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'initLon', dimension = 1, datatype = 'd'),
         PayloadItem(name = 'initLat', dimension = 1, datatype = 'd'),
@@ -1521,7 +1478,7 @@ class PAREKF_STARTUPV2_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(712)
-class PAREKF_ZUPT_Payload(XcomDefaultParameterPayload):
+class PAREKF_ZUPT_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'accThr', dimension = 1, datatype = 'd'),
         PayloadItem(name = 'omgThr', dimension = 1, datatype = 'd'),
@@ -1538,7 +1495,7 @@ class PAREKF_ZUPT_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(714)
-class PAREKF_DEFPOS_Payload(XcomDefaultParameterPayload):
+class PAREKF_DEFPOS_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'lon', dimension = 1, datatype = 'd'),
         PayloadItem(name = 'lat', dimension = 1, datatype = 'd'),
@@ -1547,28 +1504,28 @@ class PAREKF_DEFPOS_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(715)
-class PAREKF_DEFHDG_Payload(XcomDefaultParameterPayload):
+class PAREKF_DEFHDG_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'hdg', dimension = 1, datatype = 'f'),
     ])
 
 
 @parameter(709)
-class PAREKF_SMOOTH_Payload(XcomDefaultParameterPayload):
+class PAREKF_SMOOTH_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'smooth', dimension = 1, datatype = 'I'),
     ])
 
 
 @parameter(717)
-class PAREKF_POWERDOWN_Payload(XcomDefaultParameterPayload):
+class PAREKF_POWERDOWN_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'savestate', dimension = 1, datatype = 'I'),
     ])
 
 
 @parameter(718)
-class PAREKF_EARTHRAD_Payload(XcomDefaultParameterPayload):
+class PAREKF_EARTHRAD_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'M', dimension = 1, datatype = 'f'),
         PayloadItem(name = 'N', dimension = 1, datatype = 'f'),
@@ -1576,7 +1533,7 @@ class PAREKF_EARTHRAD_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(719)
-class PAREKF_STOREDPOS_Payload(XcomDefaultParameterPayload):
+class PAREKF_STOREDPOS_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'lon', dimension = 1, datatype = 'd'),
         PayloadItem(name = 'lat', dimension = 1, datatype = 'd'),
@@ -1588,7 +1545,7 @@ class PAREKF_STOREDPOS_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(723)
-class PAREKF_STOREDATT_Payload(XcomDefaultParameterPayload):
+class PAREKF_STOREDATT_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'rpy', dimension = 3, datatype = 'f'),
         PayloadItem(name = 'stdDev', dimension = 3, datatype = 'f'),
@@ -1596,28 +1553,21 @@ class PAREKF_STOREDATT_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(720)
-class PAREKF_ALIGNZUPTSTDDEV_Payload(XcomDefaultParameterPayload):
+class PAREKF_ALIGNZUPTSTDDEV_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'zuptStdDev', dimension = 1, datatype = 'd'),
     ])
 
 
 @parameter(721)
-class PAREKF_POSAIDSTDDEVTHR_Payload(XcomDefaultParameterPayload):
+class PAREKF_POSAIDSTDDEVTHR_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'thr', dimension = 1, datatype = 'd'),
     ])
 
 
-@parameter(722)
-class PAREKF_SCHULERMODE_Payload(XcomDefaultParameterPayload):
-    parameter_payload = Message([
-        PayloadItem(name = 'enable', dimension = 1, datatype = 'I'),
-    ])
-
-
 @parameter(724)
-class PAREKF_ODOMETER_Payload(XcomDefaultParameterPayload):
+class PAREKF_ODOMETER_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'sfError', dimension = 1, datatype = 'f'),
         PayloadItem(name = 'sfStdDev', dimension = 1, datatype = 'f'),
@@ -1636,7 +1586,7 @@ class PAREKF_ODOMETER_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(725)
-class PAREKF_ODOBOGIE_Payload(XcomDefaultParameterPayload):
+class PAREKF_ODOBOGIE_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'distance', dimension = 1, datatype = 'f'),
         PayloadItem(name = 'enable', dimension = 1, datatype = 'I'),
@@ -1644,7 +1594,7 @@ class PAREKF_ODOBOGIE_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(726)
-class PAREKF_GNSSLEVERARMEST_Payload(XcomDefaultParameterPayload):
+class PAREKF_GNSSLEVERARMEST_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'primary', dimension = 1, datatype = 'H'),
         PayloadItem(name = 'secondary', dimension = 1, datatype = 'H'),
@@ -1652,7 +1602,7 @@ class PAREKF_GNSSLEVERARMEST_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(727)
-class PAREKF_GNSSAIDINGRATE_Payload(XcomDefaultParameterPayload):
+class PAREKF_GNSSAIDINGRATE_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'psrpos', dimension = 1, datatype = 'H'),
         PayloadItem(name = 'psrvel', dimension = 1, datatype = 'H'),
@@ -1664,21 +1614,21 @@ class PAREKF_GNSSAIDINGRATE_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(728)
-class PAREKF_KINALIGNTHR_Payload(XcomDefaultParameterPayload):
+class PAREKF_KINALIGNTHR_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'thr', dimension = 1, datatype = 'f'),
     ])
 
 
 @parameter(729)
-class PAREKF_PDOPTHR_Payload(XcomDefaultParameterPayload):
+class PAREKF_PDOPTHR_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'thr', dimension = 1, datatype = 'f'),
     ])
 
 
 @parameter(730)
-class PAREKF_DUALANTAID_Payload(XcomDefaultParameterPayload):
+class PAREKF_DUALANTAID_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'thrHdg', dimension = 1, datatype = 'f'),
         PayloadItem(name = 'thrPitch', dimension = 1, datatype = 'f'),
@@ -1688,7 +1638,7 @@ class PAREKF_DUALANTAID_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(732)
-class PAREKF_MAGATTAID_Payload(XcomDefaultParameterPayload):
+class PAREKF_MAGATTAID_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'samplePeriods', dimension = 1, datatype = 'I'),
         PayloadItem(name = 'thrHdg', dimension = 1, datatype = 'f'),
@@ -1702,7 +1652,7 @@ class PAREKF_MAGATTAID_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(733)
-class PAREKF_MADCAID_Payload(XcomDefaultParameterPayload):
+class PAREKF_MADCAID_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'altStdDev', dimension = 1, datatype = 'f'),
         PayloadItem(name = 'latency', dimension = 1, datatype = 'f'),
@@ -1718,7 +1668,7 @@ class PAREKF_MADCAID_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(734)
-class PAREKF_ALIGNMENT_Payload(XcomDefaultParameterPayload):
+class PAREKF_ALIGNMENT_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'method', dimension = 1, datatype = 'I'),
         PayloadItem(name = 'levellingDuration', dimension = 1, datatype = 'H'),
@@ -1734,7 +1684,7 @@ class PAREKF_ALIGNMENT_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(735)
-class PAREKF_GRAVITYAID_Payload(XcomDefaultParameterPayload):
+class PAREKF_GRAVITYAID_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'enable', dimension = 1, datatype = 'I'),
         PayloadItem(name = 'omgThresh', dimension = 1, datatype = 'f'),
@@ -1745,15 +1695,9 @@ class PAREKF_GRAVITYAID_Payload(XcomDefaultParameterPayload):
     ])
 
 
-@parameter(736)
-class PAREKF_FEEDBACK_Payload(XcomDefaultParameterPayload):
-    parameter_payload = Message([
-        PayloadItem(name = 'feedbackMask', dimension = 1, datatype = 'I'),
-    ])
-
 
 @parameter(737)
-class PAREKF_ZARU_Payload(XcomDefaultParameterPayload):
+class PAREKF_ZARU_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'enable', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'reserved2', dimension = 3, datatype = 'B'),
@@ -1761,7 +1705,7 @@ class PAREKF_ZARU_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(738)
-class PAREKF_IMUCONFIG_Payload(XcomDefaultParameterPayload):
+class PAREKF_IMUCONFIG_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'accPSD', dimension = 3, datatype = 'd'),
         PayloadItem(name = 'accOffStdDev', dimension = 3, datatype = 'd'),
@@ -1783,22 +1727,16 @@ class PAREKF_IMUCONFIG_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(739)
-class PAREKF_ZUPTCALIB_Payload(XcomDefaultParameterPayload):
+class PAREKF_ZUPTCALIB_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'zuptCalibTime', dimension = 1, datatype = 'H'),
         PayloadItem(name = 'reserved2', dimension = 1, datatype = 'H'),
     ])
 
 
-@parameter(740)
-class PAREKF_STATEFREEZE_Payload(XcomDefaultParameterPayload):
-    parameter_payload = Message([
-        PayloadItem(name = 'freezeMask', dimension = 1, datatype = 'I'),
-    ])
-
 
 @parameter(741)
-class PAREKF_RECOVERY_Payload(XcomDefaultParameterPayload):
+class PAREKF_RECOVERY_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'recoveryMask', dimension = 1, datatype = 'I'),
     ])
@@ -1808,7 +1746,7 @@ class PAREKF_RECOVERY_Payload(XcomDefaultParameterPayload):
 PARDAT
 """
 @parameter(800)
-class PARDAT_POS_Payload(XcomDefaultParameterPayload):
+class PARDAT_POS_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'posMode', dimension = 1, datatype = 'H'),
         PayloadItem(name = 'altMode', dimension = 1, datatype = 'H'),
@@ -1816,27 +1754,27 @@ class PARDAT_POS_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(801)
-class PARDAT_VEL_Payload(XcomDefaultParameterPayload):
+class PARDAT_VEL_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'velMode', dimension = 1, datatype = 'I'),
     ])
 
 
 @parameter(802)
-class PARDAT_IMU_Payload(XcomDefaultParameterPayload):
+class PARDAT_IMU_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'imuMode', dimension = 1, datatype = 'I'),
     ])
 
 
 @parameter(803)
-class PARDAT_SYSSTAT_Payload(XcomDefaultParameterPayload):
+class PARDAT_SYSSTAT_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'statMode', dimension = 1, datatype = 'I'),
     ])
 
 
-class PARDAT_STATFPGA_Payload(XcomDefaultParameterPayload):
+class PARDAT_STATFPGA_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'powerStatLower', dimension = 1, datatype = 'I'),
         PayloadItem(name = 'powerStatUpper', dimension = 1, datatype = 'I'),
@@ -1852,7 +1790,7 @@ class PARDAT_STATFPGA_Payload(XcomDefaultParameterPayload):
 PARXCOM
 """
 @parameter(902)
-class PARXCOM_SERIALPORT_Payload(XcomDefaultParameterPayload):
+class PARXCOM_SERIALPORT_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'port', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'switch', dimension = 1, datatype = 'B'),
@@ -1862,7 +1800,7 @@ class PARXCOM_SERIALPORT_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(903)
-class PARXCOM_NETCONFIG_Payload(XcomDefaultParameterPayload):
+class PARXCOM_NETCONFIG_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'mode', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'protocol', dimension = 1, datatype = 'B'),
@@ -1875,7 +1813,7 @@ class PARXCOM_NETCONFIG_Payload(XcomDefaultParameterPayload):
     ])
 
 @parameter(905)
-class PARXCOM_LOGLIST_Payload(XcomDefaultParameterPayload):
+class PARXCOM_LOGLIST_Payload(DefaultParameterPayload):
     __sub_payload = [
         [PayloadItem(name = f'divider_{idx}', dimension = 1, datatype = 'H'), PayloadItem(name = f'msgid_{idx}', dimension = 1, datatype = 'H')] for idx in range(0, 16)
     ]
@@ -1885,7 +1823,7 @@ class PARXCOM_LOGLIST_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(906)
-class PARXCOM_AUTOSTART_Payload(XcomDefaultParameterPayload):
+class PARXCOM_AUTOSTART_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'channelNumber', dimension = 1, datatype = 'H'),
         PayloadItem(name = 'autoStart', dimension = 1, datatype = 'H'),
@@ -1895,7 +1833,7 @@ class PARXCOM_AUTOSTART_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(907)
-class PARXCOM_NTRIP_Payload(XcomDefaultParameterPayload):
+class PARXCOM_NTRIP_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'stream', dimension = 128, datatype = 's'),
         PayloadItem(name = 'user', dimension = 128, datatype = 's'),
@@ -1909,26 +1847,15 @@ class PARXCOM_NTRIP_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(908)
-class PARXCOM_POSTPROC_Payload(XcomDefaultParameterPayload):
+class PARXCOM_POSTPROC_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'enable', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'channel', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'reserved2', dimension = 1, datatype = 'H'),
     ])
 
-
-@parameter(909)
-class PARXCOM_BROADCAST_Payload(XcomDefaultParameterPayload):
-    parameter_payload = Message([
-        PayloadItem(name = 'port', dimension = 1, datatype = 'I'),
-        PayloadItem(name = 'hidden_mode', dimension = 1, datatype = 'B'),
-        PayloadItem(name = 'reserved2', dimension = 1, datatype = 'B'),
-        PayloadItem(name = 'reserved3', dimension = 1, datatype = 'H'),
-    ])
-
-
 @parameter(910)
-class PARXCOM_UDPCONFIG_Payload(XcomDefaultParameterPayload):
+class PARXCOM_UDPCONFIG_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'ip', dimension = 1, datatype = 'I'),
         PayloadItem(name = 'port', dimension = 1, datatype = 'I'),
@@ -1940,28 +1867,20 @@ class PARXCOM_UDPCONFIG_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(911)
-class PARXCOM_DUMPENABLE_Payload(XcomDefaultParameterPayload):
+class PARXCOM_DUMPENABLE_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'enable', dimension = 1, datatype = 'I'),
     ])
 
 
 @parameter(912)
-class PARXCOM_MIGRATOR_Payload(XcomDefaultParameterPayload):
+class PARXCOM_MIGRATOR_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'enable', dimension = 1, datatype = 'I'),
     ])
 
-
-@parameter(920)
-class PARXCOM_FRAMEOUT_Payload(XcomDefaultParameterPayload):
-    parameter_payload = Message([
-        PayloadItem(name = 'outputframe', dimension = 1, datatype = 'I'),
-    ])
-
-
 @parameter(913)
-class PARXCOM_TCPKEEPAL_Payload(XcomDefaultParameterPayload):
+class PARXCOM_TCPKEEPAL_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'timeout', dimension = 1, datatype = 'H'),
         PayloadItem(name = 'interval', dimension = 1, datatype = 'H'),
@@ -1971,7 +1890,7 @@ class PARXCOM_TCPKEEPAL_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(914)
-class PARXCOM_CANGATEWAY_Payload(XcomDefaultParameterPayload):
+class PARXCOM_CANGATEWAY_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'srcPort', dimension = 1, datatype = 'I'),
         PayloadItem(name = 'destPort', dimension = 1, datatype = 'I'),
@@ -1984,21 +1903,21 @@ class PARXCOM_CANGATEWAY_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(915)
-class PARXCOM_DEFAULTIP_Payload(XcomDefaultParameterPayload):
+class PARXCOM_DEFAULTIP_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'defaultAddress', dimension = 1, datatype = 'I'),
     ])
 
 
 @parameter(916)
-class PARXCOM_ABDCONFIG_Payload(XcomDefaultParameterPayload):
+class PARXCOM_ABDCONFIG_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'destinationPort', dimension = 1, datatype = 'I'),
         PayloadItem(name = 'sourcePort', dimension = 1, datatype = 'I'),
     ])
 
 @parameter(917)
-class PARXCOM_LOGLIST2_Payload(XcomDefaultParameterPayload):
+class PARXCOM_LOGLIST2_Payload(DefaultParameterPayload):
     __sub_payload = [
         [
             PayloadItem(name = f'divider_{idx}', dimension = 1, datatype = 'H'), 
@@ -2012,17 +1931,8 @@ class PARXCOM_LOGLIST2_Payload(XcomDefaultParameterPayload):
         logitem for log in __sub_payload for logitem in log
     ])
 
-@parameter(918)
-class PARXCOM_CALPROC_Payload(XcomDefaultParameterPayload):
-    parameter_payload = Message([
-        PayloadItem(name = 'enable', dimension = 1, datatype = 'B'),
-        PayloadItem(name = 'channel', dimension = 1, datatype = 'B'),
-        PayloadItem(name = 'divider', dimension = 1, datatype = 'H'),
-        PayloadItem(name = 'pathName', dimension = 256, datatype = 's'),
-    ])
-
 @parameter(919)
-class PARXCOM_CLIENT_Payload(XcomDefaultParameterPayload):
+class PARXCOM_CLIENT_Payload(DefaultParameterPayload):
     def __init__(self):
         item_list = []
         for idx in range(0, 8):
@@ -2051,17 +1961,10 @@ class PARXCOM_CLIENT_Payload(XcomDefaultParameterPayload):
 """
 PARFPGA
 """
-@parameter(1003)
-class PARFPGA_TIMER_Payload(XcomDefaultParameterPayload):
-    parameter_payload = Message([
-        PayloadItem(name = 'timer', dimension = 20, datatype = 'I'),
-        PayloadItem(name = 'reserved2', dimension = 1, datatype = 'H'),
-        PayloadItem(name = 'password', dimension = 1, datatype = 'H'),
-    ])
 
 
 @parameter(1002)
-class PARFPGA_TIMINGREG_Payload(XcomDefaultParameterPayload):
+class PARFPGA_TIMINGREG_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'timing_reg', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'reserved2', dimension = 1, datatype = 'B'),
@@ -2071,7 +1974,7 @@ class PARFPGA_TIMINGREG_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(1000)
-class PARFPGA_IMUSTATUSREG_Payload(XcomDefaultParameterPayload):
+class PARFPGA_IMUSTATUSREG_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'register', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'reserved2', dimension = 1, datatype = 'B'),
@@ -2080,7 +1983,7 @@ class PARFPGA_IMUSTATUSREG_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(1001)
-class PARFPGA_HDLCREG_Payload(XcomDefaultParameterPayload):
+class PARFPGA_HDLCREG_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'mode', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'clock', dimension = 1, datatype = 'B'),
@@ -2092,7 +1995,7 @@ class PARFPGA_HDLCREG_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(1004)
-class PARFPGA_INTERFACE_Payload(XcomDefaultParameterPayload):
+class PARFPGA_INTERFACE_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'matrix', dimension = 23, datatype = 'I'),
         PayloadItem(name = 'reserved2', dimension = 1, datatype = 'H'),
@@ -2101,7 +2004,7 @@ class PARFPGA_INTERFACE_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(1005)
-class PARFPGA_CONTROLREG_Payload(XcomDefaultParameterPayload):
+class PARFPGA_CONTROLREG_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'controlReg', dimension = 1, datatype = 'H'),
         PayloadItem(name = 'reserved2', dimension = 1, datatype = 'H'),
@@ -2109,7 +2012,7 @@ class PARFPGA_CONTROLREG_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(1006)
-class PARFPGA_POWERUPTHR_Payload(XcomDefaultParameterPayload):
+class PARFPGA_POWERUPTHR_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'powerupThr', dimension = 1, datatype = 'f'),
         PayloadItem(name = 'reserved2', dimension = 1, datatype = 'f'),
@@ -2117,49 +2020,41 @@ class PARFPGA_POWERUPTHR_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(1007)
-class PARFPGA_INTMAT245_Payload(XcomDefaultParameterPayload):
+class PARFPGA_INTMAT245_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'interfaceMatrix', dimension = 32, datatype = 'B'),
     ])
 
 
 @parameter(1008)
-class PARFPGA_TYPE_Payload(XcomDefaultParameterPayload):
+class PARFPGA_TYPE_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'type', dimension = 1, datatype = 'I'),
     ])
 
 
 @parameter(1009)
-class PARFPGA_GLOBALCONF_Payload(XcomDefaultParameterPayload):
+class PARFPGA_GLOBALCONF_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'configuration', dimension = 1, datatype = 'I'),
     ])
 
 
 @parameter(1010)
-class PARFPGA_HDLCPINMODE_Payload(XcomDefaultParameterPayload):
+class PARFPGA_HDLCPINMODE_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'pinMode', dimension = 1, datatype = 'I'),
     ])
 
-
-@parameter(1011)
-class PARFPGA_POWER_Payload(XcomDefaultParameterPayload):
-    parameter_payload = Message([
-        PayloadItem(name = 'powerSwitch', dimension = 1, datatype = 'I'),
-    ])
-
-
 @parameter(1012)
-class PARFPGA_ALARMTHR_Payload(XcomDefaultParameterPayload):
+class PARFPGA_ALARMTHR_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'alarmThr', dimension = 1, datatype = 'I'),
     ])
 
 
 @parameter(1013)
-class PARFPGA_PPTCONFIG_Payload(XcomDefaultParameterPayload):
+class PARFPGA_PPTCONFIG_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'pptValue', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'pptPulseWidth', dimension = 1, datatype = 'B'),
@@ -2168,7 +2063,7 @@ class PARFPGA_PPTCONFIG_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(1014)
-class PARFPGA_AUTOWAKEUP_Payload(XcomDefaultParameterPayload):
+class PARFPGA_AUTOWAKEUP_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'enableAutoWakeup', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'interval', dimension = 1, datatype = 'B'),
@@ -2177,21 +2072,13 @@ class PARFPGA_AUTOWAKEUP_Payload(XcomDefaultParameterPayload):
     ])
 
 
-@parameter(1016)
-class PARFPGA_CSAC_Payload(XcomDefaultParameterPayload):
-    parameter_payload = Message([
-        PayloadItem(name = 'mode', dimension = 1, datatype = 'B'),
-        PayloadItem(name = 'PPSdisciplineTimeConstant', dimension = 1, datatype = 'I'),
-        PayloadItem(name = 'PPSdisciplineCableLengthComp', dimension = 1, datatype = 'I'),
-        PayloadItem(name = 'PPSphaseThr', dimension = 1, datatype = 'I'),
-    ])
 
 
 """
 PARNMEA
 """
 @parameter(1300)
-class PARNMEA_COM_Payload(XcomDefaultParameterPayload):
+class PARNMEA_COM_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'port', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'reserved2', dimension = 1, datatype = 'B'),
@@ -2201,7 +2088,7 @@ class PARNMEA_COM_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(1301)
-class PARNMEA_ENABLE_Payload(XcomDefaultParameterPayload):
+class PARNMEA_ENABLE_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'reserved2', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'qualityMode', dimension = 1, datatype = 'B'),
@@ -2211,7 +2098,7 @@ class PARNMEA_ENABLE_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(1302)
-class PARNMEA_TXMASK_Payload(XcomDefaultParameterPayload):
+class PARNMEA_TXMASK_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'txMask', dimension = 1, datatype = 'I'),
         PayloadItem(name = 'txMaskUDP', dimension = 1, datatype = 'I'),
@@ -2219,7 +2106,7 @@ class PARNMEA_TXMASK_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(1303)
-class PARNMEA_DECPLACES_Payload(XcomDefaultParameterPayload):
+class PARNMEA_DECPLACES_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'digitsPos', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'digitsHdg', dimension = 1, datatype = 'B'),
@@ -2228,7 +2115,7 @@ class PARNMEA_DECPLACES_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(1304)
-class PARNMEA_RATE_Payload(XcomDefaultParameterPayload):
+class PARNMEA_RATE_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'divisor', dimension = 1, datatype = 'I'),
         PayloadItem(name = 'divisorUDP', dimension = 1, datatype = 'I'),
@@ -2236,7 +2123,7 @@ class PARNMEA_RATE_Payload(XcomDefaultParameterPayload):
 
 
 @parameter(1305)
-class PARNMEA_UDP_Payload(XcomDefaultParameterPayload):
+class PARNMEA_UDP_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'serverAddress', dimension = 1, datatype = 'I'),
         PayloadItem(name = 'port', dimension = 1, datatype = 'I'),
@@ -2250,7 +2137,7 @@ class PARNMEA_UDP_Payload(XcomDefaultParameterPayload):
 PARARINC429
 """
 @parameter(1400)
-class PARARINC429_CONFIG_Payload(XcomDefaultParameterPayload):
+class PARARINC429_CONFIG_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'port', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'enable', dimension = 1, datatype = 'B'),
@@ -2261,7 +2148,7 @@ class PARARINC429_CONFIG_Payload(XcomDefaultParameterPayload):
     ])
 
 @parameter(1401)
-class PARARINC429_LIST_Payload(XcomDefaultParameterPayload):
+class PARARINC429_LIST_Payload(DefaultParameterPayload):
     __sub_payload = [
         [
             PayloadItem(name = f'channel_{idx}', dimension = 1, datatype = 'B'), 
@@ -2283,14 +2170,14 @@ class PARARINC429_LIST_Payload(XcomDefaultParameterPayload):
 IO
 """
 @parameter(1500)
-class PARIO_HW245_Payload(XcomDefaultParameterPayload):
+class PARIO_HW245_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'configIO', dimension = 1, datatype = 'I'),
     ])
 
 
 @parameter(1501)
-class PARIO_HW288_Payload(XcomDefaultParameterPayload):
+class PARIO_HW288_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'toDef', dimension = 1, datatype = 'I'),
     ])
@@ -2309,7 +2196,7 @@ def message(message_id):
     return decorator
 
 @message(MessageID.RESPONSE)
-class XcomResponsePayload(XcomProtocolPayload):
+class ResponsePayload(ProtocolPayload):
     def __init__(self, msgLength):
         self.message_description = Message([
             PayloadItem(name = 'responseID', dimension = 1, datatype = 'H'),
@@ -2320,7 +2207,7 @@ class XcomResponsePayload(XcomProtocolPayload):
 
 
 @message(0x40)
-class POSTPROC_Payload(XcomProtocolPayload):
+class POSTPROC_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'acc', dimension = 3, datatype = 'f', unit = 'm/s²', description = 'Specific force'),
         PayloadItem(name = 'omg', dimension = 3, datatype = 'f', unit = 'rad/s', description = 'Angular rate'),
@@ -2340,7 +2227,7 @@ class POSTPROC_Payload(XcomProtocolPayload):
 
 
 @message(0x03)
-class INSSOL_Payload(XcomProtocolPayload):
+class INSSOL_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'acc', dimension = 3, datatype = 'f', unit = 'm/s²', description = 'Acceleration'),
         PayloadItem(name = 'omg', dimension = 3, datatype = 'f', unit = 'rad/s', description = 'Specific force'),
@@ -2354,7 +2241,7 @@ class INSSOL_Payload(XcomProtocolPayload):
     ])
 
 @message(0x47)
-class INSSOLECEF_Payload(XcomProtocolPayload):
+class INSSOLECEF_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'acc', dimension = 3, datatype = 'f'),
         PayloadItem(name = 'omg', dimension = 3, datatype = 'f'),
@@ -2363,7 +2250,7 @@ class INSSOLECEF_Payload(XcomProtocolPayload):
         PayloadItem(name = 'q_nb', dimension = 4, datatype = 'f'),
     ])
 
-class IMU_Payload(XcomProtocolPayload):
+class IMU_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'acc', dimension = 3, datatype = 'f'),
         PayloadItem(name = 'omg', dimension = 3, datatype = 'f'),
@@ -2383,14 +2270,14 @@ class IMUCOMP_Payload(IMU_Payload):
     pass
 
 @message(0x0D)
-class INSROTTEST_Payload(XcomProtocolPayload):
+class INSROTTEST_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'accNED', dimension = 3, datatype = 'd'),
     ])
 
 
 @message(0x31)
-class IMUCAL_Payload(XcomProtocolPayload):
+class IMUCAL_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'accLSB', dimension = 3, datatype = 'f'),
         PayloadItem(name = 'omgLSB', dimension = 3, datatype = 'f'),
@@ -2415,7 +2302,7 @@ class IMUCAL_Payload(XcomProtocolPayload):
 
 
 @message(0x20)
-class STATFPGA_Payload(XcomProtocolPayload):
+class STATFPGA_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'usParID', dimension = 1, datatype = 'H'),
         PayloadItem(name = 'uReserved', dimension = 1, datatype = 'B'),
@@ -2431,7 +2318,7 @@ class STATFPGA_Payload(XcomProtocolPayload):
 
 
 @message(0x19)
-class SYSSTAT_Payload(XcomProtocolPayload):
+class SYSSTAT_Payload(ProtocolPayload):
     def from_bytes(self, inBytes):
         item_list = [
             PayloadItem(name = 'statMode', dimension = 1, datatype = 'I'),
@@ -2466,28 +2353,28 @@ class SYSSTAT_Payload(XcomProtocolPayload):
 
 
 @message(0x04)
-class INSRPY_Payload(XcomProtocolPayload):
+class INSRPY_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'rpy', dimension = 3, datatype = 'f'),
     ])
 
 
 @message(0x05)
-class INSDCM_Payload(XcomProtocolPayload):
+class INSDCM_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'DCM', dimension = 9, datatype = 'f'),
     ])
 
 
 @message(0x06)
-class INSQUAT_Payload(XcomProtocolPayload):
+class INSQUAT_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'quat', dimension = 4, datatype = 'f'),
     ])
 
 
 @message(0x0A)
-class INSPOSLLH_Payload(XcomProtocolPayload):
+class INSPOSLLH_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'lon', dimension = 1, datatype = 'd'),
         PayloadItem(name = 'lat', dimension = 1, datatype = 'd'),
@@ -2496,7 +2383,7 @@ class INSPOSLLH_Payload(XcomProtocolPayload):
 
 
 @message(0x0C)
-class INSPOSUTM_Payload(XcomProtocolPayload):
+class INSPOSUTM_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'zone', dimension = 1, datatype = 'i'),
         PayloadItem(name = 'easting', dimension = 1, datatype = 'd'),
@@ -2506,13 +2393,13 @@ class INSPOSUTM_Payload(XcomProtocolPayload):
 
 
 @message(0x0B)
-class INSPOSECEF_Payload(XcomProtocolPayload):
+class INSPOSECEF_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'pos', dimension = 3, datatype = 'd'),
     ])
 
 
-class INSVEL_Payload(XcomProtocolPayload):
+class INSVEL_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'vel', dimension = 3, datatype = 'f'),
     ])
@@ -2535,7 +2422,7 @@ class INSVELENU_Payload(INSVEL_Payload):
     pass
 
 @message(0x18)
-class MAGDATA_Payload(XcomProtocolPayload):
+class MAGDATA_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'field', dimension = 3, datatype = 'f'),
         PayloadItem(name = 'magHdg', dimension = 1, datatype = 'f'),
@@ -2547,7 +2434,7 @@ class MAGDATA_Payload(XcomProtocolPayload):
 
 
 @message(0x17)
-class AIRDATA_Payload(XcomProtocolPayload):
+class AIRDATA_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'TAS', dimension = 1, datatype = 'f'),
         PayloadItem(name = 'IAS', dimension = 1, datatype = 'f'),
@@ -2565,7 +2452,7 @@ class AIRDATA_Payload(XcomProtocolPayload):
 
 
 @message(0x0F)
-class EKFSTDDEV_Payload(XcomProtocolPayload):
+class EKFSTDDEV_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'pos', dimension = 3, datatype = 'f'),
         PayloadItem(name = 'vel', dimension = 3, datatype = 'f'),
@@ -2579,7 +2466,7 @@ class EKFSTDDEV_Payload(XcomProtocolPayload):
 
 
 @message(0x28)
-class EKFSTDDEV2_Payload(XcomProtocolPayload):
+class EKFSTDDEV2_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'pos', dimension = 3, datatype = 'f'),
         PayloadItem(name = 'vel', dimension = 3, datatype = 'f'),
@@ -2594,7 +2481,7 @@ class EKFSTDDEV2_Payload(XcomProtocolPayload):
 
 
 @message(0x27)
-class EKFERROR2_Payload(XcomProtocolPayload):
+class EKFERROR2_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'biasAcc', dimension = 3, datatype = 'f'),
         PayloadItem(name = 'biasOmg', dimension = 3, datatype = 'f'),
@@ -2606,7 +2493,7 @@ class EKFERROR2_Payload(XcomProtocolPayload):
 
 
 @message(0x10)
-class EKFERROR_Payload(XcomProtocolPayload):
+class EKFERROR_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'biasAcc', dimension = 3, datatype = 'f'),
         PayloadItem(name = 'biasOmg', dimension = 3, datatype = 'f'),
@@ -2618,7 +2505,7 @@ class EKFERROR_Payload(XcomProtocolPayload):
 
 
 @message(0x11)
-class EKFTIGHTLY_Payload(XcomProtocolPayload):
+class EKFTIGHTLY_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'ucSatsAvailablePSR', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'ucSatsUsedPSR', dimension = 1, datatype = 'B'),
@@ -2644,21 +2531,21 @@ class EKFTIGHTLY_Payload(XcomProtocolPayload):
 
 
 @message(0x29)
-class EKFPOSCOVAR_Payload(XcomProtocolPayload):
+class EKFPOSCOVAR_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'fPosCovar', dimension = 9, datatype = 'f'),
     ])
 
 
 @message(0x21)
-class POWER_Payload(XcomProtocolPayload):
+class POWER_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'power', dimension = 32, datatype = 'f'),
     ])
 
 
 @message(0x22)
-class TEMP_Payload(XcomProtocolPayload):
+class TEMP_Payload(ProtocolPayload):
     
     message_description = Message([
         PayloadItem(name = 'temp_power_pcb', dimension = 1, datatype = 'f'),
@@ -2673,7 +2560,7 @@ class TEMP_Payload(XcomProtocolPayload):
 
 
 @message(0x1F)
-class HEAVE_Payload(XcomProtocolPayload):
+class HEAVE_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'StatFiltPos', dimension = 1, datatype = 'd'),
         PayloadItem(name = 'AppliedFreqHz', dimension = 1, datatype = 'd'),
@@ -2690,7 +2577,7 @@ class HEAVE_Payload(XcomProtocolPayload):
 
 
 @message(0x24)
-class CANSTAT_Payload(XcomProtocolPayload):
+class CANSTAT_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'uiErrorMask', dimension = 1, datatype = 'I'),
         PayloadItem(name = 'ucControllerStatus', dimension = 1, datatype = 'B'),
@@ -2701,14 +2588,14 @@ class CANSTAT_Payload(XcomProtocolPayload):
 
 
 @message(0x1D)
-class ARINC429STAT_Payload(XcomProtocolPayload):
+class ARINC429STAT_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'uiStatus', dimension = 1, datatype = 'I'),
     ])
 
 
 @message(0x26)
-class TIME_Payload(XcomProtocolPayload):
+class TIME_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'sysTime', dimension = 1, datatype = 'd'),
         PayloadItem(name = 'ImuInterval', dimension = 1, datatype = 'd'),
@@ -2721,7 +2608,7 @@ class TIME_Payload(XcomProtocolPayload):
 
 
 @message(0x12)
-class GNSSSOL_Payload(XcomProtocolPayload):
+class GNSSSOL_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'lon', dimension = 1, datatype = 'd'),
         PayloadItem(name = 'lat', dimension = 1, datatype = 'd'),
@@ -2743,7 +2630,7 @@ class GNSSSOL_Payload(XcomProtocolPayload):
 
 
 @message(0x14)
-class GNSSTIME_Payload(XcomProtocolPayload):
+class GNSSTIME_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'utcOffset', dimension = 1, datatype = 'd'),
         PayloadItem(name = 'offset', dimension = 1, datatype = 'd'),
@@ -2758,7 +2645,7 @@ class GNSSTIME_Payload(XcomProtocolPayload):
 
 
 @message(0x15)
-class GNSSSOLCUST_Payload(XcomProtocolPayload):
+class GNSSSOLCUST_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'dLon', dimension = 1, datatype = 'd'),
         PayloadItem(name = 'dLat', dimension = 1, datatype = 'd'),
@@ -2782,7 +2669,7 @@ class GNSSSOLCUST_Payload(XcomProtocolPayload):
 
 
 @message(0x33)
-class GNSSHDG_Payload(XcomProtocolPayload):
+class GNSSHDG_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'hdg', dimension = 1, datatype = 'f'),
         PayloadItem(name = 'stdDevHdg', dimension = 1, datatype = 'f'),
@@ -2798,7 +2685,7 @@ class GNSSHDG_Payload(XcomProtocolPayload):
 
 
 @message(0x1B)
-class GNSSLEVERARM_Payload(XcomProtocolPayload):
+class GNSSLEVERARM_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'primary', dimension = 3, datatype = 'f'),
         PayloadItem(name = 'stdDevPrimary', dimension = 3, datatype = 'f'),
@@ -2808,7 +2695,7 @@ class GNSSLEVERARM_Payload(XcomProtocolPayload):
 
 
 @message(0x1C)
-class GNSSVOTER_Payload(XcomProtocolPayload):
+class GNSSVOTER_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'ucSatsUsed_INT', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'ucSatsUsed_EXT', dimension = 1, datatype = 'B'),
@@ -2822,7 +2709,7 @@ class GNSSVOTER_Payload(XcomProtocolPayload):
 
 
 @message(0x1E)
-class GNSSHWMON_Payload(XcomProtocolPayload):
+class GNSSHWMON_Payload(ProtocolPayload):
     message_description = None
     def __init__(self):
         if type(self).message_description is None:
@@ -2835,7 +2722,7 @@ class GNSSHWMON_Payload(XcomProtocolPayload):
 
 
 @message(0x25)
-class GNSSSATINFO_Payload(XcomProtocolPayload):
+class GNSSSATINFO_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'svID', dimension = 1, datatype = 'I'),
         PayloadItem(name = 'dPositionECEF', dimension = 3, datatype = 'd'),
@@ -2849,7 +2736,7 @@ class GNSSSATINFO_Payload(XcomProtocolPayload):
 
 
 @message(0x38)
-class GNSSALIGNBSL_Payload(XcomProtocolPayload):
+class GNSSALIGNBSL_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'east', dimension = 1, datatype = 'd'),
         PayloadItem(name = 'north', dimension = 1, datatype = 'd'),
@@ -2867,7 +2754,7 @@ class GNSSALIGNBSL_Payload(XcomProtocolPayload):
 
 
 @message(0x16)
-class WHEELDATA_Payload(XcomProtocolPayload):
+class WHEELDATA_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'odoSpeed', dimension = 1, datatype = 'f'),
         PayloadItem(name = 'ticks', dimension = 1, datatype = 'i'),
@@ -2875,7 +2762,7 @@ class WHEELDATA_Payload(XcomProtocolPayload):
 
 
 @message(0x32)
-class WHEELDATADBG_Payload(XcomProtocolPayload):
+class WHEELDATADBG_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'odoSpeed', dimension = 1, datatype = 'f'),
         PayloadItem(name = 'ticks', dimension = 1, datatype = 'i'),
@@ -2886,7 +2773,7 @@ class WHEELDATADBG_Payload(XcomProtocolPayload):
 
 
 @message(0x34)
-class EVENTTIME_Payload(XcomProtocolPayload):
+class EVENTTIME_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'dGpsTime_EVENT_0', dimension = 1, datatype = 'd'),
         PayloadItem(name = 'dGpsTime_EVENT_1', dimension = 1, datatype = 'd'),
@@ -2894,7 +2781,7 @@ class EVENTTIME_Payload(XcomProtocolPayload):
 
 
 @message(0x35)
-class OMGINT_Payload(XcomProtocolPayload):
+class OMGINT_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'omgINT', dimension = 3, datatype = 'f'),
         PayloadItem(name = 'omgINTtime', dimension = 1, datatype = 'f'),
@@ -2902,7 +2789,7 @@ class OMGINT_Payload(XcomProtocolPayload):
 
 
 @message(0x36)
-class ADC24STATUS_Payload(XcomProtocolPayload):
+class ADC24STATUS_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'uiRRidx', dimension = 4, datatype = 'I'),
         PayloadItem(name = 'uiRRvalue', dimension = 4, datatype = 'I'),
@@ -2910,7 +2797,7 @@ class ADC24STATUS_Payload(XcomProtocolPayload):
 
 
 @message(0x37)
-class ADC24DATA_Payload(XcomProtocolPayload):
+class ADC24DATA_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'acc', dimension = 3, datatype = 'I'),
         PayloadItem(name = 'frameCounter', dimension = 1, datatype = 'H'),
@@ -2921,7 +2808,7 @@ class ADC24DATA_Payload(XcomProtocolPayload):
 
 
 @message(0x42)
-class CSACDATA_Payload(XcomProtocolPayload):
+class CSACDATA_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'status', dimension = 1, datatype = 'I'),
         PayloadItem(name = 'alarm', dimension = 1, datatype = 'I'),
@@ -2945,7 +2832,7 @@ class CSACDATA_Payload(XcomProtocolPayload):
     ])
 
 @message(0x57)
-class TAG_Payload(XcomProtocolPayload):
+class TAG_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'tag', dimension = 128, datatype = 's')
     ])
@@ -2953,7 +2840,7 @@ class TAG_Payload(XcomProtocolPayload):
 
 
 def getMessageWithID(msgID):
-    message = XcomProtocolMessage()
+    message = ProtocolMessage()
     message.header.msgID = msgID
     if msgID in MessagePayloadDictionary:
         message.payload = MessagePayloadDictionary[msgID]()
@@ -2963,7 +2850,7 @@ def getMessageWithID(msgID):
 
 
 def getCommandWithID(cmdID):
-    message = XcomProtocolMessage()
+    message = ProtocolMessage()
     message.header.msgID = MessageID.COMMAND
     if cmdID in CommandPayloadDictionary:
         message.payload = CommandPayloadDictionary[cmdID]()
@@ -2974,7 +2861,7 @@ def getCommandWithID(cmdID):
 
 
 def getParameterWithID(parameterID):
-    message = XcomProtocolMessage()
+    message = ProtocolMessage()
     message.header.msgID = MessageID.PARAMETER
     if parameterID in ParameterPayloadDictionary:
         message.payload = ParameterPayloadDictionary[parameterID]()
