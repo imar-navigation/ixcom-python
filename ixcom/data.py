@@ -2276,31 +2276,6 @@ class INSROTTEST_Payload(ProtocolPayload):
     ])
 
 
-@message(0x31)
-class IMUCAL_Payload(ProtocolPayload):
-    message_description = Message([
-        PayloadItem(name = 'accLSB', dimension = 3, datatype = 'f'),
-        PayloadItem(name = 'omgLSB', dimension = 3, datatype = 'f'),
-        PayloadItem(name = 'accCal', dimension = 3, datatype = 'd'),
-        PayloadItem(name = 'omgCal', dimension = 3, datatype = 'd'),
-        PayloadItem(name = 'avgTime', dimension = 1, datatype = 'd'),
-        PayloadItem(name = 'q_nb', dimension = 4, datatype = 'd'),
-        PayloadItem(name = 'pos', dimension = 3, datatype = 'd'),
-        PayloadItem(name = 'vel', dimension = 3, datatype = 'd'),
-        PayloadItem(name = 'temp_power_pcb', dimension = 1, datatype = 'f'),
-        PayloadItem(name = 'temp_switcher', dimension = 1, datatype = 'f'),
-        PayloadItem(name = 'temp_oem628', dimension = 1, datatype = 'f'),
-        PayloadItem(name = 'temp_oem615', dimension = 1, datatype = 'f'),
-        PayloadItem(name = 'temp_cpu', dimension = 1, datatype = 'f'),
-        PayloadItem(name = 'temp_acc', dimension = 3, datatype = 'f'),
-        PayloadItem(name = 'temp_omg', dimension = 3, datatype = 'f'),
-        PayloadItem(name = 'temp_other', dimension = 5, datatype = 'f'),
-        PayloadItem(name = 'sysstat', dimension = 1, datatype = 'I'),
-        PayloadItem(name = 'ekfstat', dimension = 2, datatype = 'I'),
-        PayloadItem(name = 'imustat', dimension = 6, datatype = 'I'),
-    ])
-
-
 @message(0x20)
 class STATFPGA_Payload(ProtocolPayload):
     message_description = Message([
