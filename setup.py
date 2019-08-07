@@ -19,7 +19,7 @@ if __name__ == '__main__':
           author='iMAR Navigation GmbH',
           author_email='support@imar-navigation.de',
           url='http://www.imar-navigation.de',
-          keywords=['XCOM', 'Inertial navigation', 'INS', 'iMAR'. 'iNAT', 'GNSS', 'GPS', 'AHRS'],
+          keywords=['XCOM', 'Inertial navigation', 'INS', 'iMAR', 'iNAT', 'GNSS', 'GPS', 'AHRS'],
           packages=['ixcom'],
           entry_points={
             'console_scripts': [
