@@ -14,13 +14,21 @@ if __name__ == '__main__':
     long_description = open(readmePath, "rt").read()
 
     setup(name='ixcom',
-          version='1.0.10',
+          version='1.1.0',
           description='Library for communicating with xcom devices over network',
           author='iMAR Navigation GmbH',
           author_email='support@imar-navigation.de',
           url='http://www.imar-navigation.de',
-          keywords=['XCOM'],
+          keywords=['XCOM', 'Inertial navigation', 'INS', 'iMAR'. 'iNAT', 'GNSS', 'GPS', 'AHRS'],
           packages=['ixcom'],
+          entry_points={
+            'console_scripts': [
+                        'configdump2txt = ixcom.cmdline:configdump2txt',
+                        'monitor2xcom = ixcom.cmdline:monitor2xcom',
+                        'xcom_lookup = ixcom.cmdline:xcom_lookup',
+                        'split_config = ixcom.cmdline:split_config',
+                                ],
+                        },
           install_requires=[
                     'numpy>=1.16.2',
                 ],
@@ -29,4 +37,6 @@ if __name__ == '__main__':
                 "License :: OSI Approved :: MIT License",
                 "Operating System :: OS Independent",
                 ],
+          long_description=long_description,
+          long_description_content_type="text/markdown",
           )
