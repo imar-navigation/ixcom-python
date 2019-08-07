@@ -563,7 +563,7 @@ class Client(MessageParser):
         msgToSend.payload.data['configAction'] = 4
         self.send_msg_and_waitfor_okay(msgToSend)
 
-    def add_log_with_rate(self, msgID, rate):
+    def add_log_with_rate(self, msgID: int, rate: float):
         '''Add a log with specified rate
 
         Adds a log with a specific message ID with a specified rate. The divider is computed by
