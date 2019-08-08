@@ -1,4 +1,5 @@
-from .protocol import parameter, DefaultParameterPayload, Message, PayloadItem
+from .protocol import DefaultParameterPayload, Message, PayloadItem, parameter
+
 
 """
 PARSYS

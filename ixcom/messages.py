@@ -3,6 +3,10 @@ from .protocol import message, ProtocolPayload, MessageID, PayloadItem, Message
 
 @message(MessageID.RESPONSE)
 class ResponsePayload(ProtocolPayload):
+    message_description = Message([
+            PayloadItem(name = 'responseID', dimension = 1, datatype = 'H'),
+            PayloadItem(name = 'repsonseLength', dimension = 1, datatype = 'H'),
+            ])
     def __init__(self, msgLength):
         self.message_description = Message([
             PayloadItem(name = 'responseID', dimension = 1, datatype = 'H'),
@@ -100,6 +104,11 @@ class STATFPGA_Payload(ProtocolPayload):
 
 @message(0x19)
 class SYSSTAT_Payload(ProtocolPayload):
+    message_description = Message([
+            PayloadItem(name = 'statMode', dimension = 1, datatype = 'I'),
+            PayloadItem(name = 'sysStat', dimension = 1, datatype = 'I'),
+            ])
+
     def from_bytes(self, inBytes):
         item_list = [
             PayloadItem(name = 'statMode', dimension = 1, datatype = 'I'),
@@ -491,7 +500,7 @@ class GNSSVOTER_Payload(ProtocolPayload):
 
 @message(0x1E)
 class GNSSHWMON_Payload(ProtocolPayload):
-    message_description = None
+    message_description = Message([])
     def __init__(self):
         if type(self).message_description is None:
             item_list = []
