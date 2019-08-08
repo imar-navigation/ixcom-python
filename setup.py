@@ -14,7 +14,7 @@ if __name__ == '__main__':
     long_description = open(readmePath, "rt").read()
 
     setup(name='ixcom',
-          version='1.1.0',
+          version='1.1.1',
           description='Library for communicating with xcom devices over network',
           author='iMAR Navigation GmbH',
           author_email='support@imar-navigation.de',
@@ -39,4 +39,8 @@ if __name__ == '__main__':
                 ],
           long_description=long_description,
           long_description_content_type="text/markdown",
+          project_urls={
+            "Documentation": "https://ixcom.readthedocs.io/en/latest/",
+            "Source Code":   "https://github.com/imar-navigation/ixcom-python",
+            },
           )

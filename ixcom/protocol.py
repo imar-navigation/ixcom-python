@@ -1,16 +1,11 @@
 import collections
 import struct
-from . import crc16
-from enum import IntEnum, IntFlag, Flag, auto
+from enum import Flag, IntEnum, IntFlag, auto
 from typing import NamedTuple
 
-class XcomError(Exception):
-    def __init__(self, message = '', thrower = None):
-        super().__init__(message)
-        self.thrower = thrower
+from . import crc16
+from .exceptions import ParseError
 
-class ParseError(XcomError):
-    pass
 
 class msg_iterator:
     def __init__(self, msg, in_bytes):
@@ -40,6 +35,7 @@ LAST_CHANNEL_NUMBER = 31
 WAIT_TIME_FOR_RESPONSE = 10
     
 class Response(IntEnum):
+    '''Enumeration for response IDs'''
     OK                  = 0x0
     InvalidParameter    = 0x1
     InvalidChecksum     = 0x2
@@ -55,24 +51,39 @@ class Response(IntEnum):
     InternalError       = 0xC
 
 class DatatSelectionMask(IntEnum):
+    '''Enumeration for the mask bits in the datsel field of the INSSOL message'''
+    
     IMURAW  = 0b0000000000000001
+    '''Inertial data as measured by the ISA'''
     IMUCORR = 0b0000000000000010
+    '''Inertial data as measured by the ISA, corrected for sensor errors (scale factor, bias, misalignments, nontorthogonality, etc...) estimated by the EKF'''
     IMUCOMP = 0b0000000000000100
+    '''Inertial data corrected for sensor errors (scale factor, bias, misalignments, nontorthogonality, etc...) estimated by the EKF and compensated for gravity/earth rate'''
     VELNED  = 0b0000000000001000
+    '''Velocity is in NED frame'''
     VELECEF = 0b0000000000010000
+    '''Velocity is in ECEF frame'''
     VELBDY  = 0b0000000000100000
-    ALTITUDE= 0b0000000001000000
-    MSL     = 0b0000000010000000
-    BAROALT = 0b0000000100000000
+    '''Velocity is in body frame'''
+    ALTITUDE_WGS84 = 0b0000000001000000
+    '''Altitude is height above WGS84 ellipsoid'''
+    ALTITUDE_MSL     = 0b0000000010000000
+    '''Altitude is height above geoid'''
+    ALTITUDE_BARO = 0b0000000100000000
+    '''Altitude is baro altitude'''
     WGS84POS= 0b0000001000000000
+    '''Position is longitude, latitude, altitude'''
     ECEFPOS = 0b0000010000000000
+    '''Position is ECEF X,Y,Z'''
 
 class MessageID(IntEnum):
+    '''Enumeration for special message IDs'''
     COMMAND       = 0xFD
     RESPONSE      = 0xFE
     PARAMETER     = 0xFF
 
 class EkfCommand(IntEnum):
+    '''Enumeration for the EKF command subcommands'''
     ALIGN           = 0
     SAVEPOS         = 1
     SAVEHDG         = 2
@@ -81,59 +92,155 @@ class EkfCommand(IntEnum):
     ALIGN_COMPLETE  = 5
 
 class LogTrigger(IntEnum):
+    '''Logs can be triggered with a certain divider from the inertial sensor samples, polled, or triggered by events.'''
     SYNC          = 0
     EVENT         = 1
     POLLED        = 2
 
 class LogCommand(IntEnum):
+    '''This enum contains possible log command'''
+
     ADD         = 0
+    '''Add the log'''
+
     STOP        = 1
+    '''Stop the current log, but do not remove from loglist'''
+
     START       = 2
+    '''Start a previously stopped log'''
+
     CLEAR       = 3
+    '''Clear log from loglist'''
+
     CLEAR_ALL   = 4
+    '''Clear all logs from loglist'''
     STOP_ALL    = 5
+    '''Stop all logs'''
+
     START_ALL   = 6
+    '''Start all logs'''
 
 class StartupPositionMode(IntEnum):
+    '''Enumeration for the available startup position modes'''
+
     GNSSPOS     = 0
+    '''Feed initial position from GNSS'''
+
     STOREDPOS   = 1
+    '''Feed initial position from stored position'''
+
     FORCEDPOS   = 2
+    '''Feed initial position from forced position'''
+
     CURRENTPOS  = 3
+    '''Feed initial position from current position'''
 
 class StartupHeadingMode(IntEnum):
+    '''Enumeration for the available startup heading modes'''
+
     DEFAULT     = 0
+    '''Start with unknown heading'''
+
     STOREDHDG   = 1
+    '''Feed initial heading from stored heading'''
+
     FORCEDHDG   = 2
+    '''Feed initial heading from forced heading'''
+
     MAGHDG      = 3
+    '''Feed initial heading from magnetic heading'''
+
     DUALANTHDG  = 4
+    '''Feed initial heading from dual antenna heading'''
+
+class AlignmentMode(IntEnum):
+    '''Enumeration for the available alignment modes'''
+
+    STATIONARY = 0
+    '''Stationary alignment, INS has to be at standstill'''
+
+    IN_MOTION = 1
+    '''In-motion alignment, INS can move arbitrarily, needs aiding (e.g. GNSS)'''
+
+class ExtAidingTimeMode(IntEnum):
+    '''External aiding can be executed with two timestamp modes.'''
+
+    GPS_SEC_OF_WEEK = 0
+    '''The time field contains the second of week'''
+
+    LATENCY = 1
+    '''The time field contains the measurement latency'''
 
 class GlobalAlignStatus(IntEnum):
+    '''The alignment status will transition from levelling to aligning to alignment complete. 
+    Only if the heading standard deviation falls below the threshold defined in PAREKF_HDGPOSTHR, the alignment status will be "heading good"
+    '''
     LEVELLING = 0
+    '''Roll and pitch are being estimated from accelerometer measurement'''
+
     ALIGNING = 1
+    '''Heading is being estimated from available aiding data'''
+    
     ALIGN_COMPLETE = 2
+    '''Alignment is complete, the system is allowed to be moved.'''
+
     HDG_GOOD = 3
+    '''Heading standard deviation is lower than the threshold defined in PAREKF_HDGPOSTHR'''
 
 class GlobalPositionStatus(IntEnum):
+    '''The position status depends on the 3D position standard deviation'''
+
     BAD = 0
+    '''Position standard deviation is worse than the medium position standard deviation threshold defined in PAREKF_HDGPOSTHR'''
+    
     MEDIUM = 1
+    '''Position standard deviation is better than the medium position standard deviation threshold defined in PAREKF_HDGPOSTHR, 
+    but worse than the high accuracy position standard deviation threshold'''
+
     HIGH = 2
+    '''Position standard deviation is better than the high accuracy position standard deviation threshold'''
+
     UNDEFINED = 3
+    '''Position has not yet been set'''
 
 class GlobalStatusBit(IntFlag):
+    '''The global status is contained in the footer of every iXCOM message'''
+
     HWERROR = auto()
+    '''The hardware has detected an error condition during build-in-test'''
+
     COMERROR = auto()
+    '''There is a communication error between the navigation processor and the IMU'''
+    
     NAVERROR = auto()
+    '''The navigation solution is erroneous, e.g. due to sensor overranges'''
+
     CALERROR = auto()
+    '''The calibration routines have encountered an error, e.g. due to temperature being out of range'''
 
     GYROOVR = auto()
+    '''A gyro overrange has been encountered'''
+
     ACCOVR = auto()
+    '''An accelerometer overrange has been encountered'''
+
     GNSSINVALID = auto()
+    '''No valid GNSS solution available'''
+
     STANDBY = auto()
+    '''The system is in standby-mode, i.e. the inertial sensor assembly is not powered up.'''
 
     DYNAMICALIGN = auto()
+    '''The system is in dynamic alignment.'''
+
     TIMEINVALID = auto()
+    '''The system time has not been set from GNSS'''
+
     NAVMODE = auto()
+    '''The system is in navigation mode'''
+
     AHRSMODE = auto()
+    '''The system is in fallback AHRS mode'''
 
     @property
     def alignment_status(self):
@@ -144,6 +251,7 @@ class GlobalStatusBit(IntFlag):
         return GlobalPositionStatus((self.value & 0xc000) >> 14)
 
 class SysstatBit(IntFlag):
+    '''An enumeration for the status bits in the extended system status'''
     IMU_INVALID         =  auto()
     IMU_CRC_ERROR       =  auto()
     IMU_TIMEOUT         =  auto()
@@ -178,6 +286,7 @@ class SysstatBit(IntFlag):
     FPGA_NOGO           = auto()
 
 class EKF_STATUS_LOW(IntFlag):
+    '''An enumeration for the status bits in the lower EKF status word'''
     POSLLH_UPDATE = auto()
     POSLLH_LAT_OUTLIER = auto()
     POSLLH_LON_OUTLIER = auto()
@@ -212,6 +321,7 @@ class EKF_STATUS_LOW(IntFlag):
     ZUPT_UPDATE = auto()
 
 class EKF_STATUS_HIGH(IntFlag):
+    '''An enumeration for the status bits in the higher EKF status word'''
     EKF_RTKLLH_UPDATE = 1 << 0
     EKF_RTKLLH_LAT_OUTLIER = 1 << 1
     EKF_RTKLLH_LON_OUTLIER = 1 << 2
@@ -249,6 +359,28 @@ class EKF_STATUS_HIGH(IntFlag):
     EKF_STATIONARY_ALIGN_COMPLETE = 1 << 30
     EKF_POSITION_VALID = 1 << 31
 
+class XcomCommandParameter(IntEnum):
+    '''Parameters to the XCOM command'''
+    channel_close  = 0
+    '''Close the current XCOM channel'''
+    channel_open   = 1
+    '''Open an XCOM channel'''
+    reboot         = 2
+    '''Reboot the device'''
+    _warmreset      = 3
+    '''Do a warm reset'''
+    _reset_omg_int  = 4
+    '''Reset integration for OMGINT log'''
+    _update_svn     = 5
+    '''Update firmware from SVN'''
+    _reset_timebias = 6
+    '''Reset the time bias between system time and GNSS time'''
+    
+class ParameterAction(IntEnum):
+    '''Allowed parameter actions'''
+    CHANGING = 0
+    REQUESTING = 1
+
 class EkfStatus:
     def __init__(self, value):
         self.value = value
@@ -265,6 +397,31 @@ class PayloadItem(NamedTuple):
     description: str = ''
     unit: str = ''
     metatype = None
+
+    def c_type(self):
+        d = {
+            'b': 'int8_t',
+            'B': 'uint8_t',
+            'h': 'int16_t',
+            'H': 'uint16_t',
+            'i': 'int32_t',
+            'I': 'uint32_t',
+            'f': 'int8_t',
+            'd': 'int8_t',
+            's': 'char',
+        }
+        result = f'{d[self.datatype]} {self.name}'
+        if self.dimension > 1:
+            result += f' [{self.dimension}]'
+        return result
+
+    def describe(self):
+        result = self.c_type()
+        if self.description:
+            result += ': ' + self.description
+        if self.unit:
+            result += f' (Unit: {self.unit})'
+        return result
 
 class Message:
     def __init__(self, item_list: [PayloadItem], name = ''):
@@ -291,6 +448,16 @@ class Message:
             return data
         except struct.error:
             raise ParseError(f'Could not convert {self.name}')
+
+    def __repr__(self):
+        result = 'Message([...])'
+        return result
+
+    def describe(self):
+        result = ''
+        for payload_item in self.item_list:
+            result += f'\t- {payload_item.describe()}\n'
+        return result
 
     def generate_struct_string(self):
         struct_string = '='
@@ -551,20 +718,6 @@ class ProtocolMessage(MessageItem):
     def size(self):
         return self.header.size()+self.payload.size()+self.bottom.size()
 
-
-class XcomCommandParameter(IntEnum):
-    reset_timebias = 6
-    update_svn        = 5
-    reset_omg_int  = 4
-    warmreset      = 3
-    reboot         = 2
-    channel_open   = 1
-    channel_close  = 0
-
-class ParameterAction(IntEnum):
-    CHANGING = 0
-    REQUESTING = 1
-
 class DefaultCommandPayload(ProtocolPayload):
     message_id = MessageID.COMMAND
     command_id = 0
@@ -604,8 +757,8 @@ class DefaultParameterPayload(ProtocolPayload):
 MessagePayloadDictionary = dict()
 def message(message_id):
     def decorator(cls):
+        cls.__doc__ = f'''Message (ID = {hex(message_id)}) with the following payload:\n\n{cls.message_description.describe()}'''
         cls.message_id = message_id
-        #print(MessagePayloadDictionary)
         MessagePayloadDictionary[message_id] = cls
         return cls
 
@@ -615,6 +768,7 @@ def message(message_id):
 ParameterPayloadDictionary = dict()
 def parameter(parameter_id):
     def decorator(cls):
+        cls.__doc__ = f'''Parameter (ID = {parameter_id}) with the following payload:\n\n{cls.parameter_payload.describe()}'''
         cls.parameter_id = parameter_id
         ParameterPayloadDictionary[parameter_id] = cls
         return cls
@@ -624,6 +778,7 @@ def parameter(parameter_id):
 CommandPayloadDictionary = dict()
 def command(command_id):
     def decorator(cls):
+        cls.__doc__ = f'''Command (ID = {command_id}) with the following payload:\n\n{cls.command_payload.describe()}'''
         cls.command_id = command_id
         CommandPayloadDictionary[command_id] = cls
         return cls
