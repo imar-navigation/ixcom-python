@@ -423,6 +423,13 @@ class PayloadItem(NamedTuple):
             result += f' (Unit: {self.unit})'
         return result
 
+    def get_struct_string(self):
+        struct_string = ''
+        if self.dimension != 1:
+            struct_string += '%d' % self.dimension
+        struct_string += self.datatype
+        return struct_string
+
 class Message:
     def __init__(self, item_list: [PayloadItem], name = ''):
         self.item_list = item_list
@@ -462,9 +469,7 @@ class Message:
     def generate_struct_string(self):
         struct_string = '='
         for item in self.item_list:
-            if item.dimension != 1:
-                struct_string += '%d' % item.dimension
-            struct_string += item.datatype
+            struct_string += item.get_struct_string()
         return struct_string
 
     def generate_data_dict(self):
