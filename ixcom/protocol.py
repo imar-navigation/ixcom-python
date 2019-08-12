@@ -430,6 +430,21 @@ class PayloadItem(NamedTuple):
         struct_string += self.datatype
         return struct_string
 
+    def get_null_item(self):
+        if self.datatype == 's':
+            return b'\0'*self.dimension
+        if self.datatype in 'BbHhIiLlQq':
+            dt_null = 0
+        elif self.datatype in 'fd':
+            dt_null = 0.0
+        else:
+            raise ValueError('Illegal datatype "{}"'.format(self.datatype))
+
+        if self.dimension == 1:
+            return dt_null
+        else:
+            return [dt_null for _ in range(0, self.dimension)]
+
 class Message:
     def __init__(self, item_list: [PayloadItem], name = ''):
         self.item_list = item_list
@@ -475,23 +490,9 @@ class Message:
     def generate_data_dict(self):
         data = collections.OrderedDict()
         for item in self.item_list:
-            if item.dimension == 1:
-                data[item.name] = self.null_item(item.datatype)
-            elif item.datatype is not 's':
-                data[item.name] = [self.null_item(item.datatype) for _ in range(0, item.dimension)]
-            else:
-                data[item.name] = b'\0'*item.dimension
+            data[item.name] = item.get_null_item()
         return data
 
-    def null_item(self, datatype):
-        if datatype in 'BbHhIiLlQq':
-            return 0
-        elif datatype in 'fd':
-            return 0.0
-        elif datatype in 's':
-            return b'\0'
-        else:
-            raise ValueError('Illegal datatype "{}"'.format(datatype))
 
 class MessageItem:
     struct_inst: struct.Struct
