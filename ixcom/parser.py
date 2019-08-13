@@ -328,6 +328,14 @@ class Client(MessageParser):
                 if channelNumber == 0:
                     raise RuntimeError('No free channel on the system!')
 
+    def get_loglist(self, channel):
+        msgToSend = data.getParameterWithID(data.PARXCOM_LOGLIST2_Payload.parameter_id)
+        msgToSend.payload.data['reserved_paramheader'] = channel
+        msgToSend.payload.data['action'] = data.ParameterAction.REQUESTING
+        self.send_msg_and_waitfor_okay(msgToSend)
+        return self.wait_for_parameter()
+
+
 
     def open_first_free_channel(self):
         '''Opens an XCOM logical channel
