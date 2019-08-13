@@ -36,7 +36,7 @@ class TextFileParser(ixcom.parser.MessageParser):
                     zeile = "%s: %s\n" % (key, tmp)
                 except:
                     zeile = "%s: %s\n" % (key, message.payload.data[key])
-            elif key == 'ip' or key == 'subnetmask' or key == 'gateway':
+            elif key in ['ip', 'subnetmask', 'gateway', 'defaultAddress', 'serverAddress']:
                 ipbinary = message.payload.data[key]
                 zeile = "%s: %s\n" % (key, socket.inet_ntoa(struct.pack('!L', ipbinary)))
             elif message.payload.get_name() == 'PARXCOM_LOGLIST2' and 'msgid' in key:
