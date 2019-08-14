@@ -1,4 +1,5 @@
 import collections
+from collections.abc import Iterable
 import struct
 from enum import Flag, IntEnum, IntFlag, auto
 from typing import NamedTuple
@@ -397,7 +398,6 @@ class PayloadItem(NamedTuple):
     description: str = ''
     unit: str = ''
     metatype = None
-    __struct_inst = None
 
     def c_type(self):
         d = {
@@ -411,7 +411,7 @@ class PayloadItem(NamedTuple):
             'd': 'int8_t',
             's': 'char',
         }
-        result = f'{d[self.datatype]} {self.name}'
+        result = f'{d.get(self.datatype, "struct")} {self.name}'
         if self.dimension > 1:
             result += f' [{self.dimension}]'
         return result
@@ -430,32 +430,26 @@ class PayloadItem(NamedTuple):
             if self.dimension != 1:
                 struct_string += '%d' % self.dimension
             struct_string += self.datatype
-        elif isinstance(self.datatype, type(self)):
+        elif isinstance(self.datatype, Message):
             struct_string = self.datatype.get_struct_string()*self.dimension
         return struct_string
 
-    @property
-    def struct_inst(self):
-        if type(self).__struct_inst is None:
-            type(self).__struct_inst = struct.Struct(self.get_struct_string())
-        return type(self).__struct_inst
-
     def get_size(self):
-        basic_sizes = {'bBs': 1, 'hH': 2, 'iIf': 4, 'd': 8}
+        basic_sizes = {'b': 1, 'B': 1, 's': 1, 'h': 2, 'H': 2, 'i': 4, 'I': 4, 'f': 4, 'd': 8}
         if isinstance(self.datatype, str):
             return basic_sizes[self.datatype]*self.dimension
-        elif isinstance(self.datatype, type(self)):
+        elif isinstance(self.datatype, Message):
             return self.datatype.get_size()*self.dimension
 
-
     def get_null_item(self):
-        if self.datatype == 's':
-            return b'\0'*self.dimension
-        if self.datatype in 'BbHhIiLlQq':
-            dt_null = 0
-        elif self.datatype in 'fd':
-            dt_null = 0.0
-        elif type(self.datatype) == type(self):
+        if isinstance(self.datatype, str):
+            if self.datatype == 's':
+                return b'\0'*self.dimension
+            if self.datatype in 'BbHhIiLlQq':
+                dt_null = 0
+            elif self.datatype in 'fd':
+                dt_null = 0.0
+        elif isinstance(self.datatype, Message):
             dt_null = self.datatype.get_null_item()
         else:
             raise ValueError('Illegal datatype "{}"'.format(self.datatype))
@@ -465,33 +459,34 @@ class PayloadItem(NamedTuple):
         else:
             return [dt_null for _ in range(0, self.dimension)]
 
-    def unpack_from(self, buffer, offset = 0):
-        if type(self.datatype) != type(self):
-            values = self.struct_inst.unpack_from(buffer, offset)
+    def consume(self, input_values):
+        output_values = []
+        if isinstance(self.datatype, str):
+            if self.datatype == 's':
+                num_to_pop = 1
+            else:
+                num_to_pop = self.dimension
+            for _ in range(0, num_to_pop):
+                output_values.append(input_values.pop(0))
         else:
-            values = []
-            for idx in range(0, self.dimension):
-                values.append(self.datatype.unpack_from(buffer, offset + idx*self.datatype.get_size()))
-
-        if len(values) == 1:
-            return {self.name: values[0]}
+            for _ in range(0, self.dimension):
+                output_values.append(self.datatype.consume(input_values))
+        if len(output_values) == 1:
+            return {self.name: output_values[0]}
         else:
-            return {self.name: values}
+            return {self.name: output_values}
 
 class Message:
     def __init__(self, item_list: [PayloadItem], name = ''):
         self.item_list = item_list
         self.data = self.generate_data_dict()
-        self.struct_inst = struct.Struct(self.generate_struct_string())
+        self.struct_inst = struct.Struct(self.generate_final_struct_string())
         self.name = name
 
     def unpack_from(self, buffer, offset = 0):
         try:
-            data = dict()
-            bytes_consumed = 0
-            for item in self.item_list:
-                data.update(item.unpack_from(buffer, bytes_consumed))
-                bytes_consumed += item.get_size()
+            values = list(self.struct_inst.unpack_from(buffer, offset))
+            return self.consume(values)
         except struct.error:
             raise ParseError(f'Could not convert {self.name}')
 
@@ -505,11 +500,14 @@ class Message:
             result += f'\t- {payload_item.describe()}\n'
         return result
 
-    def generate_struct_string(self):
-        struct_string = '='
+    def get_struct_string(self):
+        result = ''
         for item in self.item_list:
-            struct_string += item.get_struct_string()
-        return struct_string
+            result += item.get_struct_string()
+        return result
+
+    def generate_final_struct_string(self):
+        return '=' + self.get_struct_string()
 
     def generate_data_dict(self):
         data = collections.OrderedDict()
@@ -517,6 +515,20 @@ class Message:
             data[item.name] = item.get_null_item()
         return data
 
+    def get_null_item(self):
+        d = dict()
+        for item in self.item_list:
+            d[item.name] = item.get_null_item()
+        return d
+
+    def get_size(self):
+        return self.struct_inst.size
+
+    def consume(self, values):
+        data = dict()
+        for item in self.item_list:
+            data.update(item.consume(values))
+        return data
 
 class MessageItem:
     struct_inst: struct.Struct
@@ -601,7 +613,7 @@ class ProtocolPayload(MessageItem):
     def __init__(self):
         if type(self)._structString is None:
             if type(self).message_description is not None:
-                type(self)._structString = type(self).message_description.generate_struct_string()
+                type(self)._structString = self.message_description.generate_final_struct_string()
                 type(self).struct_inst = struct.Struct(self._structString)
         if type(self).message_description is not None:
             self.message_description.name = self.get_name()
@@ -620,7 +632,11 @@ class ProtocolPayload(MessageItem):
         values = []
         for value in self.data.values():
             if isinstance(value, (list, tuple)):
-                values += value
+                if isinstance(value[0], dict):
+                    for curd in value:
+                        values += curd.values()
+                else:
+                    values += value
             else:
                 values += [value]
         return bytearray(self.struct_inst.pack(*values))
