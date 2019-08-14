@@ -397,6 +397,7 @@ class PayloadItem(NamedTuple):
     description: str = ''
     unit: str = ''
     metatype = None
+    __struct_inst = None
 
     def c_type(self):
         d = {
@@ -424,11 +425,28 @@ class PayloadItem(NamedTuple):
         return result
 
     def get_struct_string(self):
-        struct_string = ''
-        if self.dimension != 1:
-            struct_string += '%d' % self.dimension
-        struct_string += self.datatype
+        if isinstance(self.datatype, str):
+            struct_string = ''
+            if self.dimension != 1:
+                struct_string += '%d' % self.dimension
+            struct_string += self.datatype
+        elif isinstance(self.datatype, type(self)):
+            struct_string = self.datatype.get_struct_string()*self.dimension
         return struct_string
+
+    @property
+    def struct_inst(self):
+        if type(self).__struct_inst is None:
+            type(self).__struct_inst = struct.Struct(self.get_struct_string())
+        return type(self).__struct_inst
+
+    def get_size(self):
+        basic_sizes = {'bBs': 1, 'hH': 2, 'iIf': 4, 'd': 8}
+        if isinstance(self.datatype, str):
+            return basic_sizes[self.datatype]*self.dimension
+        elif isinstance(self.datatype, type(self)):
+            return self.datatype.get_size()*self.dimension
+
 
     def get_null_item(self):
         if self.datatype == 's':
@@ -437,6 +455,8 @@ class PayloadItem(NamedTuple):
             dt_null = 0
         elif self.datatype in 'fd':
             dt_null = 0.0
+        elif type(self.datatype) == type(self):
+            dt_null = self.datatype.get_null_item()
         else:
             raise ValueError('Illegal datatype "{}"'.format(self.datatype))
 
@@ -444,6 +464,19 @@ class PayloadItem(NamedTuple):
             return dt_null
         else:
             return [dt_null for _ in range(0, self.dimension)]
+
+    def unpack_from(self, buffer, offset = 0):
+        if type(self.datatype) != type(self):
+            values = self.struct_inst.unpack_from(buffer, offset)
+        else:
+            values = []
+            for idx in range(0, self.dimension):
+                values.append(self.datatype.unpack_from(buffer, offset + idx*self.datatype.get_size()))
+
+        if len(values) == 1:
+            return {self.name: values[0]}
+        else:
+            return {self.name: values}
 
 class Message:
     def __init__(self, item_list: [PayloadItem], name = ''):
@@ -454,20 +487,11 @@ class Message:
 
     def unpack_from(self, buffer, offset = 0):
         try:
-            data = dict(self.data)
-            keyList = self.data.keys()
-            valueList = self.struct_inst.unpack_from(buffer, offset)
-            start_idx = 0
-            for key in keyList:
-                if isinstance(self.data[key], (list, tuple)):
-                    end_idx = start_idx + len(self.data[key])
-                    value = valueList[start_idx:end_idx]
-                    start_idx = end_idx
-                else:
-                    value = valueList[start_idx]
-                    start_idx += 1
-                data[key] = value
-            return data
+            data = dict()
+            bytes_consumed = 0
+            for item in self.item_list:
+                data.update(item.unpack_from(buffer, bytes_consumed))
+                bytes_consumed += item.get_size()
         except struct.error:
             raise ParseError(f'Could not convert {self.name}')
 
