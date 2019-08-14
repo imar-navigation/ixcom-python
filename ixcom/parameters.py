@@ -184,18 +184,17 @@ class PARGNSS_RTCMV3CONFIG_Payload(DefaultParameterPayload):
 
 @parameter(217)
 class PARGNSS_MODEL_Payload(DefaultParameterPayload):
-    __sub_payloads = [
-        [PayloadItem(name = f'modelName_{idx}', dimension = 16, datatype = 's'),
-        PayloadItem(name = f'year_{idx}', dimension = 1, datatype = 'I'),
-        PayloadItem(name = f'month_{idx}', dimension = 1, datatype = 'I'),
-        PayloadItem(name = f'day_{idx}', dimension = 1, datatype = 'I')] for idx in range(0, 6)
-    ]
+    __sub_payload = Message(
+        [PayloadItem(name = f'modelName', dimension = 16, datatype = 's'),
+        PayloadItem(name = f'year', dimension = 1, datatype = 'I'),
+        PayloadItem(name = f'month', dimension = 1, datatype = 'I'),
+        PayloadItem(name = f'day', dimension = 1, datatype = 'I')])
+
     parameter_payload = Message([
         PayloadItem(name = 'rtkCode', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'reserved2', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'reserved3', dimension = 1, datatype = 'H'),
-    ] + [
-        payload_item for model in __sub_payloads for payload_item in model
+        PayloadItem(name = 'models', dimension = 6, datatype = __sub_payload)
     ])
 
 @parameter(218)
@@ -679,11 +678,13 @@ class PARXCOM_NETCONFIG_Payload(DefaultParameterPayload):
 
 @parameter(905)
 class PARXCOM_LOGLIST_Payload(DefaultParameterPayload):
-    __sub_payload = [
-        [PayloadItem(name = f'divider_{idx}', dimension = 1, datatype = 'H'), PayloadItem(name = f'msgid_{idx}', dimension = 1, datatype = 'H')] for idx in range(0, 16)
-    ]
+    __sub_payload = Message([
+        PayloadItem(name = f'divider', dimension = 1, datatype = 'H'), 
+        PayloadItem(name = f'msgid', dimension = 1, datatype = 'H')
+        ])
+
     parameter_payload = Message([
-        logitem for log in __sub_payload for logitem in log
+        PayloadItem(name = 'logs', dimension = 16, datatype = __sub_payload)
     ])
 
 
@@ -738,17 +739,15 @@ class PARXCOM_DEFAULTIP_Payload(DefaultParameterPayload):
 
 @parameter(917)
 class PARXCOM_LOGLIST2_Payload(DefaultParameterPayload):
-    __sub_payload = [
-        [
-            PayloadItem(name = f'divider_{idx}', dimension = 1, datatype = 'H'), 
-            PayloadItem(name = f'msgid_{idx}', dimension = 1, datatype = 'H'),
-            PayloadItem(name = f'running_{idx}', dimension = 1, datatype = 'B'),
-            PayloadItem(name = f'reserved2_{idx}', dimension = 1, datatype = 'B'),
-            PayloadItem(name = f'reserved3_{idx}', dimension = 1, datatype = 'H')
-        ] for idx in range(0, 16)
-    ]
+    __sub_payload = Message([
+            PayloadItem(name = f'divider', dimension = 1, datatype = 'H'), 
+            PayloadItem(name = f'msgid', dimension = 1, datatype = 'H'),
+            PayloadItem(name = f'running', dimension = 1, datatype = 'B'),
+            PayloadItem(name = f'reserved2', dimension = 1, datatype = 'B'),
+            PayloadItem(name = f'reserved3', dimension = 1, datatype = 'H')
+        ])
     parameter_payload = Message([
-        logitem for log in __sub_payload for logitem in log
+        PayloadItem(name = 'loglist', dimension = 16, datatype = __sub_payload)
     ])
 
 
@@ -856,11 +855,14 @@ class PARARINC825_ENABLE_Payload(DefaultParameterPayload):
 
 @parameter(1204)
 class PARARINC825_LOGLIST_Payload(DefaultParameterPayload):
-    __sub_payload = [
-        [PayloadItem(name = f'divider_{idx}', dimension = 1, datatype = 'H'), PayloadItem(name = f'reserved_{idx}', dimension = 1, datatype = 'H'), PayloadItem(name = f'docnumber_{idx}', dimension = 1, datatype = 'H')] for idx in range(0, 30)
-    ]
+    __sub_payload = Message([
+            PayloadItem(name = f'divider', dimension = 1, datatype = 'H'), 
+            PayloadItem(name = f'reserved', dimension = 1, datatype = 'H'), 
+            PayloadItem(name = f'docnumber', dimension = 1, datatype = 'I')
+            ])
+
     parameter_payload = Message([
-        item for docitem in __sub_payload for item in docitem
+        PayloadItem(name = 'logs', dimension = 30, datatype = __sub_payload)
     ])
 
 
