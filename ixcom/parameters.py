@@ -954,6 +954,20 @@ class PARNMEA_UDP_Payload(DefaultParameterPayload):
         PayloadItem(name = 'reserved3', dimension = 1, datatype = 'H'),
     ])
 
+@parameter(1306)
+class PARNMEA_VTGSELECT_Payload(DefaultParameterPayload):
+    parameter_payload = Message([
+        PayloadItem(name = 'Selector', dimension = 1, datatype = 'I'),
+    ])
+
+@parameter(1402)
+class PARARINC429_CFG_Payload(DefaultParameterPayload):
+    parameter_payload = Message([
+        PayloadItem(name = 'Divisor', dimension = 1, datatype = 'H'),
+        PayloadItem(name = 'Channel', dimension = 1, datatype = 'B'),
+        PayloadItem(name = 'High Speed', dimension = 1, datatype = 'B'),
+    ])
+
 """
 IO
 """
