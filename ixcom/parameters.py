@@ -705,10 +705,10 @@ class PARXCOM_NTRIP_Payload(DefaultParameterPayload):
         PayloadItem(name = 'user', dimension = 128, datatype = 's'),
         PayloadItem(name = 'password', dimension = 128, datatype = 's'),
         PayloadItem(name = 'server', dimension = 128, datatype = 's'),
-        PayloadItem(name = 'port', dimension = 1, datatype = 'B'),
+        PayloadItem(name = 'send_pos_on_login', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'enable', dimension = 1, datatype = 'B'),
-        PayloadItem(name = 'reserved2', dimension = 1, datatype = 'H'),
-        PayloadItem(name = 'baud', dimension = 1, datatype = 'I'),
+        PayloadItem(name = 'remote_port', dimension = 1, datatype = 'H'),
+        PayloadItem(name = 'reserved2', dimension = 1, datatype = 'I'),
     ])
 
 
