@@ -12,7 +12,23 @@ class TextFileParser(ixcom.parser.MessageParser):
         self.outputfile = outputfile
         self.print_request = print_request
         self.messageSearcher.disableCRC = True
+        self._indent_level = 0
         self.add_subscriber(self)
+
+    def __handle_loglist2(self, message):
+        self.write_output(f"Channel: {message.payload.data['reserved_paramheader']}\n")
+        for log in message.payload.data['loglist']:
+            msgid = log['msgid']
+            if msgid in ixcom.data.MessagePayloadDictionary:
+                message_class = ixcom.data.MessagePayloadDictionary[msgid]
+                zeile = "msgid: %s\n" % (message_class.get_name())
+            else:
+                zeile = f'msgid: {msgid}\n'
+            self.write_divider()
+            self.write_output(zeile)
+            self.write_output(f'divider: {log["divider"]}\n')
+            self.write_output(f'running: {log["running"]}\n')
+        self.write_output('\n\n')
     
     def handle_message(self, message, from_device):
         zeile = "Header Time: %.4f\n" % (message.header.get_time())
@@ -28,30 +44,46 @@ class TextFileParser(ixcom.parser.MessageParser):
         elif message.header.msgID == ixcom.data.MessageID.COMMAND:
             zeile = "Command: %s\n" % message.payload.get_name()
         self.write_output(zeile)
-        for key in message.payload.data:
-            if key == 'str':
-                try:
-                    tmp = message.payload.data[key].decode('ascii')
-                    tmp = tmp.split('\0')[0]
-                    zeile = "%s: %s\n" % (key, tmp)
-                except:
-                    zeile = "%s: %s\n" % (key, message.payload.data[key])
-            elif key in ['ip', 'subnetmask', 'gateway', 'defaultAddress', 'serverAddress']:
-                ipbinary = message.payload.data[key]
-                zeile = "%s: %s\n" % (key, socket.inet_ntoa(struct.pack('!L', ipbinary)))
-            elif message.payload.get_name() == 'PARXCOM_LOGLIST2' and 'msgid' in key:
-                value = message.payload.data[key]
-                if value in ixcom.data.MessagePayloadDictionary:
-                    message_class = ixcom.data.MessagePayloadDictionary[value]
-                    zeile = "%s: %s\n" % (key, message_class.get_name()) 
-            else:
-                zeile = "%s: %s\n" % (key, message.payload.data[key])
+        if isinstance(message.payload, ixcom.data.PARXCOM_LOGLIST2_Payload):
+            self.__handle_loglist2(message)
+        else:                 
+            self.__convert_dict(message.payload.data)
+            zeile = "\n\n"
             self.write_output(zeile)
-        zeile = "\n\n"
+
+    def write_divider(self):
+        self.write_output('-'*10+'\n')
+
+
+    def __convert_dict(self, d):
+        for key in d:
+            if isinstance(d[key], list) and isinstance(d[key][0], dict):
+                self.write_output(f'{key}:\n')
+                self._indent_level += 1
+                for new_d in d[key]:
+                    self.write_divider()
+                    self.__convert_dict(new_d)
+                self._indent_level -= 1
+            else:
+                self.__convert_key(key, d)
+
+    def __convert_key(self, key, d):
+        if key in ['ip', 'subnetmask', 'gateway', 'defaultAddress', 'serverAddress', 'ipAddress', 'destAddr', 'udpAddr']:
+            ipbinary = d[key]
+            zeile = "%s: %s\n" % (key, socket.inet_ntoa(struct.pack('!L', ipbinary)))
+        elif isinstance(d[key], bytes):
+            try:
+                tmp = d[key].split(b'\0')[0]
+                tmp = tmp.decode('ascii')
+                zeile = "%s: %s\n" % (key, tmp)
+            except:
+                zeile = "%s: %s\n" % (key, d[key])
+        else:
+            zeile = "%s: %s\n" % (key, d[key])
         self.write_output(zeile)
 
     def write_output(self, line):
-        self.outputfile.write(line)
+        self.outputfile.write('\t'*self._indent_level+line)
         
     def parse_file(self, inputfile):
         while True:
