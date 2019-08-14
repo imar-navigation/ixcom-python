@@ -60,6 +60,39 @@ class INSSOLECEF_Payload(ProtocolPayload):
         PayloadItem(name = 'q_nb', dimension = 4, datatype = 'f'),
     ])
 
+@message(0x48)
+class EKFSTDDEVECEF_Payload(ProtocolPayload):
+    message_description = Message([
+        PayloadItem(name = 'Pos', dimension = 3, datatype = 'f'),
+        PayloadItem(name = 'Vel', dimension = 3, datatype = 'f'),
+        PayloadItem(name = 'Rpy', dimension = 3, datatype = 'f'),
+        PayloadItem(name = 'BiasAcc', dimension = 3, datatype = 'f'),
+        PayloadItem(name = 'BiasOmg', dimension = 3, datatype = 'f'),
+        PayloadItem(name = 'MaAcc', dimension = 9, datatype = 'f'),
+        PayloadItem(name = 'MaOmg', dimension = 9, datatype = 'f'),
+        PayloadItem(name = 'ScfOdo', dimension = 1, datatype = 'f'),
+        PayloadItem(name = 'MaOdo', dimension = 2, datatype = 'f'),
+    ])
+
+@message(0x49)
+class LOADFACTOR_Payload(ProtocolPayload):
+    message_description = Message([
+        PayloadItem(name = 'LoadFactor', dimension = 3, datatype = 'f'),
+    ])
+
+@message(0x50)
+class OMGDOT_Payload(ProtocolPayload):
+    message_description = Message([
+        PayloadItem(name = 'AngAcc', dimension = 3, datatype = 'f'),
+    ])
+
+@message(0x56)
+class IMU_FILTERED_Payload(ProtocolPayload):
+    message_description = Message([
+        PayloadItem(name = 'Omg', dimension = 3, datatype = 'f'),
+        PayloadItem(name = 'Acc', dimension = 3, datatype = 'f'),
+    ])
+
 class IMU_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'acc', dimension = 3, datatype = 'f'),
@@ -141,6 +174,13 @@ class SYSSTAT_Payload(ProtocolPayload):
             item_list += [PayloadItem(name = 'remainingAlignTime', dimension = 1, datatype = 'f')]
         return item_list
 
+@message(0x1a)
+class MAGHDG_Payload(ProtocolPayload):
+    message_description = Message([
+        PayloadItem(name = 'MagHdg', dimension = 1, datatype = 'f'),
+        PayloadItem(name = 'MagCOG', dimension = 1, datatype = 'f'),
+        PayloadItem(name = 'Deviation', dimension = 1, datatype = 'f'),
+    ])
 
 @message(0x04)
 class INSRPY_Payload(ProtocolPayload):
@@ -240,6 +280,11 @@ class AIRDATA_Payload(ProtocolPayload):
         PayloadItem(name = 'status', dimension = 1, datatype = 'I'),
     ])
 
+@message(0x0e)
+class INSTRACKACC_Payload(ProtocolPayload):
+    message_description = Message([
+        PayloadItem(name = 'AccACV', dimension = 3, datatype = 'f'),
+    ])
 
 @message(0x0F)
 class EKFSTDDEV_Payload(ProtocolPayload):
@@ -418,6 +463,14 @@ class GNSSSOL_Payload(ProtocolPayload):
         PayloadItem(name = 'gnssStatus', dimension = 1, datatype = 'I'),
     ])
 
+@message(0x13)
+class INSGNDSPEED_Payload(ProtocolPayload):
+    message_description = Message([
+        PayloadItem(name = 'SOG', dimension = 1, datatype = 'f'),
+        PayloadItem(name = 'COG', dimension = 1, datatype = 'f'),
+        PayloadItem(name = 'VDown', dimension = 1, datatype = 'f'),
+    ])
+
 
 @message(0x14)
 class GNSSTIME_Payload(ProtocolPayload):
@@ -508,21 +561,6 @@ class GNSSHWMON_Payload(ProtocolPayload):
                 item_list += [PayloadItem(name = 'val %d' % idx, dimension = 1, datatype = 'f'),
                               PayloadItem(name = 'status %d' % idx, dimension = 1, datatype = 'I')]
             type(self).message_description = Message(item_list)
-
-
-
-@message(0x25)
-class GNSSSATINFO_Payload(ProtocolPayload):
-    message_description = Message([
-        PayloadItem(name = 'svID', dimension = 1, datatype = 'I'),
-        PayloadItem(name = 'dPositionECEF', dimension = 3, datatype = 'd'),
-        PayloadItem(name = 'dVelocityECEF', dimension = 3, datatype = 'd'),
-        PayloadItem(name = 'fClockError', dimension = 1, datatype = 'f'),
-        PayloadItem(name = 'fIonoError', dimension = 1, datatype = 'f'),
-        PayloadItem(name = 'fTropoError', dimension = 1, datatype = 'f'),
-        PayloadItem(name = 'fElevation', dimension = 1, datatype = 'f'),
-        PayloadItem(name = 'fAzimuth', dimension = 1, datatype = 'f'),
-    ])
 
 
 @message(0x38)
@@ -619,6 +657,13 @@ class CSACDATA_Payload(ProtocolPayload):
         PayloadItem(name = 'dataValid', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'reserved', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'fwStatus', dimension = 1, datatype = 'H'),
+    ])
+
+@message(0x46)
+class INSMGRS_Payload(ProtocolPayload):
+    message_description = Message([
+        PayloadItem(name = 'Error Code', dimension = 1, datatype = 'I'),
+        PayloadItem(name = 'MGRS Position', dimension = 64, datatype = 's'),
     ])
 
 @message(0x57)
