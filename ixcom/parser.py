@@ -40,13 +40,14 @@ class MessageSearcher:
         inbytelen = len(inBytes)
         while current_msg_start_idx < inbytelen:
             current_msg_length = inBytes[current_msg_start_idx + 4] + 256*inBytes[current_msg_start_idx + 5]
+            if current_msg_start_idx + current_msg_length > inbytelen: # Message nicht mehr komplett
+                break
             self.publish(inBytes[current_msg_start_idx:current_msg_start_idx+current_msg_length])
             current_msg_start_idx += current_msg_length
 
     def process_bytes(self, inBytes):
         inByteIdx = 0
         while inByteIdx < len(inBytes):
-
             if self.searcherState == MessageSearcherState.waiting_for_sync:
                 poppedByte = inBytes[inByteIdx]
                 inByteIdx += 1
@@ -69,8 +70,7 @@ class MessageSearcher:
                     else:
                         self.searcherState = MessageSearcherState.waiting_for_sync
             elif self.searcherState == MessageSearcherState.fetching_bytes:
-                if len(
-                        inBytes) - 1 >= self.remainingByteCount + inByteIdx - 1:  # Der Buffer ist Länger als der Rest der Nachricht.
+                if len(inBytes) - 1 >= self.remainingByteCount + inByteIdx - 1:  # Der Buffer ist Länger als der Rest der Nachricht.
                     self.currentBytes[self.currentByteIdx:self.currentByteIdx + self.remainingByteCount] = inBytes[
                                                                                                            inByteIdx:inByteIdx + self.remainingByteCount]
                     self.currentByteIdx = self.currentByteIdx + self.remainingByteCount
