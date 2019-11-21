@@ -40,13 +40,14 @@ class MessageSearcher:
         inbytelen = len(inBytes)
         while current_msg_start_idx < inbytelen:
             current_msg_length = inBytes[current_msg_start_idx + 4] + 256*inBytes[current_msg_start_idx + 5]
+            if current_msg_start_idx + current_msg_length > inbytelen: # Message nicht mehr komplett
+                break
             self.publish(inBytes[current_msg_start_idx:current_msg_start_idx+current_msg_length])
             current_msg_start_idx += current_msg_length
 
     def process_bytes(self, inBytes):
         inByteIdx = 0
         while inByteIdx < len(inBytes):
-
             if self.searcherState == MessageSearcherState.waiting_for_sync:
                 poppedByte = inBytes[inByteIdx]
                 inByteIdx += 1
@@ -69,8 +70,7 @@ class MessageSearcher:
                     else:
                         self.searcherState = MessageSearcherState.waiting_for_sync
             elif self.searcherState == MessageSearcherState.fetching_bytes:
-                if len(
-                        inBytes) - 1 >= self.remainingByteCount + inByteIdx - 1:  # Der Buffer ist Länger als der Rest der Nachricht.
+                if len(inBytes) - 1 >= self.remainingByteCount + inByteIdx - 1:  # Der Buffer ist Länger als der Rest der Nachricht.
                     self.currentBytes[self.currentByteIdx:self.currentByteIdx + self.remainingByteCount] = inBytes[
                                                                                                            inByteIdx:inByteIdx + self.remainingByteCount]
                     self.currentByteIdx = self.currentByteIdx + self.remainingByteCount
@@ -902,6 +902,19 @@ class Client(MessageParser):
         parekf_zupt.payload.data['action']= data.ParameterAction.CHANGING
         self.send_msg_and_waitfor_okay(parekf_zupt)
 
+    def get_startup(self):
+        '''Convenience getter for startup parameters of the device.
+
+        Raises:
+            ClientTimeoutError: Timeout while waiting for response or parameter from the XCOM server
+            ResponseError: The response from the system was not 'OK'.
+
+        '''
+        msgToSend = data.getParameterWithID(data.PAREKF_STARTUPV2_Payload.parameter_id)
+        msgToSend.payload.data['action'] = data.ParameterAction.REQUESTING
+        self.send_msg_and_waitfor_okay(msgToSend)
+        return self.wait_for_parameter()
+
     def set_startup(self, initPos=PositionTuple(Lon=0.1249596927, Lat=0.8599914412, Alt=311.9),
                     initPosStdDev: Sequence[float] = [10, 10, 10], posMode: data.StartupPositionMode = data.StartupPositionMode.GNSSPOS, initHdg: float = 0,
                     initHdgStdDev: float = 1, hdgMode: data.StartupHeadingMode = data.StartupHeadingMode.DEFAULT, realign: bool = False, inMotion: bool = False,
@@ -1100,6 +1113,7 @@ class Client(MessageParser):
 
     def aid_pos(self, lonLatAlt: Sequence[float], llhStdDev: Sequence[float], 
                 leverarmXYZ: Sequence[float], leverarmStdDev: Sequence[float], 
+                enableMSLaltitude = 0, 
                 time: float = 0, timeMode: protocol.ExtAidingTimeMode = protocol.ExtAidingTimeMode.LATENCY):
         '''External position aiding
 
@@ -1108,6 +1122,7 @@ class Client(MessageParser):
             llhStdDev: Standard deviation in the directions of (Lon, Lat, Alt) in (m, m, m)
             leverarmXYZ: Leverarm in m
             leverarmStdDev: Standard deviation of the leverarm in m
+            enableMSLaltitude: Set 1 if Altitude is meansealevel
             time: Timestamp or latency, depending on the timeMode argument
             timeMode (protocol.ExtAidingTimeMode): Selects whether the timestamp is a GPS second of week or a latency.
 
@@ -1115,11 +1130,11 @@ class Client(MessageParser):
             ClientTimeoutError: Timeout while waiting for response or log from the XCOM server
             ResponseError: The response from the system was not 'OK'.
         '''
-        msgToSend = data.getCommandWithID(data.CMD_EXT_Payload.command_id)
+        msgToSend = data.getCommandWithID(data.CMD_EXTAID_Payload.command_id)
         msgToSend.payload.data['time'] = time
         msgToSend.payload.data['timeMode'] = timeMode
         msgToSend.payload.data['cmdParamID'] = 3
-        msgToSend.payload.structString += 'dddddddddddd'
+        msgToSend.payload.structString += '12dI'
         msgToSend.payload.data['lon'] = lonLatAlt[0]
         msgToSend.payload.data['lat'] = lonLatAlt[1]
         msgToSend.payload.data['alt'] = lonLatAlt[2]
@@ -1132,6 +1147,7 @@ class Client(MessageParser):
         msgToSend.payload.data['laXStdDev'] = leverarmStdDev[0]
         msgToSend.payload.data['laYStdDev'] = leverarmStdDev[1]
         msgToSend.payload.data['laZStdDev'] = leverarmStdDev[2]
+        msgToSend.payload.data['enableMSL_Alt'] = enableMSLaltitude
         self.send_msg_and_waitfor_okay(msgToSend)
 
     def aid_vel(self, vNED: Sequence[float], vNEDStdDev: Sequence[float], time: float = 0, timeMode: protocol.ExtAidingTimeMode = protocol.ExtAidingTimeMode.LATENCY):
@@ -1147,7 +1163,7 @@ class Client(MessageParser):
             ClientTimeoutError: Timeout while waiting for response or log from the XCOM server
             ResponseError: The response from the system was not 'OK'.
         '''
-        msgToSend = data.getCommandWithID(data.CMD_EXT_Payload.command_id)
+        msgToSend = data.getCommandWithID(data.CMD_EXTAID_Payload.command_id)
         msgToSend.payload.data['time'] = time
         msgToSend.payload.data['timeMode'] = timeMode
         msgToSend.payload.data['cmdParamID'] = 4
@@ -1173,7 +1189,7 @@ class Client(MessageParser):
             ClientTimeoutError: Timeout while waiting for response or log from the XCOM server
             ResponseError: The response from the system was not 'OK'.
         '''
-        msgToSend = data.getCommandWithID(data.CMD_EXT_Payload.command_id)
+        msgToSend = data.getCommandWithID(data.CMD_EXTAID_Payload.command_id)
         msgToSend.payload.data['time'] = time
         msgToSend.payload.data['timeMode'] = timeMode
         msgToSend.payload.data['cmdParamID'] = 5
@@ -1195,7 +1211,7 @@ class Client(MessageParser):
             ClientTimeoutError: Timeout while waiting for response or log from the XCOM server
             ResponseError: The response from the system was not 'OK'.
         '''
-        msgToSend = data.getCommandWithID(data.CMD_EXT_Payload.command_id)
+        msgToSend = data.getCommandWithID(data.CMD_EXTAID_Payload.command_id)
         msgToSend.payload.data['time'] = time
         msgToSend.payload.data['timeMode'] = timeMode
         msgToSend.payload.data['cmdParamID'] = 6
@@ -1242,7 +1258,7 @@ class Client(MessageParser):
         '''
         msgToSend = data.getParameterWithID(data.PARGNSS_ANTOFFSET_Payload.parameter_id)
         msgToSend.payload.data['action'] = data.ParameterAction.REQUESTING
-        msgToSend.payload.data['reserved'] = antenna
+        msgToSend.payload.data['reserved_paramheader'] = antenna
         self.send_msg_and_waitfor_okay(msgToSend)
         return self.wait_for_parameter()
 
@@ -1263,7 +1279,7 @@ class Client(MessageParser):
         '''
         msgToSend = data.getParameterWithID(data.PARGNSS_ANTOFFSET_Payload.parameter_id)
         msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
-        msgToSend.payload.data['reserved'] = antenna
+        msgToSend.payload.data['reserved_paramheader'] = antenna
         msgToSend.payload.data['antennaOffset'] = offset
         msgToSend.payload.data['stdDev'] = stdDev
         self.send_msg_and_waitfor_okay(msgToSend)

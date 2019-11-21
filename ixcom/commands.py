@@ -12,25 +12,17 @@ class CMD_LOG_Payload(DefaultCommandPayload):
         PayloadItem(name = 'divider', dimension = 1, datatype = 'H'),
     ])
 
-@command(0x4)
-class CMD_EKF_Payload(DefaultCommandPayload):
-    command_payload = Message([
-        PayloadItem(name = 'subcommand', dimension = 1, datatype = 'H'),
-        PayloadItem(name = 'numberOfParams', dimension = 1, datatype = 'H'),
-    ])
-
 @command(0x3)
 class CMD_CONF_Payload(DefaultCommandPayload):
     command_payload = Message([
         PayloadItem(name = 'configAction', dimension = 1, datatype = 'I'),
     ])
 
-@command(0x1)
-class CMD_EXT_Payload(DefaultCommandPayload):
+@command(0x4)
+class CMD_EKF_Payload(DefaultCommandPayload):
     command_payload = Message([
-        PayloadItem(name = 'time', dimension = 1, datatype = 'd'),
-        PayloadItem(name = 'timeMode', dimension = 1, datatype = 'H'),
-        PayloadItem(name = 'cmdParamID', dimension = 1, datatype = 'H'),
+        PayloadItem(name = 'subcommand', dimension = 1, datatype = 'H'),
+        PayloadItem(name = 'numberOfParams', dimension = 1, datatype = 'H'),
     ])
 
 @command(0x5)
@@ -39,3 +31,12 @@ class XcomCommandPayload(DefaultCommandPayload):
         PayloadItem(name = 'mode', dimension = 1, datatype = 'H'),
         PayloadItem(name = 'channelNumber', dimension = 1, datatype = 'H'),
     ])
+
+@command(0x7)
+class CMD_EXTAID_Payload(DefaultCommandPayload):
+    command_payload = Message([
+        PayloadItem(name = 'time', dimension = 1, datatype = 'd'),
+        PayloadItem(name = 'timeMode', dimension = 1, datatype = 'H'),
+        PayloadItem(name = 'cmdParamID', dimension = 1, datatype = 'H'),
+    ])
+

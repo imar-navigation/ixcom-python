@@ -55,6 +55,7 @@ def read_file(filename='iXCOMstream.bin'):
             message_bytes_dict[message_id].write(in_bytes)
         except:
             message_bytes_dict[message_id] = io.BytesIO(in_bytes)
+            message_bytes_dict[message_id].write(in_bytes) # initial bytes werden von write ueberschrieben
 
     config = {}
     def parameter_callback(msg, from_device):
