@@ -65,7 +65,8 @@ class MessageSearcher:
                 if self.remainingByteCount == 0:
                     self.remainingByteCount = self.currentBytes[self.currentByteIdx - 1] * 256 + self.currentBytes[
                         self.currentByteIdx - 2] - 6
-                    if self.remainingByteCount < 600 and self.remainingByteCount > 0:
+                    # 4096 should be replaced if greater messages would be defined
+                    if self.remainingByteCount < 4096 and self.remainingByteCount > 0:
                         self.searcherState = MessageSearcherState.fetching_bytes
                     else:
                         self.searcherState = MessageSearcherState.waiting_for_sync
