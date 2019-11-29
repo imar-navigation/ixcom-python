@@ -1281,7 +1281,6 @@ class Client(MessageParser):
         msgToSend = data.getParameterWithID(data.PARGNSS_ANTOFFSET_Payload.parameter_id)
         msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
         msgToSend.payload.data['reserved_paramheader'] = antenna
-        msgToSend.payload.data['reserved'] = antenna
         msgToSend.payload.data['antennaOffset'] = offset
         msgToSend.payload.data['stdDev'] = stdDev
         self.send_msg_and_waitfor_okay(msgToSend)
