@@ -1106,8 +1106,10 @@ class Client(MessageParser):
             ClientTimeoutError: Timeout while waiting for response or log from the XCOM server
             ResponseError: The response from the system was not 'OK'.
         '''
+        par_postproc = self.get_parameter(data.PARXCOM_POSTPROC_Payload.parameter_id)
         msgToSend = data.getParameterWithID(data.PARXCOM_POSTPROC_Payload.parameter_id)
         msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
+        msgToSend.payload.data['channel'] = par_postproc.data['channel']
         msgToSend.payload.data['enable'] = 0
         self.send_msg_and_waitfor_okay(msgToSend)
         self.save_config()
