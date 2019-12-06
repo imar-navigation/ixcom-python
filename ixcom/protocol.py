@@ -655,17 +655,19 @@ class ProtocolPayload(MessageItem):
 
 class ProtocolMessage(MessageItem):
     def __init__(self):
-        self.header  =  ProtocolHeader()
-        self.payload =  ProtocolPayload()
-        self.bottom  =  ProtocolBottom()
+        self.header  = ProtocolHeader()
+        self.payload = ProtocolPayload()
+        self.bottom  = ProtocolBottom()
 
     def to_bytes(self):
         self.header.msgLength = self.size()
-        msgBytes = self.header.to_bytes()
-        msgBytes += self.payload.to_bytes()
-        msgBytes += b'\x00\x00'
+        header = self.header.to_bytes()
+        payload = self.payload.to_bytes()
+        bottom = self.bottom.to_bytes()
+        msgBytes = header + payload + bottom[:2]
         self.bottom.crc = crc16.crc16xmodem(bytes(msgBytes))
-        return self.header.to_bytes() + self.payload.to_bytes() + self.bottom.to_bytes()
+        bottom = self.bottom.to_bytes()
+        return header + payload + bottom
 
     def from_bytes(self, inBytes):
         headerBytes = inBytes[:16]
@@ -686,7 +688,6 @@ class ProtocolMessage(MessageItem):
     @property
     def structString(self):
         return self.header.structString + self.payload.structString[1:] + self.bottom.structString[1:]
-
 
     def __str__(self):
         tmp = str(self.header.frameCounter)+","+str(self.header.timeOfWeek_sec+1e-6*self.header.timeOfWeek_usec)
@@ -764,6 +765,7 @@ class ProtocolMessage(MessageItem):
     def size(self):
         return self.header.size()+self.payload.size()+self.bottom.size()
 
+
 class DefaultCommandPayload(ProtocolPayload):
     message_id = MessageID.COMMAND
     command_id = 0
@@ -797,7 +799,6 @@ class DefaultParameterPayload(ProtocolPayload):
 
     def payload_from_bytes(self, in_bytes):
         self.data.update(self.parameter_payload.unpack_from(in_bytes))
-
         
 
 MessagePayloadDictionary = dict()
@@ -830,7 +831,6 @@ def command(command_id):
         return cls
 
     return decorator
-
 
 
 def getMessageWithID(msgID):
