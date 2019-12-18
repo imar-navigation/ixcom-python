@@ -39,4 +39,3 @@ class CMD_EXTAID_Payload(DefaultCommandPayload):
         PayloadItem(name = 'timeMode', dimension = 1, datatype = 'H'),
         PayloadItem(name = 'cmdParamID', dimension = 1, datatype = 'H'),
     ])
-
