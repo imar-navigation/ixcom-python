@@ -708,7 +708,7 @@ class PARXCOM_NTRIP_Payload(DefaultParameterPayload):
         PayloadItem(name = 'send_pos_on_login', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'enable', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'remote_port', dimension = 1, datatype = 'H'),
-        PayloadItem(name = 'reserved2', dimension = 1, datatype = 'I'),
+        PayloadItem(name = 'gga_send_period', dimension = 1, datatype = 'I'),
     ])
 
 

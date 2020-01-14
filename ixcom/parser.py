@@ -663,6 +663,26 @@ class Client(MessageParser):
         msgToSend.payload.data['divider'] = 1
         self.send_msg_and_waitfor_okay(msgToSend)
 
+    def clear_log(self, msgID: int):
+        '''Clears a log with a specific message ID.
+
+        Clears a log with a specific message ID.
+
+        Args:
+            msgID: Mesage ID which should be requested.
+
+        Raises:
+            ClientTimeoutError: Timeout while waiting for response from the XCOM server
+            ResponseError: The response from the system was not 'OK'.
+
+        '''
+        msgToSend = data.getCommandWithID(data.CMD_LOG_Payload.command_id)
+        msgToSend.payload.data['messageID'] = 3
+        msgToSend.payload.data['trigger'] = data.LogTrigger.SYNC
+        msgToSend.payload.data['parameter'] = data.LogCommand.CLEAR_ALL
+        msgToSend.payload.data['divider'] = 1
+        self.send_msg_and_waitfor_okay(msgToSend)
+
     def poll_log(self, msgID):
         '''Polls a log
 
@@ -846,7 +866,7 @@ class Client(MessageParser):
         result['ekfversion'] = self.get_parameter(7).payload.data['str'].split(b'\0')[0].decode('ascii')
         result['navnum'] = self.get_parameter(9).payload.data['str'].split(b'\0')[0].decode('ascii')
         result['navparset'] = self.get_parameter(10).payload.data['str'].split(b'\0')[0].decode('ascii')
-        result['sysname'] = self.get_parameter(19).payload.data['str'].split(b'\0')[0].decode('ascii')
+        result['sysname'] = self.get_parameter(19).payload.data['str'].split(b'\0')[0].decode('utf-8')
         result['maintiming'] = self.get_parameter(data.PARSYS_MAINTIMING_Payload.parameter_id).payload.data['maintiming']
         try:
             result['gyro_range'] = self.get_parameter(data.PARIMU_RANGE_Payload.parameter_id).payload.data['range_gyro']
@@ -1097,22 +1117,66 @@ class Client(MessageParser):
         msgToSend.payload.data['channel'] = channel
         msgToSend.payload.data['enable'] = 1
         self.send_msg_and_waitfor_okay(msgToSend)
-        self.save_config()
+        # self.save_config()
 
-    def disable_postproc(self):
-        '''Disables the logging of data used for analysis and postprocessing
+    def disable_postproc(self, channel: int = -1):
+        '''Disables the logging of data used for analysis and postprocessing for a specific channel
 
         Raises:
             ClientTimeoutError: Timeout while waiting for response or log from the XCOM server
             ResponseError: The response from the system was not 'OK'.
         '''
-        par_postproc = self.get_parameter(data.PARXCOM_POSTPROC_Payload.parameter_id)
+        channel = -1
+        if channel == -1:
+            channel = self.get_parameter(data.PARXCOM_POSTPROC_Payload.parameter_id).data['channel']
         msgToSend = data.getParameterWithID(data.PARXCOM_POSTPROC_Payload.parameter_id)
         msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
-        msgToSend.payload.data['channel'] = par_postproc.data['channel']
+        msgToSend.payload.data['channel'] = channel
         msgToSend.payload.data['enable'] = 0
         self.send_msg_and_waitfor_okay(msgToSend)
-        self.save_config()
+        # self.save_config()
+
+    # def disable_postproc(self, channel: int):
+    #     '''Disables the logging of data used for analysis and postprocessing for a specific channel
+    #
+    #     Raises:
+    #         ClientTimeoutError: Timeout while waiting for response or log from the XCOM server
+    #         ResponseError: The response from the system was not 'OK'.
+    #     '''
+    #     msgToSend = data.getParameterWithID(data.PARXCOM_POSTPROC_Payload.parameter_id)
+    #     msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
+    #     msgToSend.payload.data['channel'] = channel
+    #     msgToSend.payload.data['enable'] = 0
+    #     self.send_msg_and_waitfor_okay(msgToSend)
+    #     # self.save_config()
+
+    # def disable_postproc(self):
+    #     '''Disables the logging of data used for analysis and postprocessing
+    #
+    #     Raises:
+    #         ClientTimeoutError: Timeout while waiting for response or log from the XCOM server
+    #         ResponseError: The response from the system was not 'OK'.
+    #     '''
+    #     par_postproc = self.get_parameter(data.PARXCOM_POSTPROC_Payload.parameter_id)
+    #     msgToSend = data.getParameterWithID(data.PARXCOM_POSTPROC_Payload.parameter_id)
+    #     msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
+    #     msgToSend.payload.data['channel'] = par_postproc.data['channel']
+    #     msgToSend.payload.data['enable'] = 0
+    #     self.send_msg_and_waitfor_okay(msgToSend)
+    #     # self.save_config()
+
+    def set_ntrip(self, stream, user, password, server, sendPos=0, enable=1, remotePort=2101, ggaSendPeriod=1):
+        msgToSend = data.getParameterWithID(data.PARXCOM_NTRIP_Payload.parameter_id)
+        msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
+        msgToSend.payload.data['stream'] = stream.ljust(128, '\0').encode('ascii')
+        msgToSend.payload.data['user'] = user.ljust(128, '\0').encode('ascii')
+        msgToSend.payload.data['password'] = password.ljust(128, '\0').encode('ascii')
+        msgToSend.payload.data['server'] = server.ljust(128, '\0').encode('ascii')
+        msgToSend.payload.data['send_pos_on_login'] = sendPos
+        msgToSend.payload.data['enable'] = enable
+        msgToSend.payload.data['remote_port'] = remotePort
+        msgToSend.payload.data['gga_send_period'] = ggaSendPeriod
+        self.send_msg_and_waitfor_okay(msgToSend)
 
     def aid_pos(self, lonLatAlt: Sequence[float], llhStdDev: Sequence[float], 
                 leverarmXYZ: Sequence[float], leverarmStdDev: Sequence[float], 
