@@ -785,9 +785,11 @@ class Client(MessageParser):
             ClientTimeoutError: Timeout while waiting for response or log from the XCOM server
             ResponseError: The response from the system was not 'OK'.
         '''
-        msgToSend = data.getParameterWithID(data.PARREC_CONFIG_Payload.parameter_id)
-        msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
-        self.send_msg_and_waitfor_okay(msgToSend)
+        currently_enabled = self.get_parameter(data.PARREC_CONFIG_Payload.parameter_id).data['autostart']
+        if currently_enabled:
+            msgToSend = data.getParameterWithID(data.PARREC_CONFIG_Payload.parameter_id)
+            msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
+            self.send_msg_and_waitfor_okay(msgToSend)
 
     def start_recorder(self, path: str):
         '''Start the system recorder
@@ -814,6 +816,32 @@ class Client(MessageParser):
         msgToSend = data.getParameterWithID(data.PARREC_STOP_Payload.parameter_id)
         msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
         self.send_msg_and_waitfor_okay(msgToSend)
+
+    def disable_udp_broadcast(self):
+        '''Stop the UDP broadcast
+
+        Raises:
+            ClientTimeoutError: Timeout while waiting for response or log from the XCOM server
+            ResponseError: The response from the system was not 'OK'.
+        '''
+
+        currently_enabled = self.get_parameter(data.PARXCOM_UDPCONFIG_Payload.parameter_id).data['enable']
+
+        if currently_enabled:
+            curr_ip = self.get_parameter(data.PARXCOM_UDPCONFIG_Payload.parameter_id).data['ip']
+            curr_port = self.get_parameter(data.PARXCOM_UDPCONFIG_Payload.parameter_id).data['port']
+            curr_ch = self.get_parameter(data.PARXCOM_UDPCONFIG_Payload.parameter_id).data['channel']
+
+            msgToSend = data.getParameterWithID(data.PARXCOM_UDPCONFIG_Payload.parameter_id)
+            msgToSend.payload.data['ip'] = curr_ip
+            msgToSend.payload.data['port'] = curr_port
+            msgToSend.payload.data['enable'] = 0
+            msgToSend.payload.data['channel'] = curr_ch
+            msgToSend.payload.data['enableABD'] = 0
+            msgToSend.payload.data['reserved2'] = 0
+
+            msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
+            self.send_msg_and_waitfor_okay(msgToSend)
 
     def set_recorder_suffix(self, suffix: str):
         '''Sets the suffix of the system recorder
