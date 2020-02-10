@@ -457,7 +457,7 @@ class GNSSSOL_Payload(ProtocolPayload):
         PayloadItem(name = 'pdop', dimension = 1, datatype = 'f'),
         PayloadItem(name = 'satsUsed', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'solTracked', dimension = 1, datatype = 'B'),
-        PayloadItem(name = 'res', dimension = 1, datatype = 'H'),
+        PayloadItem(name = 'baseID', dimension = 1, datatype = 'H'),
         PayloadItem(name = 'diffAge', dimension = 1, datatype = 'f'),
         PayloadItem(name = 'solAge', dimension = 1, datatype = 'f'),
         PayloadItem(name = 'gnssStatus', dimension = 1, datatype = 'I'),
