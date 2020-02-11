@@ -118,11 +118,29 @@ def parse_message_from_file(messageID, filename = None):
     return result_dict
 
 def parse_message_from_buffer(messageID, buffer):
-    if messageID != data.SYSSTAT_Payload.message_id:
-        msg = data.getMessageWithID(messageID)   
-        dtype = np.dtype(msg.get_numpy_dtype())
-        ret = np.frombuffer(buffer.getbuffer(), dtype)
-        ret = append_fields(ret, 'gpstime', ret['time_of_week_sec'] + 1e-6*ret['time_of_week_usec'], usemask=False)
-        return ret
-    else:
+ 
+    def add_time(ret):
+        return append_fields(ret, 'gpstime', ret['time_of_week_sec'] + 1e-6*ret['time_of_week_usec'], usemask=False)
+
+    msg = getMessageWithID(messageID)   
+    if not msg or get_item_len(msg) == 0:
+        print('ignored')
         return None
+        
+    if messageID != SYSSTAT_Payload.message_id:   
+        dtype = np.dtype(msg.get_numpy_dtype())
+        nlen = int(np.floor(len(buffer.getbuffer())/ dtype.itemsize))
+        return add_time(np.frombuffer(buffer.getbuffer(), dtype,count=nlen))
+    else:
+        def iterate(buffer):
+            start = 0
+            while True:
+                try:
+                    current = buffer.getbuffer()[start:]
+                    msg.from_bytes(current)
+                    dtype = msg.get_numpy_dtype()
+                    start += msg.header.msgLength
+                    yield add_time(np.frombuffer(current, dtype, count=1))
+                except:
+                    return             
+        return list(iterate(buffer))
