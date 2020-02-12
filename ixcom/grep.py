@@ -122,12 +122,12 @@ def parse_message_from_buffer(messageID, buffer):
     def add_time(ret):
         return append_fields(ret, 'gpstime', ret['time_of_week_sec'] + 1e-6*ret['time_of_week_usec'], usemask=False)
 
-    msg = getMessageWithID(messageID)   
+    msg = data.getMessageWithID(messageID)   
     if not msg or get_item_len(msg) == 0:
         print('ignored')
         return None
         
-    if messageID != SYSSTAT_Payload.message_id:   
+    if messageID != data.SYSSTAT_Payload.message_id:   
         dtype = np.dtype(msg.get_numpy_dtype())
         nlen = int(np.floor(len(buffer.getbuffer())/ dtype.itemsize))
         return add_time(np.frombuffer(buffer.getbuffer(), dtype,count=nlen))
