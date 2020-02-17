@@ -223,6 +223,18 @@ class Client(MessageParser):
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
         self.sock.connect((self.host, self.port))
 
+    def join_comm_thread(self):
+        '''Join the communication thread
+
+        Blocks the calling location until the communications thread terminates.
+        Can e.g. be used if callbacks have been set up, logs have been requested and we just want to
+        leave the program running like this until the communications with the device stop.
+
+        Args:
+            self
+        '''
+        self._comm_thread.join()
+
     def stop(self):
         self._stop_event.set()
         self._comm_thread.join()
