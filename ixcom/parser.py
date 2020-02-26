@@ -165,6 +165,13 @@ class MessageParser:
     def add_callback(self, callback):
         self.callbacks += [callback]
 
+    def add_callback_and_block(self, callback):
+        '''Add a callback function and joins the communication thread.
+        Call stop() in a callback function the stop the communication thread and continue.
+        '''
+        self.callbacks += [callback]
+        self.join_comm_thread.join()
+
     def remove_callback(self, callback):
         self.callbacks.remove(callback)
 
@@ -217,11 +224,20 @@ class Client(MessageParser):
         
         self.add_subscriber(self)
 
-
     def _create_socket_and_connect(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
         self.sock.connect((self.host, self.port))
+
+    def join_comm_thread(self):
+        '''Join the communication thread
+        Blocks the calling location until the communications thread terminates.
+        Can e.g. be used if callbacks have been set up, logs have been requested and we just want to
+        leave the program running like this until the communications with the device stop.
+        Args:
+            self
+        '''
+        self._comm_thread.join()
 
     def stop(self):
         self._stop_event.set()

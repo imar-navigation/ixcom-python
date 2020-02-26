@@ -14,6 +14,11 @@ class PARSYS_STRING64_Payload(DefaultParameterPayload):
         PayloadItem(name = 'str', dimension = 64, datatype = 's')
     ])
 
+class PARSYS_STRING128_Payload(DefaultParameterPayload):
+    parameter_payload = Message([
+        PayloadItem(name = 'str', dimension = 128, datatype = 's')
+    ])
+
 @parameter(0)
 class PARSYS_PRJNUM_Payload(PARSYS_STRING_Payload):
     pass
