@@ -50,12 +50,12 @@ def read_file(filename='iXCOMstream.bin'):
     message_searcher = MessageSearcher(disable_crc = True)
 
     def message_callback(in_bytes):
+        if not in_bytes:
+            return
         message_id = int(in_bytes[1])
-        try:
-            message_bytes_dict[message_id].write(in_bytes)
-        except:
-            message_bytes_dict[message_id] = io.BytesIO(in_bytes)
-            message_bytes_dict[message_id].write(in_bytes) # initial bytes werden von write ueberschrieben
+        if message_id not in message_bytes_dict:
+            message_bytes_dict[message_id] =  io.BytesIO(b'')
+        message_bytes_dict[message_id].write(in_bytes)
 
     config = {}
     def parameter_callback(msg, from_device):
