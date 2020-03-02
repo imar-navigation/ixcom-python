@@ -143,4 +143,4 @@ def parse_message_from_buffer(messageID, buffer):
                     yield add_time(np.frombuffer(current, dtype, count=1))
                 except:
                     return             
-        return list(iterate(buffer))
+        return np.hstack(iterate(buffer))
