@@ -222,6 +222,12 @@ class PARGNSS_SWITCHER_Payload(DefaultParameterPayload):
         PayloadItem(name = 'switcher', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'reserved2', dimension = 1, datatype = 'H'),
     ])
+
+@parameter(229)
+class PARGNSS_HDGOFFSET_Payload(DefaultParameterPayload):
+    parameter_payload = Message([
+        PayloadItem(name='offset', dimension=1, datatype='f'),
+    ])
       
 """
 PARMAG

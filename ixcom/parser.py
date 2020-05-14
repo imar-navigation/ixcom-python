@@ -29,6 +29,7 @@ class MessageSearcher:
         self.currentBytes = bytearray(512)
         self.currentByteIdx = 0
         self.remainingByteCount = 0
+        self.msgLength = 0
         self.disableCRC = disable_crc
         self.callbacks = []
         if parserDelegate is not None:
@@ -38,7 +39,7 @@ class MessageSearcher:
         current_msg_start_idx = 0
         inBytes = memoryview(buffer)
         inbytelen = len(inBytes)
-        while current_msg_start_idx < inbytelen:
+        while current_msg_start_idx + 5 < inbytelen:
             current_msg_length = inBytes[current_msg_start_idx + 4] + 256*inBytes[current_msg_start_idx + 5]
             if current_msg_start_idx + current_msg_length > inbytelen: # Message nicht mehr komplett
                 break
@@ -63,8 +64,8 @@ class MessageSearcher:
                 self.currentByteIdx += 1
                 self.remainingByteCount -= 1
                 if self.remainingByteCount == 0:
-                    self.remainingByteCount = self.currentBytes[self.currentByteIdx - 1] * 256 + self.currentBytes[
-                        self.currentByteIdx - 2] - 6
+                    self.msgLength = self.currentBytes[self.currentByteIdx - 1] * 256 + self.currentBytes[self.currentByteIdx - 2]
+                    self.remainingByteCount = self.msgLength - 6
                     # 4096 should be replaced if greater messages would be defined
                     if self.remainingByteCount < 4096 and self.remainingByteCount > 0:
                         self.searcherState = MessageSearcherState.fetching_bytes
@@ -72,14 +73,12 @@ class MessageSearcher:
                         self.searcherState = MessageSearcherState.waiting_for_sync
             elif self.searcherState == MessageSearcherState.fetching_bytes:
                 if len(inBytes) - 1 >= self.remainingByteCount + inByteIdx - 1:  # Der Buffer ist Länger als der Rest der Nachricht.
-                    self.currentBytes[self.currentByteIdx:self.currentByteIdx + self.remainingByteCount] = inBytes[
-                                                                                                           inByteIdx:inByteIdx + self.remainingByteCount]
+                    self.currentBytes[self.currentByteIdx:self.currentByteIdx + self.remainingByteCount] = inBytes[inByteIdx:inByteIdx + self.remainingByteCount]
                     self.currentByteIdx = self.currentByteIdx + self.remainingByteCount
                     inByteIdx = inByteIdx + self.remainingByteCount
                     self.remainingByteCount = 0
                 else:
-                    self.currentBytes[self.currentByteIdx:self.currentByteIdx + (len(inBytes) - inByteIdx)] = inBytes[
-                                                                                                              inByteIdx:]
+                    self.currentBytes[self.currentByteIdx:self.currentByteIdx + (len(inBytes) - inByteIdx)] = inBytes[inByteIdx:]
                     self.currentByteIdx = self.currentByteIdx + (len(inBytes) - inByteIdx)
                     self.remainingByteCount -= (len(inBytes) - inByteIdx)
                     inByteIdx = len(inBytes)
@@ -124,10 +123,13 @@ class MessageParser:
         parameterID = inBytes[16] + (inBytes[17] << 8)
         message = data.getParameterWithID(parameterID)
         if message is not None:
-            message.from_bytes(inBytes)
-            self.publish(message)
+            try:
+                message.from_bytes(inBytes)
+                self.publish(message)
+            except Exception:
+                print('Error: Parameter with ID: {} could not be parsed!'.format(parameterID))
         else:
-            pass
+            print('Warning: Parameter with ID: {} not handled!'.format(parameterID))
 
     def parse_command(self, inBytes):
         cmdID = inBytes[16] + (inBytes[17] << 8)

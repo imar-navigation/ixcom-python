@@ -5,15 +5,17 @@ import struct
 import argparse
 import socket
 
-        
+
 class TextFileParser(ixcom.parser.MessageParser):
-    def __init__(self, outputfile, print_request = True):
+    def __init__(self, outputfile, skip_parameter=None, print_request = True):
         super().__init__()
         self.outputfile = outputfile
         self.print_request = print_request
-        self.messageSearcher.disableCRC = True
+        self.messageSearcher.disableCRC = False
         self._indent_level = 0
         self.add_subscriber(self)
+        self.skipParameter = skip_parameter
+        self.parameterList = list()
 
     def __handle_loglist2(self, message):
         self.write_output(f"Channel: {message.payload.data['reserved_paramheader']}\n")
@@ -32,8 +34,13 @@ class TextFileParser(ixcom.parser.MessageParser):
     
     def handle_message(self, message, from_device):
         zeile = "Header Time: %.4f\n" % (message.header.get_time())
-        self.write_output(zeile)
+        if self.skipParameter is None:
+            self.write_output(zeile)
+        elif message.data['parameterID'] in self.skipParameter:
+            return
         if message.header.msgID == ixcom.data.MessageID.PARAMETER:
+            self.parameterList.append((message.data['parameterID'], message))
+            return
             if message.payload.data["action"] == 0:
                 zeile = "Parameter: %s\n" % message.payload.get_name()
             else:
@@ -50,6 +57,22 @@ class TextFileParser(ixcom.parser.MessageParser):
             self.__convert_dict(message.payload.data)
             zeile = "\n\n"
             self.write_output(zeile)
+
+    def write_parameter(self):
+        self.parameterList.sort(key=lambda messagetuple: messagetuple[0])
+        for par in self.parameterList:
+            message = par[1]
+            if message.payload.data["action"] == 0:
+                zeile = "Parameter: %s\n" % message.payload.get_name()
+            else:
+                zeile = "Parameter request: %s\n" % message.payload.get_name()
+            self.write_output(zeile)
+            if isinstance(message.payload, ixcom.data.PARXCOM_LOGLIST2_Payload):
+                self.__handle_loglist2(message)
+            else:
+                self.__convert_dict(message.payload.data)
+                zeile = "\n\n"
+                self.write_output(zeile)
 
     def write_divider(self):
         self.write_output('-'*10+'\n')
@@ -125,15 +148,16 @@ def xcom_lookup(argv = None):
                 pass
             sys.exit(0)
 
-def configdump2txt(argv = None):
+
+def configdump2txt(argv=None):
     parser = argparse.ArgumentParser(description='Converts xcom binary config dump files to other representations')
-    parser.add_argument('input_file', metavar='', type=argparse.FileType('rb'), nargs='?',
-                       help='Name of the binary file', default = 'config.dump')
-    parser.add_argument('-o', '--output', metavar='output_filename', type=argparse.FileType('wt'),
-                       help='Filename of the output file', default = sys.stdout)     
-    args = parser.parse_args(args = argv)
-    xcomparser = TextFileParser(args.output)
+    parser.add_argument('input_file', metavar='', type=argparse.FileType('rb'), nargs='?', help='Name of the binary file', default='config.dump')
+    parser.add_argument('-o', '--output', metavar='output_filename', type=argparse.FileType('wt'), help='Filename of the output file', default=sys.stdout)
+    args = parser.parse_args(args=argv)
+    xcomparser = TextFileParser(args.output, skip_parameter=[917])  # skip parxcom_loglist2(917)
     xcomparser.parse_file(args.input_file)
+    xcomparser.write_parameter()
+
 
 def monitor2xcom(argv = None):
     import re
