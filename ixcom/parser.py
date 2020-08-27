@@ -1368,6 +1368,24 @@ class Client(MessageParser):
         msgToSend.payload.data['stdDev'] = stdDev
         self.send_msg_and_waitfor_okay(msgToSend)
 
+    def set_odooffset(self, offset=[0, 0, 0]):
+        '''Convenience setter for odometer offset
+
+        Sets the odometer offset
+
+        Args:
+            offset: antenna offset in m.
+
+        Raises:
+            ClientTimeoutError: Timeout while waiting for response or parameter from the XCOM server
+            ResponseError: The response from the system was not 'OK'.
+
+        '''
+        msgToSend = data.getParameterWithID(data.PARODO_LEVERARM_Payload.parameter_id)
+        msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
+        msgToSend.payload.data['leverArm'] = offset
+        self.send_msg_and_waitfor_okay(msgToSend)
+
     def get_virtual_meas_pt(self):
         '''Convenience getter for virtual measpoint offset
 
