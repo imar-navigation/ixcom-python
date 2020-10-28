@@ -671,3 +671,26 @@ class TAG_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'tag', dimension = 128, datatype = 's')
     ])
+
+@message(0x25)
+class GNSSSATINFO_Payload(ProtocolPayload):
+    message_description = Message([
+        PayloadItem(name = 'SvID', dimension = 1, datatype = 'I'),
+        PayloadItem(name = 'PositionECEF', dimension = 3, datatype = 'd'),
+        PayloadItem(name = 'VelocityECEF', dimension = 3, datatype = 'd'),
+        PayloadItem(name = 'CN0', dimension = 3, datatype = 'f'),
+        PayloadItem(name = 'ClockError', dimension = 1, datatype = 'f'),
+        PayloadItem(name = 'IonoError', dimension = 1, datatype = 'f'),
+        PayloadItem(name = 'TropoError', dimension = 1, datatype = 'f'),
+        PayloadItem(name = 'Elevation', dimension = 1, datatype = 'f'),
+        PayloadItem(name = 'Azimuth', dimension = 1, datatype = 'f'),
+    ])
+
+@message(0x45)
+class NTRIPSTAT_Payload(ProtocolPayload):
+    message_description = Message([
+        PayloadItem(name = 'NtripStatus', dimension = 1, datatype = 'I'),
+        PayloadItem(name = 'LastErrorMsg', dimension = 256, datatype = 's'),
+        PayloadItem(name = 'ErrorCounter', dimension = 1, datatype = 'I'),
+    ])
+
