@@ -93,6 +93,34 @@ class IMU_FILTERED_Payload(ProtocolPayload):
         PayloadItem(name = 'Acc', dimension = 3, datatype = 'f'),
     ])
 
+@message(0x65)
+class MAGDATA2_Payload(ProtocolPayload):
+    message_description = Message([
+        PayloadItem(name='rawx', dimension=1, datatype='i'),
+        PayloadItem(name='rawy', dimension=1, datatype='i'),
+        PayloadItem(name='rawz', dimension=1, datatype='i'),
+        PayloadItem(name='bit_error', dimension=1, datatype='B'),
+        PayloadItem(name='reserved', dimension=3, datatype='B'),
+    ])
+
+@message(0x66)
+class IPST_Payload(ProtocolPayload):
+    message_description = Message([
+        PayloadItem(name='omg', dimension=3, datatype='f'),
+        PayloadItem(name='acc', dimension=3, datatype='f'),
+        PayloadItem(name='system_status', dimension=1, datatype='I'),
+        PayloadItem(name='fpga_status', dimension=1, datatype='I'),
+        PayloadItem(name='odo_0_ticks', dimension=1, datatype='i'),
+        PayloadItem(name='odo_0_event', dimension=1, datatype='I'),
+        PayloadItem(name='odo_0_event_next', dimension=1, datatype='I'),
+        PayloadItem(name='odo_1_ticks', dimension=1, datatype='i'),
+        PayloadItem(name='odo_1_event', dimension=1, datatype='I'),
+        PayloadItem(name='odo_1_event_next', dimension=1, datatype='I'),
+        PayloadItem(name='odo_2_ticks', dimension=1, datatype='i'),
+        PayloadItem(name='odo_2_event', dimension=1, datatype='I'),
+        PayloadItem(name='odo_2_event_next', dimension=1, datatype='I'),
+    ])
+
 class IMU_Payload(ProtocolPayload):
     message_description = Message([
         PayloadItem(name = 'acc', dimension = 3, datatype = 'f'),
@@ -134,6 +162,47 @@ class STATFPGA_Payload(ProtocolPayload):
         PayloadItem(name = 'usRes', dimension = 1, datatype = 'H'),
     ])
 
+
+@message(0x63)
+class PASSTHROUGH_Payload(ProtocolPayload):
+    message_description = Message([
+            PayloadItem(name = 'port', dimension = 1, datatype = 'B'),
+            PayloadItem(name = 'reserved', dimension = 3, datatype = 'B'),
+            PayloadItem(name='passthroughdata', dimension=256, datatype='B')
+            ])
+
+    def from_bytes(self, inBytes):
+        item_list = [
+            PayloadItem(name = 'port', dimension = 1, datatype = 'B'),
+            PayloadItem(name = 'reserved', dimension = 3, datatype = 'B'),
+        ]
+        item_list += [PayloadItem(name='passthroughdata', dimension=len(inBytes[4:]), datatype='B')]
+        #item_list += self._get_payload(port)
+        #item_list += passthrough_data
+        self.message_description = Message(item_list)
+        super().from_bytes(inBytes)
+
+    def _get_payload(self, stat_mode):
+        item_list = []
+        if(stat_mode & (1 << 0)):
+            item_list += [PayloadItem(name = 'imuStat', dimension = 1, datatype = 'I')]
+        if(stat_mode & (1 << 1)):
+            item_list += [PayloadItem(name = 'gnssStat', dimension = 1, datatype = 'I')]
+        if(stat_mode & (1 << 2)):
+            item_list += [PayloadItem(name = 'magStat', dimension = 1, datatype = 'I')]
+        if(stat_mode & (1 << 3)):
+            item_list += [PayloadItem(name = 'madcStat', dimension = 1, datatype = 'I')]
+        if(stat_mode & (1 << 4)):
+            item_list += [PayloadItem(name = 'ekfStat', dimension = 2, datatype = 'I')]
+        if(stat_mode & (1 << 5)):
+            item_list += [PayloadItem(name = 'ekfGeneralStat', dimension = 1, datatype = 'I')]
+        if(stat_mode & (1 << 6)):
+            item_list += [PayloadItem(name = 'addStat', dimension = 4, datatype = 'I')]
+        if(stat_mode & (1 << 7)):
+            item_list += [PayloadItem(name = 'serviceStat', dimension = 1, datatype = 'I')]
+        if(stat_mode & (1 << 8)):
+            item_list += [PayloadItem(name = 'remainingAlignTime', dimension = 1, datatype = 'f')]
+        return item_list
 
 @message(0x19)
 class SYSSTAT_Payload(ProtocolPayload):

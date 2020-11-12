@@ -982,6 +982,23 @@ class Client(MessageParser):
         self.send_msg_and_waitfor_okay(msgToSend)
         return self.wait_for_parameter()
 
+    def get_interface(self, port=0):
+        msgToSend = data.getParameterWithID(data.PARXCOM_INTERFACE_Payload.parameter_id)
+        msgToSend.payload.data['action'] = data.ParameterAction.REQUESTING
+        msgToSend.payload.data['port'] = port
+        self.send_msg_and_waitfor_okay(msgToSend)
+        return self.wait_for_parameter()
+
+    def set_interface(self, port=0, portlevel=0, portmode=0, baudrate=115200, reservedList=[0,0,0,0,0,0,0,0]):
+        msgToSend = data.getParameterWithID(data.PARXCOM_INTERFACE_Payload.parameter_id)
+        msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
+        msgToSend.payload.data['port'] = port
+        msgToSend.payload.data['portmode'] = portmode
+        msgToSend.payload.data['portlevel'] = portlevel
+        msgToSend.payload.data['baudrate'] = baudrate
+        msgToSend.payload.data['reserved'] = reservedList
+        self.send_msg_and_waitfor_okay(msgToSend)
+
     def set_startup(self, initPos=PositionTuple(Lon=0.1249596927, Lat=0.8599914412, Alt=311.9),
                     initPosStdDev: Sequence[float] = [10, 10, 10], posMode: data.StartupPositionMode = data.StartupPositionMode.GNSSPOS, initHdg: float = 0,
                     initHdgStdDev: float = 1, hdgMode: data.StartupHeadingMode = data.StartupHeadingMode.DEFAULT, realign: bool = False, inMotion: bool = False,
@@ -1129,6 +1146,10 @@ class Client(MessageParser):
             bytesToSend = msg.to_bytes()
             self.send_and_wait_for_okay(bytesToSend)
 
+    def send_msg_and_dont_waitfor_okay(self, msg):
+        with self.okay_lock:
+            bytesToSend = msg.to_bytes()
+            self.send_and_dont_wait_for_okay(bytesToSend)
 
     def set_imu_misalign(self, x: float, y: float, z: float):
         '''Adjusts PARIMU_MISALIGN
@@ -1326,6 +1347,24 @@ class Client(MessageParser):
         response = self._response_event.response
         if response.payload.data['responseID'] != data.Response.OK:
             raise ResponseError(self._response_event.response.data['responseText'].decode('ascii'), self)
+
+    def send_and_dont_wait_for_okay(self, inBytes):
+        '''Waits for reception of OK response
+
+        Send the bytes and waits for an OK response from the system
+
+        Args:
+            inBytes: bytes to send
+
+        Raises:
+            ClientTimeoutError: Timeout while waiting for response from the XCOM server
+            ResponseError: The response from the system was not 'OK'.
+
+        '''
+        try:
+            self.sock.sendall(inBytes)
+        except socket.error:
+            raise CommunicationError('Failed sending bytes to device {}'.format(self.host), self)
 
     def get_antoffset(self, antenna):
         '''Convenience getter for antenna offset
