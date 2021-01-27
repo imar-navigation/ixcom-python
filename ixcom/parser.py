@@ -127,7 +127,7 @@ class MessageParser:
                 message.from_bytes(inBytes)
                 self.publish(message)
             except Exception:
-                print('Error: Parameter with ID: {} could not be parsed!'.format(parameterID))
+                print('Error: Parameter with ID: {} ({}) could not be parsed!'.format(parameterID, message.payload.get_name()))
         else:
             print('Warning: Parameter with ID: {} not handled!'.format(parameterID))
 

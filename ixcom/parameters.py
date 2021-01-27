@@ -673,6 +673,9 @@ class PARXCOM_SERIALPORT_Payload(DefaultParameterPayload):
         PayloadItem(name = 'baudRate', dimension = 1, datatype = 'I'),
     ])
 
+    def get_name(self):
+        return super().get_name() + '_COM' + str(self.data.get('port'))
+
 
 @parameter(903)
 class PARXCOM_NETCONFIG_Payload(DefaultParameterPayload):
@@ -686,6 +689,12 @@ class PARXCOM_NETCONFIG_Payload(DefaultParameterPayload):
         PayloadItem(name = 'subnetmask', dimension = 1, datatype = 'I'),
         PayloadItem(name = 'gateway', dimension = 1, datatype = 'I'),
     ])
+
+    def get_name(self):
+        if 0 == self.data.get('interface'):
+            return super().get_name() + '_ETH'
+        else:
+            return super().get_name() + '_USB'
 
 @parameter(905)
 class PARXCOM_LOGLIST_Payload(DefaultParameterPayload):
@@ -760,6 +769,9 @@ class PARXCOM_LOGLIST2_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'loglist', dimension = 16, datatype = __sub_payload)
     ])
+
+    def get_name(self):
+        return super().get_name() + '_Channel' + str(self.data.get('reserved_paramheader'))
 
 
 """
@@ -920,6 +932,9 @@ class PARNMEA_COM_Payload(DefaultParameterPayload):
         PayloadItem(name = 'reserved3', dimension = 1, datatype = 'H'),
         PayloadItem(name = 'baud', dimension = 1, datatype = 'I'),
     ])
+
+    def get_name(self):
+        return super().get_name() + '_COM' + str(self.data.get('port'))
 
 
 @parameter(1301)
