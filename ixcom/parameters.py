@@ -928,7 +928,7 @@ PARNMEA
 class PARNMEA_COM_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'port', dimension = 1, datatype = 'B'),
-        PayloadItem(name = 'reserved2', dimension = 1, datatype = 'B'),
+        PayloadItem(name = 'enable', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'reserved3', dimension = 1, datatype = 'H'),
         PayloadItem(name = 'baud', dimension = 1, datatype = 'I'),
     ])
