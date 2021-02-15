@@ -35,6 +35,14 @@ class PARSYS_SERIALNUM_Payload(PARSYS_STRING_Payload):
 class PARSYS_MFG_Payload(PARSYS_STRING_Payload):
     pass
 
+@parameter(4)
+class PARSYS_CALDATE_Payload(DefaultParameterPayload):
+    parameter_payload = Message([
+        PayloadItem(name = 'password', dimension = 1, datatype = 'H'),
+        PayloadItem(name = 'reserved2', dimension = 1, datatype = 'H'),
+        PayloadItem(name = 'str', dimension = 32, datatype = 's'),
+    ])
+
 @parameter(5)
 class PARSYS_FWVERSION_Payload(PARSYS_STRING_Payload):
     pass
@@ -60,14 +68,6 @@ class PARSYS_MAINTIMING_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'maintiming', dimension = 1, datatype = 'H'),
         PayloadItem(name = 'password', dimension = 1, datatype = 'H'),
-    ])
-
-@parameter(4)
-class PARSYS_CALDATE_Payload(DefaultParameterPayload):
-    parameter_payload = Message([
-        PayloadItem(name = 'password', dimension = 1, datatype = 'H'),
-        PayloadItem(name = 'reserved2', dimension = 1, datatype = 'H'),
-        PayloadItem(name = 'str', dimension = 32, datatype = 's'),
     ])
 
 @parameter(12)
