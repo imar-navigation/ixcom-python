@@ -14,7 +14,11 @@ if __name__ == '__main__':
     long_description = open(readmePath, "rt").read()
 
     setup(name='ixcom',
+<<<<<<< HEAD
           version='1.2.0',
+=======
+          version='1.1.11',
+>>>>>>> aa2592ee76fb2092d7b464b0e19d6520633b9728
           description='Library for communicating with xcom devices over network',
           author='iMAR Navigation GmbH',
           author_email='support@imar-navigation.de',
