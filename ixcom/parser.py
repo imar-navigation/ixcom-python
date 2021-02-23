@@ -312,7 +312,11 @@ class Client(MessageParser):
             for _ in inputready:
                 if self.sock.fileno() != -1:
                     try:
-                        self.messageSearcher.process_bytes(self.sock.recv(1024))
+                        _data = self.sock.recv(2048)
+                        if len(_data) >= 1024:
+                            print('max bytes read:', len(_data))
+                        self.messageSearcher.process_bytes(_data)
+                        # self.messageSearcher.process_bytes(self.sock.recv(1024))
                     except OSError:
                         pass
 

@@ -211,15 +211,60 @@ class SYSSTAT_Payload(ProtocolPayload):
             PayloadItem(name = 'sysStat', dimension = 1, datatype = 'I'),
             ])
 
+    def _get_varsize_message_description(self, stat_mode):
+        _item_list = [
+            PayloadItem(name = 'statMode', dimension = 1, datatype = 'I'),
+            PayloadItem(name = 'sysStat', dimension = 1, datatype = 'I')
+            ]
+        if(stat_mode & (1 << 0)):
+            _item_list += [PayloadItem(name = 'imuStat', dimension = 1, datatype = 'I')]
+        if(stat_mode & (1 << 1)):
+            _item_list += [PayloadItem(name = 'gnssStat', dimension = 1, datatype = 'I')]
+        if(stat_mode & (1 << 2)):
+            _item_list += [PayloadItem(name = 'magStat', dimension = 1, datatype = 'I')]
+        if(stat_mode & (1 << 3)):
+            _item_list += [PayloadItem(name = 'madcStat', dimension = 1, datatype = 'I')]
+        if(stat_mode & (1 << 4)):
+            _item_list += [PayloadItem(name = 'ekfStat', dimension = 2, datatype = 'I')]
+        if(stat_mode & (1 << 5)):
+            _item_list += [PayloadItem(name = 'ekfGeneralStat', dimension = 1, datatype = 'I')]
+        if(stat_mode & (1 << 6)):
+            _item_list += [PayloadItem(name = 'addStat', dimension = 4, datatype = 'I')]
+        if(stat_mode & (1 << 7)):
+            _item_list += [PayloadItem(name = 'serviceStat', dimension = 1, datatype = 'I')]
+        if(stat_mode & (1 << 8)):
+            _item_list += [PayloadItem(name = 'remainingAlignTime', dimension = 1, datatype = 'f')]
+        self.message_description = Message(_item_list)
+        self.item_list = _item_list
+        self._structString = None
+
+
     def from_bytes(self, inBytes):
         item_list = [
             PayloadItem(name = 'statMode', dimension = 1, datatype = 'I'),
             PayloadItem(name = 'sysStat', dimension = 1, datatype = 'I'),
         ]
-        stat_mode = struct.unpack("I", inBytes[:4])[0]
+        stat_mode = struct.unpack('I', inBytes[:4])[0]
         item_list += self._get_payload(stat_mode)
-        self.message_description = Message(item_list)
+        _msg = Message(item_list)
+        self.data = _msg.data
+        self.message_description = _msg
+        self.struct_inst = _msg.struct_inst
+        self._structString = _msg.struct_inst.format
         super().from_bytes(inBytes)
+
+#    def to_bytes(self):
+#        item_list = [
+#            PayloadItem(name = 'statMode', dimension = 1, datatype = 'I'),
+#            PayloadItem(name = 'sysStat', dimension = 1, datatype = 'I'),
+#        ]
+#        item_list += self._get_payload(self.data['statMode'])
+#        _msg = Message(item_list)
+#        self.data = _msg.data
+#        self.message_description = _msg
+#        self.struct_inst = _msg.struct_inst
+#        self._structString = _msg.struct_inst.format
+#        return super().to_bytes()
 
     def _get_payload(self, stat_mode):
         item_list = []

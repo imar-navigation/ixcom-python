@@ -609,8 +609,13 @@ class ProtocolPayload(MessageItem):
     _structString = None
     data = collections.OrderedDict()
 
-
-    def __init__(self):
+    def __init__(self, varsizehelper=None):
+        if varsizehelper:
+            self._get_varsize_message_description(varsizehelper)
+            type(self)._structString = None
+            type(self).item_list = self.item_list
+            type(self).message_description = self.message_description
+            self._structString = self.message_description.generate_final_struct_string()
         if type(self)._structString is None:
             if type(self).message_description is not None:
                 type(self)._structString = self.message_description.generate_final_struct_string()
@@ -833,11 +838,14 @@ def command(command_id):
     return decorator
 
 
-def getMessageWithID(msgID):
+def getMessageWithID(msgID, varsizehelper=None):
     message = ProtocolMessage()
     message.header.msgID = msgID
     if msgID in MessagePayloadDictionary:
-        message.payload = MessagePayloadDictionary[msgID]()
+        if varsizehelper is None:
+            message.payload = MessagePayloadDictionary[msgID]()
+        else:
+            message.payload = MessagePayloadDictionary[msgID](varsizehelper)
         return message
     else:
         return None
