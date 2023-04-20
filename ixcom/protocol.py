@@ -2,11 +2,13 @@ import collections
 from collections.abc import Iterable
 import struct
 from enum import Flag, IntEnum, IntFlag, auto
-from typing import NamedTuple
+from typing import NamedTuple, List
 
 from . import crc16
 from .exceptions import ParseError
 
+import os
+import json
 
 class msg_iterator:
     def __init__(self, msg, in_bytes):
@@ -79,9 +81,14 @@ class DatatSelectionMask(IntEnum):
 
 class MessageID(IntEnum):
     '''Enumeration for special message IDs'''
+    PLUGIN        = 0x64
     COMMAND       = 0xFD
     RESPONSE      = 0xFE
     PARAMETER     = 0xFF
+
+class ParamID(IntEnum):
+    '''Enumeration for special parameter IDs'''
+    PARPLUGIN     = 2000
 
 class EkfCommand(IntEnum):
     '''Enumeration for the EKF command subcommands'''
@@ -376,7 +383,7 @@ class XcomCommandParameter(IntEnum):
     '''Update firmware from SVN'''
     _reset_timebias = 6
     '''Reset the time bias between system time and GNSS time'''
-    
+
 class ParameterAction(IntEnum):
     '''Allowed parameter actions'''
     CHANGING = 0
@@ -389,8 +396,8 @@ class EkfStatus:
     def __str__(self):
         return f'Low Status: {str(EKF_STATUS_LOW(self.value[0]))}, High status: {str(EKF_STATUS_LOW(self.value[0]))}'
 
-    
 
+# Payload classes
 class PayloadItem(NamedTuple):
     name: str
     dimension: int
@@ -407,6 +414,8 @@ class PayloadItem(NamedTuple):
             'H': 'uint16_t',
             'i': 'int32_t',
             'I': 'uint32_t',
+            'l': 'int64_t',
+            'L': 'uint64_t',
             'f': 'int8_t',
             'd': 'int8_t',
             's': 'char',
@@ -435,7 +444,7 @@ class PayloadItem(NamedTuple):
         return struct_string
 
     def get_size(self):
-        basic_sizes = {'b': 1, 'B': 1, 's': 1, 'h': 2, 'H': 2, 'i': 4, 'I': 4, 'f': 4, 'd': 8}
+        basic_sizes = {'b': 1, 'B': 1, 's': 1, 'h': 2, 'H': 2, 'i': 4, 'I': 4, 'f': 4, 'd': 8, 'l': 8, 'L': 8}
         if isinstance(self.datatype, str):
             return basic_sizes[self.datatype]*self.dimension
         elif isinstance(self.datatype, Message):
@@ -476,8 +485,9 @@ class PayloadItem(NamedTuple):
         else:
             return {self.name: output_values}
 
+
 class Message:
-    def __init__(self, item_list: [PayloadItem], name = ''):
+    def __init__(self, item_list: List[PayloadItem], name = ''):
         self.item_list = item_list
         self.data = self.generate_data_dict()
         self.struct_inst = struct.Struct(self.generate_final_struct_string())
@@ -530,6 +540,7 @@ class Message:
             data.update(item.consume(values))
         return data
 
+
 class MessageItem:
     struct_inst: struct.Struct
 
@@ -547,6 +558,7 @@ class MessageItem:
             return self.struct_inst.size
         except:
             raise NotImplementedError()
+
 
 class ProtocolHeader(MessageItem):
     structString = "=BBBBHHII"
@@ -580,13 +592,22 @@ class ProtocolHeader(MessageItem):
             'sync': self.sync, 
             'msg_id': self.msgID, 
             'frame_counter': self.frameCounter, 
-            'reserved': self.reserved,
+            'reserved_header': self.reserved,
             'msg_length': self.msgLength,
             'week': self.week,
             'time_of_week_sec': self.timeOfWeek_sec,
             'time_of_week_usec': self.timeOfWeek_usec}
         return d
 
+    def set_data(self, d):
+        self.sync = d['sync']
+        self.msgID = d['msg_id']
+        self.frameCounter = d['frame_counter']
+        self.reserved = d['reserved_header']
+        self.msgLength = d['msg_length']
+        self.week = d['week']
+        self.timeOfWeek_sec = d['time_of_week_sec']
+        self.timeOfWeek_usec = d['time_of_week_usec']
 
 
 class ProtocolBottom(MessageItem):
@@ -603,26 +624,62 @@ class ProtocolBottom(MessageItem):
     def from_bytes(self, inBytes):
         self.gStatus, self.crc = self.struct_inst.unpack(inBytes)
 
+    def get_data(self):
+        d = {
+                'global_status': self.gStatus,
+                'crc': self.crc}
+        return d
+
+    def set_data(self, d):
+        self.gStatus = d['global_status']
+        self.crc = d['crc']
+
+
 class ProtocolPayload(MessageItem):
     message_id = 0
-    message_description = None
-    _structString = None
-    data = collections.OrderedDict()
+    message_description = Message([])
+    init_opts = {}
+    get_varsize_item_list = None
+    get_varsize_arg_from_bytes = None
 
-    def __init__(self, varsizehelper=None):
-        if varsizehelper:
-            self._get_varsize_message_description(varsizehelper)
-            type(self)._structString = None
-            type(self).item_list = self.item_list
-            type(self).message_description = self.message_description
-            self._structString = self.message_description.generate_final_struct_string()
-        if type(self)._structString is None:
-            if type(self).message_description is not None:
-                type(self)._structString = self.message_description.generate_final_struct_string()
-                type(self).struct_inst = struct.Struct(self._structString)
-        if type(self).message_description is not None:
-            self.message_description.name = self.get_name()
-            self.data = type(self).message_description.generate_data_dict()
+
+    def __init__(self, varsize_arg=None):
+        # varsize_arg is:
+        # - optional to create an empty message
+        # - unused for from_bytes (gets its own varsize_arg for parsing)
+        # - required to create a message and use to_bytes
+        if varsize_arg is not None:
+            self.message_description = Message(self.get_varsize_item_list(varsize_arg))
+        self._init_from_varsize_arg(varsize_arg)
+
+    def _init_from_varsize_arg(self, varsize_arg):
+        cls = type(self)
+        if cls not in cls.init_opts:
+            cls.init_opts[cls] = {}
+        _init_opts = cls.init_opts[cls]
+        if varsize_arg in _init_opts:
+            _init = _init_opts[varsize_arg]
+        else:
+            _init = {}
+            if varsize_arg is None:
+                _init['message_description'] = cls.message_description
+            else:
+                _init['message_description'] = self.message_description  # self.message_description must be set before
+            _init['structString'] = _init['message_description'].generate_final_struct_string()
+            _init['struct_inst'] = struct.Struct(_init['structString'])
+            _init['message_description_name'] = self.get_name()
+            _init_opts[varsize_arg] = _init
+        self.message_description = _init['message_description']
+        self._structString = _init['structString']
+        self.struct_inst = _init['struct_inst']
+        self.message_description.name = _init['message_description_name']
+        # alwalys create own data dict
+        self.data = self.message_description.generate_data_dict()
+        self._initarg = varsize_arg
+
+    @classmethod
+    def _is_varsize(cls):
+        return (cls.get_varsize_item_list is not None) and (cls.get_varsize_arg_from_bytes is not None)
 
     @property
     def structString(self):
@@ -647,6 +704,10 @@ class ProtocolPayload(MessageItem):
         return bytearray(self.struct_inst.pack(*values))
 
     def from_bytes(self, inBytes):
+        if self.get_varsize_arg_from_bytes:
+            _varsiz_arg = self.get_varsize_arg_from_bytes(inBytes)
+            if _varsiz_arg != self._initarg:
+                self.__init__(_varsiz_arg)
         self.data.update(self.message_description.unpack_from(inBytes))
 
     @classmethod
@@ -658,8 +719,9 @@ class ProtocolPayload(MessageItem):
     def construct_message(cls):
         return getMessageWithID(cls.message_id)
 
+
 class ProtocolMessage(MessageItem):
-    def __init__(self):
+    def __init__(self, varsizearg=None):
         self.header  = ProtocolHeader()
         self.payload = ProtocolPayload()
         self.bottom  = ProtocolBottom()
@@ -723,8 +785,9 @@ class ProtocolMessage(MessageItem):
         current_item = ''
         item_list = []
         dtype_list = []
+        type_string = 'fdsbBhHiIlL'
         while len(struct_string) > 0:
-            while struct_string[0] not in 'fdsbBhHiI':
+            while struct_string[0] not in type_string:
                 current_item += struct_string[0]
                 struct_string = struct_string[1:]
             current_item += struct_string[0]
@@ -732,9 +795,8 @@ class ProtocolMessage(MessageItem):
             item_list.append(current_item)
             current_item = ''
 
-        for idx, item in enumerate(item_list):
-            fieldname = list(self.data.keys())[idx]
-            cardinality = item.rstrip('fdsbBhHiI')
+        def construct_item_spec_from_msg_def(fieldname, item):
+            cardinality = item.rstrip(type_string)
             if len(cardinality) == 0:
                 cardinality = 1
             else:
@@ -746,11 +808,11 @@ class ProtocolMessage(MessageItem):
                 byte_size = '2'
             elif dtype in 'iIf':
                 byte_size = '4'
-            elif dtype in 'd':
+            elif dtype in 'dLl':
                 byte_size = '8'
-            if dtype in 'bhi':
+            if dtype in 'bhil':
                 out_type = 'i'
-            elif dtype in 'BHI':
+            elif dtype in 'BHIL':
                 out_type = 'u'
             elif dtype in 'fd':
                 out_type = 'f'
@@ -762,10 +824,53 @@ class ProtocolMessage(MessageItem):
                 item_spec = (fieldname, out_type)
             else:
                 out_type = out_type + byte_size
-                item_spec = (fieldname, out_type, cardinality)
-            dtype_list.append(item_spec)
+                if cardinality == 1:
+                    item_spec = (fieldname, out_type)
+                else:
+                    item_spec = (fieldname, out_type, cardinality)
+            return item_spec
 
-        return dtype_list
+        def build_dtype_list(data, item_list):
+            dtype_list = []
+            idx_offset = 0
+            for idx, fieldname in enumerate(data.keys()):
+                item = item_list[idx+idx_offset]
+                is_nested = False
+                is_nested_list = False
+                is_empty_nested_list = False
+                if (type(data[fieldname]) is type(list())):
+                    if data[fieldname]:
+                        if (type(data[fieldname][0]) is type(dict())):
+                            is_nested = True
+                            is_nested_list = True
+                    else:
+                        is_empty_nested_list = True
+                else:
+                    if (type(data[fieldname]) is type(dict())):
+                        is_nested = True
+                if is_nested:
+                    if is_nested_list:
+                        sublist_length = len(data[fieldname][0])
+                        dtype_sublist, nested_offset = build_dtype_list(data[fieldname][0],
+                            item_list[idx+idx_offset:])
+                        nestet_list_length = len(data[fieldname])
+                        idx_offset += sublist_length * nestet_list_length - 1 + nestet_list_length * nested_offset
+                        item_spec = (fieldname, dtype_sublist, nestet_list_length)
+                    else:
+                        sublist_length = len(data[fieldname])
+                        dtype_sublist, nested_offset = build_dtype_list(data[fieldname],
+                            item_list[idx+idx_offset:])
+                        idx_offset += sublist_length - 1 + nested_offset
+                        item_spec = (fieldname, dtype_sublist)
+                elif is_empty_nested_list:
+                    idx_offset -= 1
+                    item_spec = (fieldname, list())
+                else:
+                    item_spec = construct_item_spec_from_msg_def(fieldname, item)
+                dtype_list.append(item_spec)
+            return dtype_list, idx_offset
+        
+        return build_dtype_list(self.data, item_list)[0]
 
     def size(self):
         return self.header.size()+self.payload.size()+self.bottom.size()
@@ -779,12 +884,44 @@ class DefaultCommandPayload(ProtocolPayload):
         PayloadItem(name = 'specific', dimension = 1, datatype = 'H'),
     ])
     command_payload = Message([])
+    message_description = None
 
-    def __init__(self):
-        if type(self).message_description is None:
-            type(self).message_description = Message(type(self).command_header.item_list + type(self).command_payload.item_list)
-        super().__init__()
+    def __init__(self, varsize_arg=None):
+        cls = type(self)
+        if varsize_arg is not None:
+            self.command_payload = Message(self.get_varsize_item_list(varsize_arg))
+            self.message_description = Message(cls.command_header.item_list + self.command_payload.item_list)
+            self._init_from_varsize_arg(varsize_arg)
+        else:
+            if cls.message_description is None:
+                cls.message_description = Message(cls.command_header.item_list + cls.command_payload.item_list)
+            self._init_from_varsize_arg(None)
 
+class DefaultPluginMessagePayload(ProtocolPayload):
+    message_id = MessageID.PLUGIN
+    plugin_message_id = 0
+    plugin_message_header = Message([
+        PayloadItem(name = 'plugin_data_id', dimension = 1, datatype = 'H'),
+        PayloadItem(name = 'reserved_pluginheader', dimension = 1, datatype = 'H'),
+    ])
+    plugin_message_payload = Message([])
+    message_description = None
+
+    def __init__(self, varsize_arg=None):
+        cls = type(self)
+        if varsize_arg is not None:
+            self.plugin_message_payload = Message(self.get_varsize_item_list(varsize_arg))
+            self.message_description = Message(cls.plugin_message_header.item_list + self.plugin_message_payload.item_list)
+            self._init_from_varsize_arg(varsize_arg)
+        else:
+            if cls.message_description is None:
+                cls.message_description = Message(cls.plugin_message_header.item_list + cls.plugin_message_payload.item_list)
+            self._init_from_varsize_arg(None)
+
+    def payload_from_bytes(self, in_bytes):
+        if self.get_varsize_arg_from_bytes:
+            self._handle_varsize_arg(self.get_varsize_arg_from_bytes(in_bytes))
+        self.data.update(self.parameter_payload.unpack_from(in_bytes))
 
 class DefaultParameterPayload(ProtocolPayload):
     message_id = MessageID.PARAMETER
@@ -797,32 +934,95 @@ class DefaultParameterPayload(ProtocolPayload):
     parameter_payload = Message([])
     message_description = None
 
-    def __init__(self):
-        if type(self).message_description is None:
-            type(self).message_description = Message(type(self).parameter_header.item_list + type(self).parameter_payload.item_list)
-        super().__init__()
+    def __init__(self, varsize_arg=None):
+        cls = type(self)
+        if varsize_arg is not None:
+            self.parameter_payload = Message(self.get_varsize_item_list(varsize_arg))
+            self.message_description = Message(cls.parameter_header.item_list + self.parameter_payload.item_list)
+            self._init_from_varsize_arg(varsize_arg)
+        else:
+            if cls.message_description is None:
+                cls.message_description = Message(cls.parameter_header.item_list + cls.parameter_payload.item_list)
+            self._init_from_varsize_arg(None)
 
     def payload_from_bytes(self, in_bytes):
+        if self.get_varsize_arg_from_bytes:
+            self._handle_varsize_arg(self.get_varsize_arg_from_bytes(in_bytes))
         self.data.update(self.parameter_payload.unpack_from(in_bytes))
-        
 
+class DefaultPluginParameterPayload(DefaultParameterPayload):
+    parameter_id = ParamID.PARPLUGIN
+    plugin_parameter_id = 0
+    plugin_parameter_header = Message([
+        PayloadItem(name = 'plugin_index', dimension = 1, datatype = 'B'),
+        PayloadItem(name = 'reserved_plugin_paramheader', dimension = 1, datatype = 'B'),
+        PayloadItem(name = 'pluginParID', dimension = 1, datatype = 'H'),
+    ])
+    plugin_parameter_payload = Message([])
+
+    def __init__(self, varsize_arg=None):
+        cls = type(self)
+        if varsize_arg is not None:
+            self.plugin_parameter_payload = Message(self.get_varsize_item_list(varsize_arg))
+            self.parameter_payload = Message(cls.plugin_parameter_header.item_list +self.plugin_parameter_payload.item_list )
+            self.message_description = Message(cls.parameter_header.item_list + self.parameter_payload.item_list)
+            self._init_from_varsize_arg(varsize_arg)
+        else:
+            if cls.message_description is None:
+                cls.parameter_payload = Message(cls.plugin_parameter_header.item_list + cls.plugin_parameter_payload.item_list)
+                cls.message_description = Message(cls.parameter_header.item_list + cls.parameter_payload.item_list)
+            self._init_from_varsize_arg(None)
+        
+    def payload_from_bytes(self, in_bytes):
+        if self.get_varsize_arg_from_bytes:
+            self._handle_varsize_arg(self.get_varsize_arg_from_bytes(in_bytes))
+        self.data.update(self.plugin_parameter_payload.unpack_from(in_bytes))
+
+
+# protocol dictionaries and decorators
+PayloadNameDictionary = dict()
 MessagePayloadDictionary = dict()
 def message(message_id):
     def decorator(cls):
         cls.__doc__ = f'''Message (ID = {hex(message_id)}) with the following payload:\n\n{cls.message_description.describe()}'''
         cls.message_id = message_id
         MessagePayloadDictionary[message_id] = cls
+        PayloadNameDictionary[cls.get_name()] = cls
         return cls
 
     return decorator
 
+PluginMessagePayloadDictionary = dict()
+def plugin_message(plugin_message_id):
+    def decorator(cls):
+        cls.__doc__ = f'''Plugin Message (ID = {plugin_message_id}) with the following payload:\n\n{cls.plugin_message_payload.describe()}'''
+        cls.plugin_message_id = plugin_message_id
+        PluginMessagePayloadDictionary[plugin_message_id] = cls
+        PayloadNameDictionary[cls.get_name()] = cls
+        return cls
+
+    return decorator
 
 ParameterPayloadDictionary = dict()
 def parameter(parameter_id):
     def decorator(cls):
         cls.__doc__ = f'''Parameter (ID = {parameter_id}) with the following payload:\n\n{cls.parameter_payload.describe()}'''
         cls.parameter_id = parameter_id
+        if parameter_id == ParamID.PARPLUGIN:
+            assert("use plugin_parameter decorator for plugin parameter")
         ParameterPayloadDictionary[parameter_id] = cls
+        PayloadNameDictionary[cls.get_name()] = cls
+        return cls
+
+    return decorator
+
+PluginParameterPayloadDictionary = dict()
+def plugin_parameter(plugin_parameter_id):
+    def decorator(cls):
+        cls.__doc__ = f'''Plugin Parameter (ID = {plugin_parameter_id}) with the following payload:\n\n{cls.plugin_parameter_payload.describe()}'''
+        cls.plugin_parameter_id = plugin_parameter_id
+        PluginParameterPayloadDictionary[plugin_parameter_id] = cls
+        PayloadNameDictionary[cls.get_name()] = cls
         return cls
 
     return decorator
@@ -833,41 +1033,153 @@ def command(command_id):
         cls.__doc__ = f'''Command (ID = {command_id}) with the following payload:\n\n{cls.command_payload.describe()}'''
         cls.command_id = command_id
         CommandPayloadDictionary[command_id] = cls
+        PayloadNameDictionary[cls.get_name()] = cls
         return cls
 
     return decorator
 
 
-def getMessageWithID(msgID, varsizehelper=None):
-    message = ProtocolMessage()
-    message.header.msgID = msgID
+# protocol getter functions
+def getMessageWithID(msgID, varsize_arg=None):
+    """creates message with specified message ID
+    Args:
+        varsize_arg: argument for _get_varsize_item_list
+    """
     if msgID in MessagePayloadDictionary:
-        if varsizehelper is None:
-            message.payload = MessagePayloadDictionary[msgID]()
-        else:
-            message.payload = MessagePayloadDictionary[msgID](varsizehelper)
+        message = ProtocolMessage()
+        message.header.msgID = msgID
+        message.payload = MessagePayloadDictionary[msgID](varsize_arg)
         return message
     else:
         return None
 
+def getPluginMessageWithID(plugin_message_id, varsize_arg=None):
+    message = ProtocolMessage()
+    message.header.msgID = MessageID.PLUGIN
+    if plugin_message_id in PluginMessagePayloadDictionary:
+        message.payload = PluginMessagePayloadDictionary[plugin_message_id](varsize_arg)
+        message.payload.data['plugin_data_id'] = plugin_message_id
+        return message
+    else:
+        return None
 
-def getCommandWithID(cmdID):
+def getCommandWithID(cmdID, varsize_arg=None):
     message = ProtocolMessage()
     message.header.msgID = MessageID.COMMAND
     if cmdID in CommandPayloadDictionary:
-        message.payload = CommandPayloadDictionary[cmdID]()
+        message.payload = CommandPayloadDictionary[cmdID](varsize_arg)
         message.payload.data['cmdID'] = cmdID
         return message
     else:
         return None
 
-
-def getParameterWithID(parameterID):
+def getParameterWithID(parameterID, varsize_arg=None):
+    """creates parameter with specified parameter ID
+    Args:
+        varsize_arg: argument for _get_varsize_item_list
+    """
     message = ProtocolMessage()
     message.header.msgID = MessageID.PARAMETER
+    if parameterID == ParamID.PARPLUGIN:
+        assert ("use getPluginParameterWithID for plugin parameter")
     if parameterID in ParameterPayloadDictionary:
-        message.payload = ParameterPayloadDictionary[parameterID]()
+        message.payload = ParameterPayloadDictionary[parameterID](varsize_arg)
         message.payload.data['parameterID'] = parameterID
         return message
     else:
         return None
+
+def getPluginParameterWithID(pluginParameterID, varsize_arg=None):
+    message = ProtocolMessage()
+    message.header.msgID = MessageID.PARAMETER
+    if pluginParameterID in PluginParameterPayloadDictionary:
+        message.payload = PluginParameterPayloadDictionary[pluginParameterID](varsize_arg)
+        # assemble plugin parameter header
+        message.payload.data['parameterID'] = ParamID.PARPLUGIN
+        message.payload.data['reserved_paramheader'] = 0
+        message.payload.data['plugin_index'] = 0
+        message.payload.data['pluginParID'] = pluginParameterID
+        return message
+    else:
+        return None
+
+def getMessageByName(msg_name, varsize_arg=None):
+    if msg_name not in PayloadNameDictionary:
+        return None
+    cls = PayloadNameDictionary[msg_name]
+    if cls.message_id == MessageID.PLUGIN:
+        return getPluginMessageWithID(cls.plugin_message_id, varsize_arg)
+    elif cls.message_id == MessageID.COMMAND:
+        return getCommandWithID(cls.command_id, varsize_arg)
+    elif cls.message_id == MessageID.RESPONSE:
+        return getMessageWithID(MessageID.RESPONSE)
+    elif cls.message_id == MessageID.PARAMETER:
+        if cls.parameter_id == ParamID.PARPLUGIN:
+            return getPluginParameterWithID(cls.plugin_parameter_id, varsize_arg)
+        else:
+            return getParameterWithID(cls.parameter_id, varsize_arg)
+    else:
+        return getMessageWithID(cls.message_id, varsize_arg)
+
+
+# json parsing
+def split_string(string):
+    dimension = ""
+    datatype = ""
+    for char in string:
+        if char.isdigit():
+            dimension += char
+        else:
+            datatype += char
+    if dimension == '':
+        dimension = '1'
+    return int(dimension), datatype
+
+def parse_payload_item(payload):
+    messageList = []
+    for idx in range(payload.__len__()):
+        if "structFields" in payload[idx]:
+            nestedMessageList = parse_payload_item(payload[idx]['structFields'])
+            dim, dtype = split_string(payload[idx]['format'])
+            messageList.append(PayloadItem(name=payload[idx]['var'], dimension=dim, datatype=Message(nestedMessageList)))
+        else:
+            dim, dtype = split_string(payload[idx]['format'])
+            messageList.append(PayloadItem(name=payload[idx]['var'], dimension=dim, datatype=dtype))
+    return messageList
+
+def parse_parameter_json_folder(path_json):
+    if os.path.isdir(path_json):
+        for f in os.listdir(path_json):
+            try:
+                with open(os.path.join(path_json, f), "r") as fh:
+                    pardata = json.load(fh)
+                    parid = int(pardata['id'])
+                    if ('parameter' != pardata['type']) or (parid in ParameterPayloadDictionary) or (parid == ParamID.PARPLUGIN):
+                        continue
+                    parcls = type(pardata['name'] + '_Payload', (DefaultParameterPayload,), {})
+                    parcls.parameter_id = parid
+                    itemlist = parse_payload_item(pardata['payload'])
+                    parcls.parameter_payload = Message(itemlist)
+                    ParameterPayloadDictionary[parid] = parcls
+                    PayloadNameDictionary[parcls.get_name()] = parcls
+            except Exception:
+                print("error parsing parameterfile:", f)
+
+def parse_messages_json_folder(path_json):
+    if os.path.isdir(path_json):
+        for f in os.listdir(path_json):
+            try:
+                with open(os.path.join(path_json, f), "r") as fh:
+                    msgdata = json.load(fh)
+                    msgid = int(msgdata['id'], 16)
+                    if ('message' != msgdata['type']) or (msgid in MessagePayloadDictionary) or (msgid == MessageID.PLUGIN):
+                        continue
+                    msgcls = type(msgdata['name'] + '_Payload', (ProtocolPayload,), {})
+                    msgcls.message_id = msgid
+                    itemlist = parse_payload_item(msgdata['payload'])
+                    msgcls.message_description = Message(itemlist)
+                    MessagePayloadDictionary[msgid] = msgcls
+                    PayloadNameDictionary[msgcls.get_name()] = msgcls
+            except Exception:
+                print("error parsing messagefile:", f)
+

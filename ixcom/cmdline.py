@@ -7,8 +7,9 @@ import socket
 
 
 class TextFileParser(ixcom.parser.MessageParser):
-    def __init__(self, outputfile, skip_parameter=None, print_request = True):
+    def __init__(self, outputfile, skip_parameter=list(), print_request = True):
         super().__init__()
+        self.ignore_output = False
         self.outputfile = outputfile
         self.print_request = print_request
         self.messageSearcher.disableCRC = False
@@ -34,13 +35,13 @@ class TextFileParser(ixcom.parser.MessageParser):
     
     def handle_message(self, message, from_device):
         zeile = "Header Time: %.4f\n" % (message.header.get_time())
-        if self.skipParameter is None:
-            self.write_output(zeile)
-        elif message.data['parameterID'] in self.skipParameter:
-            return
         if message.header.msgID == ixcom.data.MessageID.PARAMETER:
-            self.parameterList.append((message.data['parameterID'], message))
-            return
+            parameter_id = message.data['parameterID']
+            if not (parameter_id in ixcom.data.ParameterPayloadDictionary) or \
+                parameter_id in self.skipParameter:
+                return
+            self.write_output(zeile)
+            self.parameterList.append((parameter_id, message))
             if message.payload.data["action"] == 0:
                 zeile = "Parameter: %s\n" % message.payload.get_name()
             else:
@@ -106,7 +107,8 @@ class TextFileParser(ixcom.parser.MessageParser):
         self.write_output(zeile)
 
     def write_output(self, line):
-        self.outputfile.write('\t'*self._indent_level+line)
+        if not self.ignore_output:
+            self.outputfile.write('\t'*self._indent_level+line)
         
     def parse_file(self, inputfile):
         while True:
@@ -136,7 +138,7 @@ def xcom_lookup(argv = None):
                 sysname = client.get_parameter(19).payload.data['str'].decode('utf-8').split('\0')[0]
                 imutype = client.get_parameter(107).payload.data["type"]
                 fwversion = client.get_parameter(5).payload.data['str'].decode('utf-8').split('\0')[0]
-                if imutype is not 255:
+                if imutype != 255:
                     print("%s (%s, FW %s): ssh://root@%s, ftp://%s" % (data[:-1].decode('utf-8'), sysname, fwversion, ip, ip))
                 client.close_channel()
             except:
@@ -155,14 +157,16 @@ def configdump2txt(argv=None):
     parser.add_argument('-o', '--output', metavar='output_filename', type=argparse.FileType('wt'), help='Filename of the output file', default=sys.stdout)
     args = parser.parse_args(args=argv)
     xcomparser = TextFileParser(args.output, skip_parameter=[917])  # skip parxcom_loglist2(917)
+    xcomparser.ignore_output = True
     xcomparser.parse_file(args.input_file)
+    xcomparser.ignore_output = False
     xcomparser.write_parameter()
 
 
 def monitor2xcom(argv = None):
     import re
     import binascii
-    parser = argparse.ArgumentParser(description='Converts xcom binary config dump files to other representations')
+    parser = argparse.ArgumentParser(description='Converts raw messages in monitor log files to readable text')
     parser.add_argument('input_file', metavar='', type=argparse.FileType('rt'), nargs='?',
                        help='Name of the monitor file', default = 'monitor.log')
     parser.add_argument('-o', '--output', metavar='output_filename', type=argparse.FileType('wt'),

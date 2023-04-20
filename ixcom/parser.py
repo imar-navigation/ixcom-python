@@ -1,5 +1,6 @@
 import collections
 import math
+import numpy
 import queue
 import select
 import socket
@@ -14,6 +15,7 @@ from .data import (BROADCAST_PORT, GENERAL_PORT, LAST_CHANNEL_NUMBER,
                    SYNC_BYTE, WAIT_TIME_FOR_RESPONSE)
 from .exceptions import (ClientTimeoutError, CommunicationError, ParseError,
                          ResponseError)
+from .protocol import ParamID, ProtocolHeader, ProtocolBottom
 
 PositionTuple = collections.namedtuple('PositionTuple', 'Lon Lat Alt')
 
@@ -22,6 +24,10 @@ class MessageSearcherState(IntEnum):
     waiting_for_msglength = 1
     fetching_bytes = 2
 
+XCOM_MAX_MESSAGE_LENGTH = 4096
+XCOM_HEADER_LENGTH = ProtocolHeader().size()
+XCOM_BOTTOM_LENGTH = ProtocolBottom().size()
+TOTAL_MAX_MESSAGE_LENGTH = XCOM_MAX_MESSAGE_LENGTH + XCOM_HEADER_LENGTH + XCOM_BOTTOM_LENGTH
 
 class MessageSearcher:
     def __init__(self, parserDelegate = None, disable_crc = False):
@@ -35,10 +41,18 @@ class MessageSearcher:
         if parserDelegate is not None:
             self.callbacks.append(parserDelegate.parse)
 
+    def handle_v5_json(self, inBytes):
+        if inBytes[0] == SYNC_BYTE:
+            return 0
+        else:
+            json_hdr_len_pos = 7*4
+            return int.from_bytes(inBytes[json_hdr_len_pos:json_hdr_len_pos+4], byteorder='little')
+
     def process_buffer_unsafe(self, buffer):
         current_msg_start_idx = 0
         inBytes = memoryview(buffer)
         inbytelen = len(inBytes)
+        current_msg_start_idx = self.handle_v5_json(inBytes)
         while current_msg_start_idx + 5 < inbytelen:
             current_msg_length = inBytes[current_msg_start_idx + 4] + 256*inBytes[current_msg_start_idx + 5]
             if current_msg_start_idx + current_msg_length > inbytelen: # Message nicht mehr komplett
@@ -66,8 +80,7 @@ class MessageSearcher:
                 if self.remainingByteCount == 0:
                     self.msgLength = self.currentBytes[self.currentByteIdx - 1] * 256 + self.currentBytes[self.currentByteIdx - 2]
                     self.remainingByteCount = self.msgLength - 6
-                    # 4096 should be replaced if greater messages would be defined
-                    if self.remainingByteCount < 4096 and self.remainingByteCount > 0:
+                    if self.remainingByteCount < TOTAL_MAX_MESSAGE_LENGTH and self.remainingByteCount > 0:
                         self.searcherState = MessageSearcherState.fetching_bytes
                     else:
                         self.searcherState = MessageSearcherState.waiting_for_sync
@@ -121,7 +134,11 @@ class MessageParser:
 
     def parse_parameter(self, inBytes):
         parameterID = inBytes[16] + (inBytes[17] << 8)
-        message = data.getParameterWithID(parameterID)
+        if parameterID != ParamID.PARPLUGIN:
+            message = data.getParameterWithID(parameterID)
+        else:
+            pluginParameterID = inBytes[22] + (inBytes[23] << 8)
+            message = data.getPluginParameterWithID(pluginParameterID)
         if message is not None:
             try:
                 message.from_bytes(inBytes)
@@ -129,7 +146,7 @@ class MessageParser:
             except Exception:
                 print('Error: Parameter with ID: {} ({}) could not be parsed!'.format(parameterID, message.payload.get_name()))
         else:
-            print('Warning: Parameter with ID: {} not handled!'.format(parameterID))
+            data.handle_undefined_parameter(parameterID)
 
     def parse_command(self, inBytes):
         cmdID = inBytes[16] + (inBytes[17] << 8)
@@ -139,6 +156,19 @@ class MessageParser:
             self.publish(message)
         else:
             pass
+
+    def parse_plugin_message(self, inBytes):
+        plugin_message_id = inBytes[16] + (inBytes[17] << 8)
+        message = data.getPluginMessageWithID(plugin_message_id)
+        if message is not None:
+            try:
+                message.from_bytes(inBytes)
+                self.publish(message)
+            except Exception:
+                print('Error: Plugin Message with ID: {} ({}) could not be parsed!'.format(plugin_message_id, message.payload.get_name()))
+        else:
+            data.handle_undefined_plugin_message(plugin_message_id)
+
 
     def parse(self, inBytes):
         header = data.ProtocolHeader()
@@ -150,6 +180,8 @@ class MessageParser:
                 self.parse_parameter(inBytes)
             elif header.msgID == data.MessageID.COMMAND:
                 self.parse_command(inBytes)
+            elif header.msgID == data.MessageID.PLUGIN:
+                self.parse_plugin_message(inBytes)
             else:
                 message = data.getMessageWithID(header.msgID)
                 if message is not None:
@@ -240,6 +272,12 @@ class Client(MessageParser):
             self
         '''
         self._comm_thread.join()
+    
+    def get_commthread_handler(self):
+        return self._comm_thread
+
+    def get_callbackthread_handler(self):
+        return self._callback_thread
 
     def stop(self):
         self._stop_event.set()
@@ -436,6 +474,27 @@ class Client(MessageParser):
         
         '''
         msgToSend = data.getParameterWithID(parameterID)
+        msgToSend.payload.data['action'] = data.ParameterAction.REQUESTING
+        self.send_msg_and_waitfor_okay(msgToSend)
+        return self.wait_for_parameter()
+
+    def get_plugin_parameter(self, parameterID: int):
+        '''Gets plugin parameter from device with specified ID
+
+        Gets the specified plugin parameter. Blocks until parameter is retrieved.
+
+        Args:
+            parameterID: ID of the plugin parameter to retrieve
+
+        Returns:
+            An XcomMessage object containing the parameter
+
+        Raises:
+            ClientTimeoutError: Timeout while waiting for response or parameter from the XCOM server
+            ResponseError: The response from the system was not 'OK'
+
+        '''
+        msgToSend = data.getPluginParameterWithID(parameterID)
         msgToSend.payload.data['action'] = data.ParameterAction.REQUESTING
         self.send_msg_and_waitfor_okay(msgToSend)
         return self.wait_for_parameter()
@@ -1429,19 +1488,27 @@ class Client(MessageParser):
         msgToSend.payload.data['leverArm'] = offset
         self.send_msg_and_waitfor_okay(msgToSend)
 
-    def get_virtual_meas_pt(self):
+    def get_virtual_meas_pt(self, channel=0):
         '''Convenience getter for virtual measpoint offset
 
         Gets the virtual measpoint offset for the output values defined with the mask #
+
+        Args:
+            channel: get parameter for the desired channel (not available in older software versions)
                 
         Raises:
             ClientTimeoutError: Timeout while waiting for response or parameter from the XCOM server
             ResponseError: The response from the system was not 'OK'.
         
         '''
-        return self.get_parameter(data.PAREKF_VMP_Payload.parameter_id)
+        msgToSend = data.getParameterWithID(data.PAREKF_VMP_Payload.parameter_id)
+        msgToSend.payload.data['action'] = data.ParameterAction.REQUESTING
+        msgToSend.payload.data['reserved_paramheader'] = channel
+        self.send_msg_and_waitfor_okay(msgToSend)
 
-    def set_virtual_meas_pt(self, offset=[0, 0, 0], activationMask=0, cutOffFreq=0):
+        return self.wait_for_parameter()
+
+    def set_virtual_meas_pt(self, offset=[0, 0, 0], activationMask=0, cutOffFreq=0, channel=0xFF):
         '''Convenience setter for virtual measpoint offset
 
         Sets the virtual measpoint offset #
@@ -1451,6 +1518,7 @@ class Client(MessageParser):
             activationMask: Bit 0 -> INS/GNSS Position, Bit 1 -> INS/GNSS Velocity, Bit 2 -> Specific Force, Bit 3 -> Angular Rate
             cutOffFreq: The parameter CUTOFF-FREQ specifies the cut-off 1st frequency in [Hz] of the 1 order low pass. The low pass
                         is used to filter ω for the transformation. Due to the noise, the derivation of ω will not be transformed.
+            channel: Set the settings to a specific channel or all channels (0xFF) (not available in older software versions)
         
         Raises:
             ClientTimeoutError: Timeout while waiting for response or parameter from the XCOM server
@@ -1459,9 +1527,38 @@ class Client(MessageParser):
         '''
         msgToSend = data.getParameterWithID(data.PAREKF_VMP_Payload.parameter_id)
         msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
+        msgToSend.payload.data['reserved_paramheader'] = channel
         msgToSend.payload.data['leverArm'] = offset
         msgToSend.payload.data['mask'] = activationMask
         msgToSend.payload.data['cutoff'] = cutOffFreq
+        self.send_msg_and_waitfor_okay(msgToSend)
+
+### ride_control Plugin parameters
+    ANGLIM_DEFAULT = numpy.deg2rad(10.0)
+    def set_PARPLUGIN_IATANGLIM(
+            self,
+            angLimLowMain: Sequence[float] = [-ANGLIM_DEFAULT, -ANGLIM_DEFAULT, -ANGLIM_DEFAULT, -ANGLIM_DEFAULT],
+            angLimUpMain: Sequence[float] = [ANGLIM_DEFAULT, ANGLIM_DEFAULT, ANGLIM_DEFAULT, ANGLIM_DEFAULT],
+            angLimLowAux: Sequence[float] = [-ANGLIM_DEFAULT, -ANGLIM_DEFAULT, -ANGLIM_DEFAULT, -ANGLIM_DEFAULT],
+            angLimUpAux: Sequence[float] = [ANGLIM_DEFAULT, ANGLIM_DEFAULT, ANGLIM_DEFAULT, ANGLIM_DEFAULT]):
+        '''Change angulare limits of actuators
+
+        Changes the angular limits of the actuators. Blocks until system
+        repsonse is received.
+
+
+        Raises:
+            ClientTimeoutError: Timeout while waiting for response from the XCOM server
+            ResponseError: The response from the system was not 'OK'
+
+        '''
+        msgToSend = data.getPluginParameterWithID(data.PARPLUGIN_IATANGLIM_Payload.plugin_parameter_id)
+        msgToSend.payload.data['angLimLowMain'] = angLimLowMain
+        msgToSend.payload.data['angLimUpMain'] = angLimUpMain
+        msgToSend.payload.data['angLimLowAux'] = angLimLowAux
+        msgToSend.payload.data['angLimUpAux'] = angLimUpAux
+
+        msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
         self.send_msg_and_waitfor_okay(msgToSend)
 
 def broadcast_search(timeout=0.1, port=BROADCAST_PORT, addr='<broadcast>'):

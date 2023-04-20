@@ -1,0 +1,184 @@
+{
+    "created": "2023-03-24",
+    "domain": "public",
+    "payload": [
+        {
+            "fieldSize": "160",
+            "fieldOffset": "20",
+            "structSize": 160,
+            "var": "acc",
+            "format": "t",
+            "structFields": [
+                {
+                    "fieldSize": "24",
+                    "fieldOffset": "0",
+                    "var": "root_noise_psd",
+                    "format": "3d",
+                    "fieldName": "Root_Noise_PSd",
+                    "type": "3d",
+                    "description": "Root Noise for x-, y- and z-axis in: accelerometers: \\ensuremath{\\frac{m}{s^{2}\\sqrt{Hz}}}; gyroscopes: \\ensuremath{\\frac{rad}{s\\sqrt{Hz}}}"
+                },
+                {
+                    "fieldSize": "24",
+                    "fieldOffset": "24",
+                    "var": "offset_stddev",
+                    "format": "3d",
+                    "fieldName": "Offset_Stddev",
+                    "type": "3d",
+                    "description": "Bias standard deviation for x-, y- and z-axis in accelerometers: \\ensuremath{\\frac{m}{s^2}}; gyroscopes: \\ensuremath{\\frac{\\textit{rad}}{s}}"
+                },
+                {
+                    "fieldSize": "24",
+                    "fieldOffset": "48",
+                    "var": "offset_rw",
+                    "format": "3d",
+                    "fieldName": "Offset_RW",
+                    "type": "3d",
+                    "description": "Bias random walk for x-, y- and z-axis in accelerometers: [m/s3/sqrt(Hz)] gyroscopes: [rad/s2/sqrt(Hz)]"
+                },
+                {
+                    "fieldSize": "24",
+                    "fieldOffset": "72",
+                    "var": "scalefactor_stddev",
+                    "format": "3d",
+                    "fieldName": "Scalefactor_Stddev",
+                    "type": "3d",
+                    "description": "Scale factor standard deviation for x-, y- and z-axis"
+                },
+                {
+                    "fieldSize": "24",
+                    "fieldOffset": "96",
+                    "var": "scalefactor_rw",
+                    "format": "3d",
+                    "fieldName": "Scalefactor_RW",
+                    "type": "3d",
+                    "description": "Scale factor random walk for x-, y- and z-axis in: accelerometers: \\ensuremath{\\frac{1}{s\\sqrt{Hz}}}; gyroscopes: \\ensuremath{\\frac{1}{s\\sqrt{Hz}}}"
+                },
+                {
+                    "fieldSize": "8",
+                    "fieldOffset": "120",
+                    "var": "ma_stddev",
+                    "format": "d",
+                    "fieldName": "MA_Stddev",
+                    "type": "d",
+                    "description": "Misalignment standard deviation in: accelerometers: \\ensuremath{m}; gyroscopes: \\textit{rad}"
+                },
+                {
+                    "fieldSize": "8",
+                    "fieldOffset": "128",
+                    "var": "ma_rw",
+                    "format": "d",
+                    "fieldName": "MA_RW",
+                    "type": "d",
+                    "description": "Misalignment random walk in: accelerometers: \\ensuremath{\\frac{m}{s^{2}\\sqrt{Hz}}}; gyroscopes: [rad/s/ Hz]"
+                },
+                {
+                    "fieldSize": "24",
+                    "fieldOffset": "136",
+                    "var": "quantization",
+                    "format": "3d",
+                    "fieldName": "Quantization",
+                    "type": "3d",
+                    "description": "Quantization for x-, y- and z-axis"
+                }
+            ],
+            "fieldName": "Acc",
+            "type": "t",
+            "structName": "XCOMparEKF_IMUCONFIGtype",
+            "description": "Deviation values related to accelerometers"
+        },
+        {
+            "fieldSize": "160",
+            "fieldOffset": "180",
+            "structSize": 160,
+            "var": "gyro",
+            "format": "t",
+            "structFields": [
+                {
+                    "fieldSize": "24",
+                    "fieldOffset": "0",
+                    "var": "root_noise_psd",
+                    "format": "3d",
+                    "fieldName": "Root_Noise_PSd",
+                    "type": "3d",
+                    "description": "Root Noise for x-, y- and z-axis in: accelerometers: \\ensuremath{\\frac{m}{s^{2}\\sqrt{Hz}}}; gyroscopes: \\ensuremath{\\frac{rad}{s\\sqrt{Hz}}}"
+                },
+                {
+                    "fieldSize": "24",
+                    "fieldOffset": "24",
+                    "var": "offset_stddev",
+                    "format": "3d",
+                    "fieldName": "Offset_Stddev",
+                    "type": "3d",
+                    "description": "Bias standard deviation for x-, y- and z-axis in accelerometers: \\ensuremath{\\frac{m}{s^2}}; gyroscopes: \\ensuremath{\\frac{\\textit{rad}}{s}}"
+                },
+                {
+                    "fieldSize": "24",
+                    "fieldOffset": "48",
+                    "var": "offset_rw",
+                    "format": "3d",
+                    "fieldName": "Offset_RW",
+                    "type": "3d",
+                    "description": "Bias random walk for x-, y- and z-axis in accelerometers: [m/s3/sqrt(Hz)] gyroscopes: [rad/s2/sqrt(Hz)]"
+                },
+                {
+                    "fieldSize": "24",
+                    "fieldOffset": "72",
+                    "var": "scalefactor_stddev",
+                    "format": "3d",
+                    "fieldName": "Scalefactor_Stddev",
+                    "type": "3d",
+                    "description": "Scale factor standard deviation for x-, y- and z-axis"
+                },
+                {
+                    "fieldSize": "24",
+                    "fieldOffset": "96",
+                    "var": "scalefactor_rw",
+                    "format": "3d",
+                    "fieldName": "Scalefactor_RW",
+                    "type": "3d",
+                    "description": "Scale factor random walk for x-, y- and z-axis in: accelerometers: \\ensuremath{\\frac{1}{s\\sqrt{Hz}}}; gyroscopes: \\ensuremath{\\frac{1}{s\\sqrt{Hz}}}"
+                },
+                {
+                    "fieldSize": "8",
+                    "fieldOffset": "120",
+                    "var": "ma_stddev",
+                    "format": "d",
+                    "fieldName": "MA_Stddev",
+                    "type": "d",
+                    "description": "Misalignment standard deviation in: accelerometers: \\ensuremath{m}; gyroscopes: \\textit{rad}"
+                },
+                {
+                    "fieldSize": "8",
+                    "fieldOffset": "128",
+                    "var": "ma_rw",
+                    "format": "d",
+                    "fieldName": "MA_RW",
+                    "type": "d",
+                    "description": "Misalignment random walk in: accelerometers: \\ensuremath{\\frac{m}{s^{2}\\sqrt{Hz}}}; gyroscopes: [rad/s/ Hz]"
+                },
+                {
+                    "fieldSize": "24",
+                    "fieldOffset": "136",
+                    "var": "quantization",
+                    "format": "3d",
+                    "fieldName": "Quantization",
+                    "type": "3d",
+                    "description": "Quantization for x-, y- and z-axis"
+                }
+            ],
+            "fieldName": "Gyro",
+            "type": "t",
+            "structName": "XCOMparEKF_IMUCONFIGtype",
+            "description": "Deviation values related to angular rate sensors"
+        }
+    ],
+    "name": "PAREKF_IMUCONFIG2",
+    "version": "3.1.0",
+    "scope": "read only",
+    "synopsis": "This parameter defines the initial standard deviations and the process noise model for the used inertial sensors (read only).",
+    "id": "0760",
+    "type": "parameter",
+    "revision": "git 5d47e9088112f403d66774d46ba059a27ac44c4b",
+    "description": "This parameter defines the initial standard deviations and the process noise model for the used inertial sensors."
+}

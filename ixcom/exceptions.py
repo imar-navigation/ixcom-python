@@ -17,3 +17,6 @@ class ClientTimeoutError(XcomError):
 
 class CommunicationError(XcomError):
     pass
+
+class EndOfConfig(XcomError):
+    pass

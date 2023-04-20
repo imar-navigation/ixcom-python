@@ -1,0 +1,86 @@
+{
+    "created": "2018-07-11",
+    "domain": "public",
+    "payload": [
+        {
+            "fieldSize": "12",
+            "fieldOffset": "16",
+            "var": "accel",
+            "format": "3f",
+            "fieldName": "Accel",
+            "type": "3f",
+            "description": "Calibrated acceleration along IMU x-, y-, and z-axis in \\ensuremath{\\frac{m}{s^2}}."
+        },
+        {
+            "fieldSize": "12",
+            "fieldOffset": "28",
+            "var": "gyro",
+            "format": "3f",
+            "fieldName": "Gyro",
+            "type": "3f",
+            "description": "Calibrated angular rate along IMU x-, y-, and z-axis in \\ensuremath{\\frac{\\textit{rad}}{s}}."
+        },
+        {
+            "fieldSize": "12",
+            "fieldOffset": "40",
+            "var": "rpy",
+            "format": "3f",
+            "fieldName": "RPY",
+            "type": "3f",
+            "description": "Roll, pitch and yaw in \\textit{rad}."
+        },
+        {
+            "fieldSize": "12",
+            "fieldOffset": "52",
+            "var": "vel",
+            "format": "3f",
+            "fieldName": "Vel",
+            "type": "3f",
+            "description": "Velocity along x-, y- and z-axis in \\ensuremath{\\frac{m}{s}}. The reference frame can be selected via the PARDAT\\_VEL parameter (ENU, NED, ECEF or body frame)."
+        },
+        {
+            "fieldSize": "16",
+            "fieldOffset": "64",
+            "var": "pos",
+            "format": "2d",
+            "fieldName": "Pos",
+            "type": "2d",
+            "description": "Longitude and latitude in \\textit{rad}. The selected values are masked in the DATSEL field."
+        },
+        {
+            "fieldSize": "4",
+            "fieldOffset": "80",
+            "var": "altitude",
+            "format": "f",
+            "fieldName": "Altidude",
+            "type": "f",
+            "description": "Altitude/Height in \\ensuremath{m}. The content (WGS or MSL or Baro based) can be selected via the PARDAT\\_POS parameter. The selected value is masked in the DATSEL field."
+        },
+        {
+            "fieldSize": "2",
+            "fieldOffset": "84",
+            "var": "undulation",
+            "format": "h",
+            "fieldName": "Undulation",
+            "type": "h",
+            "description": "Relationship between the geoid and the ellipsoid in \\ensuremath{cm}."
+        },
+        {
+            "fieldSize": "2",
+            "fieldOffset": "86",
+            "var": "data_selection",
+            "format": "H",
+            "fieldName": "Data_Selection",
+            "type": "H",
+            "description": "Data selection mask. This field contains the selected data sources for this mes- sage"
+        }
+    ],
+    "name": "INSSOL",
+    "version": "0.0.0",
+    "synopsis": "Integrated navigation solution including IMU data in a selectable frame",
+    "rate": "full",
+    "id": "0x03",
+    "type": "message",
+    "revision": "svn 116",
+    "description": ""
+}

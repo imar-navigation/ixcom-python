@@ -1,3 +1,10 @@
+try:
+    import fastcrc.crc16
+    fastcrc_installed = True
+except ImportError:
+    fastcrc_installed = False
+
+
 __crc16_table = [
         0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7,
         0x8108, 0x9129, 0xa14a, 0xb16b, 0xc18c, 0xd1ad, 0xe1ce, 0xf1ef,
@@ -39,6 +46,9 @@ def __crc16(data, crc, table):
         crc = ((crc << 8) & 0xff00) ^ table[((crc >> 8) & 0xff)^byte]
     return crc & 0xffff
 
-
-def crc16xmodem(data, crc=0):
-    return __crc16(data, crc, __crc16_table)
+if fastcrc_installed:
+    def crc16xmodem(data, crc=0):
+        return fastcrc.crc16.xmodem(data)
+else:
+    def crc16xmodem(data, crc=0):
+        return __crc16(data, crc, __crc16_table)
