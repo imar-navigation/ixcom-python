@@ -239,6 +239,7 @@ class Client(MessageParser):
         self.timeout = timeout
         self.host = host
         self.port = port
+        self._open_channel = -1
         self._create_socket_and_connect()
         self._stop_event = threading.Event()
         self._response_event = threading.Event()
@@ -278,6 +279,9 @@ class Client(MessageParser):
 
     def get_callbackthread_handler(self):
         return self._callback_thread
+    
+    def get_open_channel(self):
+        return self._open_channel
 
     def stop(self):
         self._stop_event.set()
@@ -343,6 +347,7 @@ class Client(MessageParser):
         msgToSend.payload.data['mode'] = data.XcomCommandParameter.channel_open
         msgToSend.payload.data['channelNumber'] = channelNumber
         self.send_msg_and_waitfor_okay(msgToSend)
+        self._open_channel = channelNumber
 
     def _update_data(self):
         while not self._stop_event.is_set():
@@ -381,6 +386,7 @@ class Client(MessageParser):
             try:
                 self.send_msg_and_waitfor_okay(msgToSend)
                 self.clear_all()
+                self._open_channel = channelNumber
                 return channelNumber
             except (ResponseError, ConnectionError):
                 channelNumber -= 1
@@ -420,6 +426,7 @@ class Client(MessageParser):
             try:
                 self.send_msg_and_waitfor_okay(msgToSend)
                 self.clear_all()
+                self._open_channel = channelNumber
                 return channelNumber
             except (ResponseError, ConnectionError):
                 channelNumber += 1
@@ -442,6 +449,8 @@ class Client(MessageParser):
         msgToSend.payload.data['mode'] = data.XcomCommandParameter.channel_close
         msgToSend.payload.data['channelNumber'] = 0
         self.send_msg_and_waitfor_okay(msgToSend)
+        self._open_channel = -1
+
 
     def reboot(self):
         '''Reboots the system
