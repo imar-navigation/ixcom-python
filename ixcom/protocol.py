@@ -414,8 +414,10 @@ class PayloadItem(NamedTuple):
             'H': 'uint16_t',
             'i': 'int32_t',
             'I': 'uint32_t',
-            'l': 'int64_t',
-            'L': 'uint64_t',
+            'l': 'int32_t',
+            'L': 'uint32_t',
+            'q': 'int64_t',
+            'Q': 'uint64_t',
             'f': 'int8_t',
             'd': 'int8_t',
             's': 'char',
@@ -444,7 +446,7 @@ class PayloadItem(NamedTuple):
         return struct_string
 
     def get_size(self):
-        basic_sizes = {'b': 1, 'B': 1, 's': 1, 'h': 2, 'H': 2, 'i': 4, 'I': 4, 'f': 4, 'd': 8, 'l': 8, 'L': 8}
+        basic_sizes = {'b': 1, 'B': 1, 's': 1, 'h': 2, 'H': 2, 'i': 4, 'I': 4, 'l': 4, 'L': 4, 'f': 4, 'd': 8, 'q': 8, 'Q': 8}
         if isinstance(self.datatype, str):
             return basic_sizes[self.datatype]*self.dimension
         elif isinstance(self.datatype, Message):
@@ -691,16 +693,22 @@ class ProtocolPayload(MessageItem):
         self.struct_inst = struct.Struct(self._structString)
 
     def to_bytes(self):
-        values = []
-        for value in self.data.values():
-            if isinstance(value, (list, tuple)):
-                if isinstance(value[0], dict):
-                    for curd in value:
-                        values += curd.values()
+        def extract_values(diction):
+            values = []
+            for value in diction.values():
+                if isinstance(value, (list, tuple)):
+                    if len(value):
+                        if isinstance(value[0], dict):
+                            for curd in value:
+                                values +=extract_values(curd)
+                        else:
+                            values += value
+                elif isinstance(value, dict):
+                    values += extract_values(value)
                 else:
-                    values += value
-            else:
-                values += [value]
+                    values += [value]
+            return values
+        values = extract_values(self.data)
         return bytearray(self.struct_inst.pack(*values))
 
     def from_bytes(self, inBytes):
@@ -785,7 +793,7 @@ class ProtocolMessage(MessageItem):
         current_item = ''
         item_list = []
         dtype_list = []
-        type_string = 'fdsbBhHiIlL'
+        type_string = 'fdsbBhHiIlLqQ'
         while len(struct_string) > 0:
             while struct_string[0] not in type_string:
                 current_item += struct_string[0]
@@ -806,13 +814,13 @@ class ProtocolMessage(MessageItem):
                 byte_size = '1'
             elif dtype in 'hH':
                 byte_size = '2'
-            elif dtype in 'iIf':
+            elif dtype in 'iIflL':
                 byte_size = '4'
-            elif dtype in 'dLl':
+            elif dtype in 'dQq':
                 byte_size = '8'
-            if dtype in 'bhil':
+            if dtype in 'bhilq':
                 out_type = 'i'
-            elif dtype in 'BHIL':
+            elif dtype in 'BHILQ':
                 out_type = 'u'
             elif dtype in 'fd':
                 out_type = 'f'
@@ -1133,6 +1141,10 @@ def split_string(string):
             datatype += char
     if dimension == '':
         dimension = '1'
+    if datatype == 'L':
+        datatype = 'Q'
+    if datatype == 'l':
+        datatype = 'q'
     return int(dimension), datatype
 
 def parse_payload_item(payload):
