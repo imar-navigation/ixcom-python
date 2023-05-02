@@ -14,7 +14,7 @@ if __name__ == '__main__':
     long_description = open(readmePath, "rt").read()
 
     setup(name='ixcom',
-          version='1.3.4',
+          version='1.3.5',
           description='Library for communicating with xcom devices over network',
           author='iMAR Navigation GmbH',
           author_email='support@imar-navigation.de',
@@ -22,6 +22,7 @@ if __name__ == '__main__':
           keywords=['XCOM', 'Inertial navigation', 'INS', 'iMAR', 'iNAT', 'GNSS', 'GPS', 'AHRS'],
           packages=['ixcom'],
           package_data={'': ['ixcom/messages/*.json', 'ixcom/parameters/*.json']},
+          include_package_data=True,
           entry_points={
             'console_scripts': [
                         'configdump2txt = ixcom.cmdline:configdump2txt',
