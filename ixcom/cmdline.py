@@ -4,6 +4,8 @@ import sys
 import struct
 import argparse
 import socket
+import io
+import os
 
 
 class TextFileParser(ixcom.parser.MessageParser):
@@ -216,3 +218,21 @@ def split_config(argv = None):
     except Exception as ex:
         print(ex)
         sys.exit(1)
+
+def remove_partial_msgs(argv = None):
+    parser = argparse.ArgumentParser(description='Removes Partial Messages from XCOMStream')
+    parser.add_argument('inputfile', metavar='inputfile', type=argparse.FileType('rb'), nargs='?',
+                       help='Name of the binary XCOMStream file', default = 'XCOMStream.bin')
+    parser.add_argument('-o', '--output', metavar='output_filename', type=argparse.FileType(mode='wb'),
+                       help='Filename of the output file', default = 'XCOMStream.clean.bin')  
+    args = parser.parse_args()
+    xcomparser = ixcom.parser.MessageSearcher(disable_crc = False)
+
+    iob = io.BytesIO(b'')
+    def r_callback(in_bytes):
+        iob.write(in_bytes)
+
+    xcomparser.add_callback(r_callback)
+    xcomparser.process_bytes(args.inputfile.read())
+    iob.seek(0, os.SEEK_SET)
+    args.output.write(iob.read())

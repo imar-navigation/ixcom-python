@@ -14,7 +14,7 @@ if __name__ == '__main__':
     long_description = open(readmePath, "rt").read()
 
     setup(name='ixcom',
-          version='1.3.5',
+          version='1.3.6',
           description='Library for communicating with xcom devices over network',
           author='iMAR Navigation GmbH',
           author_email='support@imar-navigation.de',
@@ -29,6 +29,7 @@ if __name__ == '__main__':
                         'monitor2xcom = ixcom.cmdline:monitor2xcom',
                         'xcom_lookup = ixcom.cmdline:xcom_lookup',
                         'split_config = ixcom.cmdline:split_config',
+                        'xcom-remove-partial-msgs = ixcom.cmdline:remove_partial_msgs',
                                 ],
                         },
           install_requires=[

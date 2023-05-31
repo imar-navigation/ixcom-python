@@ -845,14 +845,14 @@ class ProtocolMessage(MessageItem):
                 item = item_list[idx+idx_offset]
                 is_nested = False
                 is_nested_list = False
-                is_empty_nested_list = False
+                is_empty_list = False
                 if (type(data[fieldname]) is type(list())):
                     if data[fieldname]:
                         if (type(data[fieldname][0]) is type(dict())):
                             is_nested = True
                             is_nested_list = True
                     else:
-                        is_empty_nested_list = True
+                        is_empty_list = True
                 else:
                     if (type(data[fieldname]) is type(dict())):
                         is_nested = True
@@ -870,8 +870,9 @@ class ProtocolMessage(MessageItem):
                             item_list[idx+idx_offset:])
                         idx_offset += sublist_length - 1 + nested_offset
                         item_spec = (fieldname, dtype_sublist)
-                elif is_empty_nested_list:
-                    idx_offset -= 1
+                elif is_empty_list:
+                    if item[0] != "0":
+                        idx_offset -= 1
                     item_spec = (fieldname, list())
                 else:
                     item_spec = construct_item_spec_from_msg_def(fieldname, item)

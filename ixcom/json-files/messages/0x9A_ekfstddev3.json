@@ -1,0 +1,104 @@
+{
+    "created": "2023-05-25",
+    "domain": "public",
+    "payload": [
+        {
+            "fieldSize": "12",
+            "fieldOffset": "16",
+            "var": "pos",
+            "format": "3f",
+            "fieldName": "Pos",
+            "type": "3f",
+            "description": "Standard deviation of estimated longitude, latitude and height in \\ensuremath{m}"
+        },
+        {
+            "fieldSize": "12",
+            "fieldOffset": "28",
+            "var": "vel_ned",
+            "format": "3f",
+            "fieldName": "Vel_NED",
+            "type": "3f",
+            "description": "Standard deviation of estimated north, east and down velocity in \\ensuremath{\\frac{m}{s}}"
+        },
+        {
+            "fieldSize": "12",
+            "fieldOffset": "40",
+            "var": "tilt",
+            "format": "3f",
+            "fieldName": "Tilt",
+            "type": "3f",
+            "description": "Standard deviation of estimated tilt around north, east and down axis in \\textit{rad}"
+        },
+        {
+            "fieldSize": "12",
+            "fieldOffset": "52",
+            "var": "bias_acc",
+            "format": "3f",
+            "fieldName": "Bias_Acc",
+            "type": "3f",
+            "description": "Standard deviation of estimated acceleration bias along IMU x-, y- and z-axis in [m/s2 ]"
+        },
+        {
+            "fieldSize": "12",
+            "fieldOffset": "64",
+            "var": "bias_omg",
+            "format": "3f",
+            "fieldName": "Bias_Omg",
+            "type": "3f",
+            "description": "Standard deviation of estimated angular rate bias along IMU x-, y- and z-axis in \\ensuremath{\\frac{\\textit{rad}}{s}}"
+        },
+        {
+            "fieldSize": "36",
+            "fieldOffset": "76",
+            "var": "ma_acc",
+            "format": "9f",
+            "fieldName": "MA_Acc",
+            "type": "9f",
+            "description": "Standard deviation of estimated acceleration misalignment along IMU x-, y- and z-axis"
+        },
+        {
+            "fieldSize": "36",
+            "fieldOffset": "112",
+            "var": "ma_omg",
+            "format": "9f",
+            "fieldName": "MA_Omg",
+            "type": "9f",
+            "description": "Standard deviation of estimated angular rate misalignment along IMU x-, y- and z-axis"
+        },
+        {
+            "fieldSize": "4",
+            "fieldOffset": "148",
+            "var": "scf_odo",
+            "format": "f",
+            "fieldName": "SCF_Odo",
+            "type": "f",
+            "description": "Standard deviation of the estimated odometer scale factor"
+        },
+        {
+            "fieldSize": "8",
+            "fieldOffset": "152",
+            "var": "ma_odo",
+            "format": "2f",
+            "fieldName": "MA_Odo",
+            "type": "2f",
+            "description": "Standard deviation of estimated odometer misalignment around first and second axis perpendicular to odometer direction"
+        },
+        {
+            "fieldSize": "12",
+            "fieldOffset": "160",
+            "var": "vel_body",
+            "format": "3f",
+            "fieldName": "Vel_Body",
+            "type": "3f",
+            "description": "Standard deviation of estimated x, y, z body velocity in \\ensuremath{\\frac{m}{s}}"
+        }
+    ],
+    "name": "EKFSTDDEV3",
+    "version": "3.1.0",
+    "synopsis": "EKF estimated standard deviations (including body velocity)",
+    "rate": "ekf",
+    "id": "0x9A",
+    "type": "message",
+    "revision": "git 94a5a6e5c1c211381d229cbead356e1614eb240e",
+    "description": "The EKFSTDDEV3 message contains the estimated sensor errors as well as the current standard deviations of position parameters and of orientation angles (RPY) by the extended Kalman Filter. Furthermore, it displays the accuracy of other estimated values. In addition to the standard deviations reported in the EKFSTDDEV, estimated sensor nonorthogonality and misalignment standard deviations are included in this log. For the standard deviation of the position: The accuracy is given in meters. No special resolution and no special value range are used, this is only limited by the IEEE float format. The float value corresponds to the 1 sigma interval (in meters) supplied by the Kalman Filter. For the standard deviation of the orientation angles (RPY): The float value corresponds to the 1 sigma interval (in rad) supplied by the Kalman Filter. The value range is \\ensuremath{-\\pi} to \\ensuremath{+\\pi}. The resolution is only limited by the float data type. Additionally, there is a pre-defined sequence to follow when using RPY: first, the rotation is around the z-axis, then around the (already rotated) y-axis, finally around the x-axis. If you need further help on this topic, please contact iMAR support (support@imar-navigation.de)."
+}

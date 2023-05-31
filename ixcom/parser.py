@@ -50,14 +50,20 @@ class MessageSearcher:
 
     def process_buffer_unsafe(self, buffer):
         current_msg_start_idx = 0
+        last_msg_start_id = -1
         inBytes = memoryview(buffer)
         inbytelen = len(inBytes)
         current_msg_start_idx = self.handle_v5_json(inBytes)
         while current_msg_start_idx + 5 < inbytelen:
+            
             current_msg_length = inBytes[current_msg_start_idx + 4] + 256*inBytes[current_msg_start_idx + 5]
+
             if current_msg_start_idx + current_msg_length > inbytelen: # Message nicht mehr komplett
                 break
             self.publish(inBytes[current_msg_start_idx:current_msg_start_idx+current_msg_length])
+            if current_msg_start_idx <= last_msg_start_id:
+                raise Exception("File is corrupted, try xcom-remove-partial-msgs on XCOMStream file")
+            last_msg_start_id = current_msg_start_idx
             current_msg_start_idx += current_msg_length
 
     def process_bytes(self, inBytes):
@@ -767,9 +773,9 @@ class Client(MessageParser):
 
         '''
         msgToSend = data.getCommandWithID(data.CMD_LOG_Payload.command_id)
-        msgToSend.payload.data['messageID'] = 3
+        msgToSend.payload.data['messageID'] = msgID
         msgToSend.payload.data['trigger'] = data.LogTrigger.SYNC
-        msgToSend.payload.data['parameter'] = data.LogCommand.CLEAR_ALL
+        msgToSend.payload.data['parameter'] = data.LogCommand.CLEAR
         msgToSend.payload.data['divider'] = 1
         self.send_msg_and_waitfor_okay(msgToSend)
 
