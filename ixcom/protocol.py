@@ -79,6 +79,18 @@ class DatatSelectionMask(IntEnum):
     ECEFPOS = 0b0000010000000000
     '''Position is ECEF X,Y,Z'''
 
+class ParDatVelMode(IntEnum):
+    '''Enumeration for the velocity output frame of the INSSOL message'''
+
+    NED = 0
+    '''The velocity fields of the INSSOL message contain the velocity in NED frame.'''
+    ENU = 1
+    '''The velocity fields of the INSSOL message contain the velocity in ENU frame.'''
+    ECEF = 2
+    '''The velocity fields of the INSSOL message contain the velocity in ECEF frame.'''
+    BODY = 3
+    '''The velocity fields of the INSSOL message contain the velocity in vehicle body frame.'''
+
 class MessageID(IntEnum):
     '''Enumeration for special message IDs'''
     PLUGIN        = 0x64

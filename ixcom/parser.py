@@ -968,6 +968,35 @@ class Client(MessageParser):
         msgToSend.payload.data['statMode'] = 127
         msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
         self.send_msg_and_waitfor_okay(msgToSend)
+    
+    def set_ins_vel_output_frame(self, vel_output_mode: int = protocol.ParDatVelMode.NED):
+        '''Defines the velocity output frame of the INSSOL message
+            0: NED
+            1: ENU
+            2: ECEF
+            3: BODY
+
+        Raises:
+            ClientTimeoutError: Timeout while waiting for response or log from the XCOM server
+            ResponseError: The response from the system was not 'OK'.
+        '''
+        msgToSend = data.getParameterWithID(data.PARDAT_VEL_Payload.parameter_id)
+        msgToSend.payload.data['velMode'] = vel_output_mode
+        msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
+        self.send_msg_and_waitfor_okay(msgToSend)
+
+    def get_ins_vel_output_frame(self):
+        '''Convenience getter for velocity output frame of the INSSOL message
+
+        Raises:
+            ClientTimeoutError: Timeout while waiting for response or parameter from the XCOM server
+            ResponseError: The response from the system was not 'OK'.
+
+        '''
+        msgToSend = data.getParameterWithID(data.PARDAT_VEL_Payload.parameter_id)
+        msgToSend.payload.data['action'] = data.ParameterAction.REQUESTING
+        self.send_msg_and_waitfor_okay(msgToSend)
+        return self.wait_for_parameter()
 
     def get_device_info(self):
         '''Get information about the connected device
