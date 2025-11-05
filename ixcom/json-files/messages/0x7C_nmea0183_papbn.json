@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0x7C",
+    "name": "NMEA0183_PAPBN",
+    "payload": [
+        {
+            "format": "4076B",
+            "var": "payload_buffer"
+        }
+    ],
+    "type": "message"
+}

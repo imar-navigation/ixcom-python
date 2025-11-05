@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0x00",
+    "name": "IMURAW",
+    "payload": [
+        {
+            "format": "3f",
+            "var": "acc"
+        },
+        {
+            "format": "3f",
+            "var": "omg"
+        }
+    ],
+    "type": "message"
+}

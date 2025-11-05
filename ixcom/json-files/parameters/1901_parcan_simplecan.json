@@ -1,0 +1,36 @@
+{
+    "domain": "public",
+    "id": "1901",
+    "name": "PARCAN_SIMPLECAN",
+    "payload": [
+        {
+            "format": "I",
+            "var": "tx_mask"
+        },
+        {
+            "format": "I",
+            "var": "divider"
+        },
+        {
+            "format": "I",
+            "var": "base_id"
+        },
+        {
+            "format": "B",
+            "var": "source"
+        },
+        {
+            "format": "B",
+            "var": "use_extended_id"
+        },
+        {
+            "format": "B",
+            "var": "device_idx"
+        },
+        {
+            "format": "B",
+            "var": "reserved"
+        }
+    ],
+    "type": "parameter"
+}

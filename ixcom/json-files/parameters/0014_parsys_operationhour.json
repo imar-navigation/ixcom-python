@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0014",
+    "name": "PARSYS_OPERATIONHOUR",
+    "payload": [
+        {
+            "format": "I",
+            "var": "operation_hour_counter"
+        }
+    ],
+    "type": "parameter"
+}

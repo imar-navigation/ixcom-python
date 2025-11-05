@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0721",
+    "name": "PAREKF_POSAIDSTDDEVTHR",
+    "payload": [
+        {
+            "format": "d",
+            "var": "thr_stddev_pos"
+        }
+    ],
+    "type": "parameter"
+}

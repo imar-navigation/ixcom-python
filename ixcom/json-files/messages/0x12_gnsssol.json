@@ -1,0 +1,72 @@
+{
+    "domain": "public",
+    "id": "0x12",
+    "name": "GNSSSOL",
+    "payload": [
+        {
+            "format": "d",
+            "var": "lon"
+        },
+        {
+            "format": "d",
+            "var": "lat"
+        },
+        {
+            "format": "f",
+            "var": "alt"
+        },
+        {
+            "format": "f",
+            "var": "undulation"
+        },
+        {
+            "format": "3f",
+            "var": "v_ned"
+        },
+        {
+            "format": "3f",
+            "var": "stddev_pos"
+        },
+        {
+            "format": "3f",
+            "var": "stddev_vel"
+        },
+        {
+            "format": "H",
+            "var": "sol_status"
+        },
+        {
+            "format": "H",
+            "var": "posvel_type"
+        },
+        {
+            "format": "f",
+            "var": "pdop"
+        },
+        {
+            "format": "B",
+            "var": "sats_used"
+        },
+        {
+            "format": "B",
+            "var": "sats_tracked"
+        },
+        {
+            "format": "H",
+            "var": "station_id"
+        },
+        {
+            "format": "f",
+            "var": "diff_age"
+        },
+        {
+            "format": "f",
+            "var": "sol_age"
+        },
+        {
+            "format": "I",
+            "var": "gnss_status"
+        }
+    ],
+    "type": "message"
+}

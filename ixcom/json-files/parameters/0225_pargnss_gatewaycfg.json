@@ -1,0 +1,28 @@
+{
+    "domain": "public",
+    "id": "0225",
+    "name": "PARGNSS_GATEWAYCFG",
+    "payload": [
+        {
+            "format": "B",
+            "var": "udp_enable"
+        },
+        {
+            "format": "3B",
+            "var": "reserved1"
+        },
+        {
+            "format": "I",
+            "var": "udp_addr"
+        },
+        {
+            "format": "I",
+            "var": "udp_port"
+        },
+        {
+            "format": "I",
+            "var": "tcp_port"
+        }
+    ],
+    "type": "parameter"
+}

@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0715",
+    "name": "PAREKF_DEFHDG",
+    "payload": [
+        {
+            "format": "f",
+            "var": "default_hdg"
+        }
+    ],
+    "type": "parameter"
+}

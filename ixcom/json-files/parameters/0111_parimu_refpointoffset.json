@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0111",
+    "name": "PARIMU_REFPOINTOFFSET",
+    "payload": [
+        {
+            "format": "3d",
+            "var": "refpoint_offset"
+        }
+    ],
+    "type": "parameter"
+}

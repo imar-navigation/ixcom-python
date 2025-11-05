@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0753",
+    "name": "PAREKF_REFFRAME",
+    "payload": [
+        {
+            "format": "B",
+            "var": "reference_frame"
+        },
+        {
+            "format": "3B",
+            "var": "reserved"
+        }
+    ],
+    "type": "parameter"
+}

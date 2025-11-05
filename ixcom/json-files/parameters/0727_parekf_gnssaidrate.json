@@ -1,0 +1,32 @@
+{
+    "domain": "public",
+    "id": "0727",
+    "name": "PAREKF_GNSSAIDRATE",
+    "payload": [
+        {
+            "format": "H",
+            "var": "psrpos_period"
+        },
+        {
+            "format": "H",
+            "var": "psrvel_period"
+        },
+        {
+            "format": "H",
+            "var": "rtk_period"
+        },
+        {
+            "format": "H",
+            "var": "rtk_timeout"
+        },
+        {
+            "format": "H",
+            "var": "hdg_period"
+        },
+        {
+            "format": "H",
+            "var": "zupt_timeout"
+        }
+    ],
+    "type": "parameter"
+}

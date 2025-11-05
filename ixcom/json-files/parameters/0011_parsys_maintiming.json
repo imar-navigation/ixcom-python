@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0011",
+    "name": "PARSYS_MAINTIMING",
+    "payload": [
+        {
+            "format": "H",
+            "var": "main_timing"
+        },
+        {
+            "format": "H",
+            "var": "password"
+        }
+    ],
+    "type": "parameter"
+}

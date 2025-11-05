@@ -1,0 +1,40 @@
+{
+    "domain": "public",
+    "id": "0x93",
+    "name": "EXTPOSLLH",
+    "payload": [
+        {
+            "format": "d",
+            "var": "time"
+        },
+        {
+            "format": "d",
+            "var": "latitude"
+        },
+        {
+            "format": "d",
+            "var": "longitude"
+        },
+        {
+            "format": "f",
+            "var": "altitude"
+        },
+        {
+            "format": "3f",
+            "var": "position_stddev"
+        },
+        {
+            "format": "B",
+            "var": "solution_valid"
+        },
+        {
+            "format": "B",
+            "var": "obs_used"
+        },
+        {
+            "format": "6B",
+            "var": "reserved"
+        }
+    ],
+    "type": "message"
+}

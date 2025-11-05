@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0401",
+    "name": "PARMADC_LEVERARM",
+    "payload": [
+        {
+            "format": "3f",
+            "var": "lever_arm_xyz"
+        },
+        {
+            "format": "3f",
+            "var": "lever_arm_xyz_stddev"
+        }
+    ],
+    "type": "parameter"
+}

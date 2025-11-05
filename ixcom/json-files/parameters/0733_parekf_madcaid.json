@@ -1,0 +1,48 @@
+{
+    "domain": "public",
+    "id": "0733",
+    "name": "PAREKF_MADCAID",
+    "payload": [
+        {
+            "format": "f",
+            "var": "altitude_stddev"
+        },
+        {
+            "format": "f",
+            "var": "latency"
+        },
+        {
+            "format": "H",
+            "var": "aiding_interval"
+        },
+        {
+            "format": "H",
+            "var": "reserved"
+        },
+        {
+            "format": "f",
+            "var": "scale_factor_error"
+        },
+        {
+            "format": "f",
+            "var": "scale_factor_stddev"
+        },
+        {
+            "format": "f",
+            "var": "scale_factor_rw"
+        },
+        {
+            "format": "f",
+            "var": "bias"
+        },
+        {
+            "format": "f",
+            "var": "bias_stddev"
+        },
+        {
+            "format": "f",
+            "var": "bias_rw"
+        }
+    ],
+    "type": "parameter"
+}

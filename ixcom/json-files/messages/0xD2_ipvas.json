@@ -1,0 +1,92 @@
+{
+    "domain": "public",
+    "id": "0xD2",
+    "name": "IPVAS",
+    "payload": [
+        {
+            "format": "f",
+            "var": "heading"
+        },
+        {
+            "format": "I",
+            "var": "utc_year"
+        },
+        {
+            "format": "B",
+            "var": "utc_month"
+        },
+        {
+            "format": "B",
+            "var": "utc_day"
+        },
+        {
+            "format": "B",
+            "var": "utc_hour"
+        },
+        {
+            "format": "B",
+            "var": "utc_min"
+        },
+        {
+            "format": "I",
+            "var": "utc_ms"
+        },
+        {
+            "format": "d",
+            "var": "runtime"
+        },
+        {
+            "format": "d",
+            "var": "latitude"
+        },
+        {
+            "format": "d",
+            "var": "longitude"
+        },
+        {
+            "format": "f",
+            "var": "height_msl"
+        },
+        {
+            "format": "f",
+            "var": "altitude"
+        },
+        {
+            "format": "3f",
+            "var": "rpy"
+        },
+        {
+            "format": "f",
+            "var": "climb_rate"
+        },
+        {
+            "format": "f",
+            "var": "speed"
+        },
+        {
+            "format": "3f",
+            "var": "v_ned"
+        },
+        {
+            "format": "3f",
+            "var": "v_vehicle"
+        },
+        {
+            "format": "3f",
+            "var": "rpy_rate"
+        },
+        {
+            "format": "3f",
+            "var": "omg_vehicle"
+        },
+        {
+            "format": "3f",
+            "var": "acc_ned"
+        },
+        {
+            "format": "3f",
+            "var": "acc_vehicle"
+        }
+    ],
+    "type": "message"
+}

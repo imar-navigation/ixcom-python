@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0701",
+    "name": "PAREKF_ALIGNTIME",
+    "payload": [
+        {
+            "format": "I",
+            "var": "align_time"
+        }
+    ],
+    "type": "parameter"
+}

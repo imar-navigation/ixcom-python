@@ -1,0 +1,44 @@
+{
+    "domain": "public",
+    "id": "0x48",
+    "name": "EKFSTDDEVECEF",
+    "payload": [
+        {
+            "format": "3f",
+            "var": "pos"
+        },
+        {
+            "format": "3f",
+            "var": "vel"
+        },
+        {
+            "format": "3f",
+            "var": "tilt"
+        },
+        {
+            "format": "3f",
+            "var": "bias_acc"
+        },
+        {
+            "format": "3f",
+            "var": "bias_omg"
+        },
+        {
+            "format": "9f",
+            "var": "ma_acc"
+        },
+        {
+            "format": "9f",
+            "var": "ma_omg"
+        },
+        {
+            "format": "f",
+            "var": "scf_odo"
+        },
+        {
+            "format": "2f",
+            "var": "ma_odo"
+        }
+    ],
+    "type": "message"
+}

@@ -1,0 +1,68 @@
+{
+    "domain": "public",
+    "id": "0713",
+    "name": "PAREKF_ZUPT2",
+    "payload": [
+        {
+            "format": "d",
+            "var": "thr_acc"
+        },
+        {
+            "format": "d",
+            "var": "thr_omg"
+        },
+        {
+            "format": "d",
+            "var": "thr_vel"
+        },
+        {
+            "format": "f",
+            "var": "cutoff"
+        },
+        {
+            "format": "f",
+            "var": "zupt_period"
+        },
+        {
+            "format": "f",
+            "var": "min_stddev_zupt"
+        },
+        {
+            "format": "f",
+            "var": "weighting_factor"
+        },
+        {
+            "format": "f",
+            "var": "time_constant"
+        },
+        {
+            "format": "f",
+            "var": "velocity_stddev_factor"
+        },
+        {
+            "format": "f",
+            "var": "summated_rate_limit"
+        },
+        {
+            "format": "f",
+            "var": "summated_acceleration_limit"
+        },
+        {
+            "format": "H",
+            "var": "delay"
+        },
+        {
+            "format": "B",
+            "var": "automatic_zupt"
+        },
+        {
+            "format": "B",
+            "var": "reserved"
+        },
+        {
+            "format": "I",
+            "var": "mask"
+        }
+    ],
+    "type": "parameter"
+}

@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0x22",
+    "name": "TEMPERATURE",
+    "payload": [
+        {
+            "format": "16f",
+            "var": "temperature"
+        }
+    ],
+    "type": "message"
+}

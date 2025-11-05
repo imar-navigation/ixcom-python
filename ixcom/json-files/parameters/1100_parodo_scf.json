@@ -1,0 +1,20 @@
+{
+    "domain": "public",
+    "id": "1100",
+    "name": "PARODO_SCF",
+    "payload": [
+        {
+            "format": "f",
+            "var": "scf_odo"
+        },
+        {
+            "format": "f",
+            "var": "scf_odo_est"
+        },
+        {
+            "format": "I",
+            "var": "reserved1"
+        }
+    ],
+    "type": "parameter"
+}

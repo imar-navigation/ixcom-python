@@ -1,0 +1,70 @@
+{
+    "domain": "public",
+    "id": "0x67",
+    "name": "RAWDATA",
+    "payload": [
+        {
+            "format": "3f",
+            "var": "acc"
+        },
+        {
+            "format": "3f",
+            "var": "omg"
+        },
+        {
+            "format": "I",
+            "var": "odometer_interval"
+        },
+        {
+            "format": "3t",
+            "structFields": [
+                {
+                    "format": "i",
+                    "var": "odo_ticks"
+                },
+                {
+                    "format": "I",
+                    "var": "odo_trig_event"
+                },
+                {
+                    "format": "I",
+                    "var": "odo_trig_next_event"
+                }
+            ],
+            "var": "odometer"
+        },
+        {
+            "format": "I",
+            "var": "sys_status"
+        },
+        {
+            "format": "I",
+            "var": "fpga_status"
+        },
+        {
+            "format": "f",
+            "var": "imu_temperature"
+        },
+        {
+            "format": "B",
+            "var": "imu_temperature_axis"
+        },
+        {
+            "format": "B",
+            "var": "events"
+        },
+        {
+            "format": "H",
+            "var": "rr_addr"
+        },
+        {
+            "format": "2H",
+            "var": "rr_data"
+        },
+        {
+            "format": "2I",
+            "var": "user_event"
+        }
+    ],
+    "type": "message"
+}

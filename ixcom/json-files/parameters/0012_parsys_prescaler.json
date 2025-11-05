@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0012",
+    "name": "PARSYS_PRESCALER",
+    "payload": [
+        {
+            "format": "H",
+            "var": "prescaler"
+        },
+        {
+            "format": "H",
+            "var": "password"
+        }
+    ],
+    "type": "parameter"
+}

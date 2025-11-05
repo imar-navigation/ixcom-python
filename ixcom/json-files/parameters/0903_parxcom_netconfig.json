@@ -1,0 +1,40 @@
+{
+    "domain": "public",
+    "id": "0903",
+    "name": "PARXCOM_NETCONFIG",
+    "payload": [
+        {
+            "format": "B",
+            "var": "mode"
+        },
+        {
+            "format": "B",
+            "var": "reserved_1"
+        },
+        {
+            "format": "B",
+            "var": "interface"
+        },
+        {
+            "format": "B",
+            "var": "reserved_2"
+        },
+        {
+            "format": "I",
+            "var": "port"
+        },
+        {
+            "format": "I",
+            "var": "ip_addr"
+        },
+        {
+            "format": "I",
+            "var": "subnet_mask"
+        },
+        {
+            "format": "I",
+            "var": "gateway"
+        }
+    ],
+    "type": "parameter"
+}

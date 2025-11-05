@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0709",
+    "name": "PAREKF_SMOOTH",
+    "payload": [
+        {
+            "format": "I",
+            "var": "slew_samples"
+        }
+    ],
+    "type": "parameter"
+}

@@ -1,0 +1,56 @@
+{
+    "domain": "public",
+    "id": "0724",
+    "name": "PAREKF_ODOMETER",
+    "payload": [
+        {
+            "format": "f",
+            "var": "scale_factor_error"
+        },
+        {
+            "format": "f",
+            "var": "scale_factor_stddev"
+        },
+        {
+            "format": "f",
+            "var": "scale_factor_rw"
+        },
+        {
+            "format": "2f",
+            "var": "misalignment"
+        },
+        {
+            "format": "2f",
+            "var": "misalignment_stddev"
+        },
+        {
+            "format": "2f",
+            "var": "misalignment_rw"
+        },
+        {
+            "format": "f",
+            "var": "min_velocity"
+        },
+        {
+            "format": "f",
+            "var": "max_velocity"
+        },
+        {
+            "format": "B",
+            "var": "inno_avg_enable"
+        },
+        {
+            "format": "B",
+            "var": "misalignment_estimation_enable"
+        },
+        {
+            "format": "B",
+            "var": "coarse_calib_enable"
+        },
+        {
+            "format": "B",
+            "var": "reserved2"
+        }
+    ],
+    "type": "parameter"
+}

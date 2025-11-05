@@ -1,0 +1,26 @@
+{
+    "domain": "public",
+    "id": "1113",
+    "name": "PARODO_MODE2",
+    "payload": [
+        {
+            "format": "3t",
+            "structFields": [
+                {
+                    "format": "H",
+                    "var": "enable"
+                },
+                {
+                    "format": "H",
+                    "var": "mode"
+                }
+            ],
+            "var": "odometer"
+        },
+        {
+            "format": "2H",
+            "var": "deglitcher"
+        }
+    ],
+    "type": "parameter"
+}

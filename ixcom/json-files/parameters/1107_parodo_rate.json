@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "1107",
+    "name": "PARODO_RATE",
+    "payload": [
+        {
+            "format": "f",
+            "var": "update_rate"
+        }
+    ],
+    "type": "parameter"
+}

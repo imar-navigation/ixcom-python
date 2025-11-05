@@ -1,0 +1,24 @@
+{
+    "domain": "public",
+    "id": "0906",
+    "name": "PARXCOM_AUTOSTART",
+    "payload": [
+        {
+            "format": "H",
+            "var": "channel_number"
+        },
+        {
+            "format": "H",
+            "var": "auto_start"
+        },
+        {
+            "format": "H",
+            "var": "port"
+        },
+        {
+            "format": "H",
+            "var": "reserved"
+        }
+    ],
+    "type": "parameter"
+}

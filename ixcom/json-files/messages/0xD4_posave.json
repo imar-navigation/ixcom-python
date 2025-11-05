@@ -1,0 +1,36 @@
+{
+    "domain": "public",
+    "id": "0xD4",
+    "name": "POSAVE",
+    "payload": [
+        {
+            "format": "I",
+            "var": "status"
+        },
+        {
+            "format": "I",
+            "var": "number_of_samples"
+        },
+        {
+            "format": "3d",
+            "var": "pos"
+        },
+        {
+            "format": "3d",
+            "var": "stddev"
+        },
+        {
+            "format": "3d",
+            "var": "min"
+        },
+        {
+            "format": "3d",
+            "var": "max"
+        },
+        {
+            "format": "d",
+            "var": "runtime"
+        }
+    ],
+    "type": "message"
+}

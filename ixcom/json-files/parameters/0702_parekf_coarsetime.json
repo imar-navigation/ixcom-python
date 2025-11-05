@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0702",
+    "name": "PAREKF_COARSETIME",
+    "payload": [
+        {
+            "format": "I",
+            "var": "coarse_time"
+        }
+    ],
+    "type": "parameter"
+}

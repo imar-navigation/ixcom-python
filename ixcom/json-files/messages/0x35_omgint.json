@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0x35",
+    "name": "OMGINT",
+    "payload": [
+        {
+            "format": "3f",
+            "var": "omg_int"
+        },
+        {
+            "format": "f",
+            "var": "integration_time"
+        }
+    ],
+    "type": "message"
+}

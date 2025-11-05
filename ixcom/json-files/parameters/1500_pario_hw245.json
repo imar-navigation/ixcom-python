@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "1500",
+    "name": "PARIO_HW245",
+    "payload": [
+        {
+            "format": "I",
+            "var": "config_io"
+        }
+    ],
+    "type": "parameter"
+}

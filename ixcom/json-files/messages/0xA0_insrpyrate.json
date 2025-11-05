@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0xA0",
+    "name": "INSRPYRATE",
+    "payload": [
+        {
+            "format": "3d",
+            "var": "rpy_rate"
+        }
+    ],
+    "type": "message"
+}

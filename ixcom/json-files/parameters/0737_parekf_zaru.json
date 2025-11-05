@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0737",
+    "name": "PAREKF_ZARU",
+    "payload": [
+        {
+            "format": "B",
+            "var": "enable"
+        },
+        {
+            "format": "3B",
+            "var": "reserved1"
+        }
+    ],
+    "type": "parameter"
+}

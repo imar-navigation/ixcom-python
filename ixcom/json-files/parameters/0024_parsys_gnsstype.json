@@ -1,0 +1,20 @@
+{
+    "domain": "public",
+    "id": "0024",
+    "name": "PARSYS_GNSSTYPE",
+    "payload": [
+        {
+            "format": "64b",
+            "var": "gnss_type_info"
+        },
+        {
+            "format": "B",
+            "var": "has_auth_code"
+        },
+        {
+            "format": "3B",
+            "var": "reserved"
+        }
+    ],
+    "type": "parameter"
+}

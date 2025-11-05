@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0xA3",
+    "name": "INSWANDERAZIMUTH",
+    "payload": [
+        {
+            "format": "d",
+            "var": "wander_azimuth"
+        },
+        {
+            "format": "2d",
+            "var": "reserved"
+        }
+    ],
+    "type": "message"
+}

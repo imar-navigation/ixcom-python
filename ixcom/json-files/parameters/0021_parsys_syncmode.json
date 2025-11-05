@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0021",
+    "name": "PARSYS_SYNCMODE",
+    "payload": [
+        {
+            "format": "H",
+            "var": "mode"
+        },
+        {
+            "format": "H",
+            "var": "reserved1"
+        }
+    ],
+    "type": "parameter"
+}

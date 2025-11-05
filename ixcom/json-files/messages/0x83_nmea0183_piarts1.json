@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0x83",
+    "name": "NMEA0183_PIARTS1",
+    "payload": [
+        {
+            "format": "4076B",
+            "var": "payload_buffer"
+        }
+    ],
+    "type": "message"
+}

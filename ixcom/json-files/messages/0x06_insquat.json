@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0x06",
+    "name": "INSQUAT",
+    "payload": [
+        {
+            "format": "4f",
+            "var": "q_nb"
+        }
+    ],
+    "type": "message"
+}

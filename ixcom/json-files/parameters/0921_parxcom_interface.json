@@ -1,0 +1,32 @@
+{
+    "domain": "public",
+    "id": "0921",
+    "name": "PARXCOM_INTERFACE",
+    "payload": [
+        {
+            "format": "B",
+            "var": "port"
+        },
+        {
+            "format": "B",
+            "var": "port_mode"
+        },
+        {
+            "format": "B",
+            "var": "port_level"
+        },
+        {
+            "format": "B",
+            "var": "available"
+        },
+        {
+            "format": "I",
+            "var": "baud"
+        },
+        {
+            "format": "8B",
+            "var": "reserved1"
+        }
+    ],
+    "type": "parameter"
+}

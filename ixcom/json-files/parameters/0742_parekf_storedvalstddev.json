@@ -1,0 +1,24 @@
+{
+    "domain": "public",
+    "id": "0742",
+    "name": "PAREKF_STOREDVALSTDDEV",
+    "payload": [
+        {
+            "format": "I",
+            "var": "enable_pos_stddev"
+        },
+        {
+            "format": "f",
+            "var": "pos_stddev"
+        },
+        {
+            "format": "I",
+            "var": "enable_hdg_stddev"
+        },
+        {
+            "format": "f",
+            "var": "hdg_stddev"
+        }
+    ],
+    "type": "parameter"
+}

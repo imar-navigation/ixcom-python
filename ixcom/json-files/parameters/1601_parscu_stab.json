@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "1601",
+    "name": "PARSCU_STAB",
+    "payload": [
+        {
+            "format": "4072B",
+            "var": "payload_buffer"
+        }
+    ],
+    "type": "parameter"
+}

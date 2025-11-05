@@ -1,0 +1,40 @@
+{
+    "domain": "public",
+    "id": "0218",
+    "name": "PARGNSS_VERSION",
+    "payload": [
+        {
+            "format": "I",
+            "var": "component_type"
+        },
+        {
+            "format": "16B",
+            "var": "model"
+        },
+        {
+            "format": "16B",
+            "var": "psn"
+        },
+        {
+            "format": "16B",
+            "var": "hw_version"
+        },
+        {
+            "format": "16B",
+            "var": "sw_version"
+        },
+        {
+            "format": "16B",
+            "var": "boot_version"
+        },
+        {
+            "format": "16B",
+            "var": "comp_date"
+        },
+        {
+            "format": "16B",
+            "var": "comp_time"
+        }
+    ],
+    "type": "parameter"
+}

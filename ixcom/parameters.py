@@ -1,5 +1,4 @@
 import os
-import json
 from .protocol import Message, PayloadItem, parse_parameter_json_folder
 from .protocol import DefaultParameterPayload, parameter
 from .protocol import DefaultPluginParameterPayload, plugin_parameter
@@ -151,20 +150,6 @@ class PARIMU_BANDSTOP_Payload(DefaultParameterPayload):
         PayloadItem(name = 'center', dimension = 1, datatype = 'f'),
     ])
 
-@parameter(117)
-class PARIMU_RANGE_Payload(DefaultParameterPayload):
-    parameter_payload = Message([
-        PayloadItem(name = 'range_accel', dimension = 1, datatype = 'f'),
-        PayloadItem(name = 'range_gyro', dimension = 1, datatype = 'f'),
-    ])
-
-@parameter(203)
-class PARGNSS_LATENCY_Payload(DefaultParameterPayload):
-    parameter_payload = Message([
-        PayloadItem(name = 'baud', dimension = 1, datatype = 'f'),
-        PayloadItem(name = 'reserved2', dimension = 1, datatype = 'H'),
-    ])
-
 @parameter(204)
 class PARGNSS_ANTOFFSET_Payload(DefaultParameterPayload):
     parameter_payload = Message([
@@ -172,8 +157,11 @@ class PARGNSS_ANTOFFSET_Payload(DefaultParameterPayload):
         PayloadItem(name = 'stdDev', dimension = 3, datatype = 'f'),
     ])
 
-    def get_ant_number(self):
-        return self.data.get('reserved_paramheader', '')
+    def get_name(self = None):
+        if self:
+            if hasattr(self,"data"):
+                return super().get_name() + '_' + str(self.data.get('reserved_paramheader'))
+        return "PARGNSS_ANTOFFSET"
 
 @parameter(212)
 class PARGNSS_LOCKOUTSYSTEM_Payload(DefaultParameterPayload):
@@ -181,15 +169,6 @@ class PARGNSS_LOCKOUTSYSTEM_Payload(DefaultParameterPayload):
         PayloadItem(name = 'lockoutMask', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'reserved2', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'reserved3', dimension = 1, datatype = 'H'),
-    ])
-
-@parameter(213)
-class PARGNSS_RTCMV3CONFIG_Payload(DefaultParameterPayload):
-    parameter_payload = Message([
-        PayloadItem(name = 'port', dimension = 1, datatype = 'B'),
-        PayloadItem(name = 'enable', dimension = 1, datatype = 'B'),
-        PayloadItem(name = 'reserved2', dimension = 1, datatype = 'H'),
-        PayloadItem(name = 'baud', dimension = 1, datatype = 'I'),
     ])
 
 @parameter(217)
@@ -220,14 +199,6 @@ class PARGNSS_VERSION_Payload(DefaultParameterPayload):
         PayloadItem(name = 'comptime', dimension = 16, datatype = 's'),
     ])
 
-@parameter(226)
-class PARGNSS_SWITCHER_Payload(DefaultParameterPayload):
-    parameter_payload = Message([
-        PayloadItem(name = 'enable', dimension = 1, datatype = 'B'),
-        PayloadItem(name = 'switcher', dimension = 1, datatype = 'B'),
-        PayloadItem(name = 'reserved2', dimension = 1, datatype = 'H'),
-    ])
-
 @parameter(229)
 class PARGNSS_HDGOFFSET_Payload(DefaultParameterPayload):
     parameter_payload = Message([
@@ -246,14 +217,6 @@ class PARMAG_COM_Payload(DefaultParameterPayload):
 class PARMAG_MISALIGN_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'rpy', dimension = 3, datatype = 'f'),
-    ])
-
-@parameter(307)
-class PARMAG_CAL_Payload(DefaultParameterPayload):
-    parameter_payload = Message([
-        PayloadItem(name = 'C', dimension = 9, datatype = 'f'),
-        PayloadItem(name = 'bias', dimension = 3, datatype = 'f'),
-        PayloadItem(name = 'valid', dimension = 1, datatype = 'I'),
     ])
 
 @parameter(308)
@@ -336,6 +299,12 @@ class PAREKF_VMP_Payload(DefaultParameterPayload):
         PayloadItem(name = 'mask', dimension = 1, datatype = 'H'),
         PayloadItem(name = 'cutoff', dimension = 1, datatype = 'H'),
     ])
+
+    def get_name(self = None):
+        if self:
+            if hasattr(self,"data"):
+                return super().get_name() + '_' + str(self.data.get('reserved_paramheader'))
+        return "PAREKF_VMP"     
 
 @parameter(704)
 class PAREKF_AIDING_Payload(DefaultParameterPayload):
@@ -456,8 +425,10 @@ class PAREKF_ODOMETER_Payload(DefaultParameterPayload):
         PayloadItem(name = 'rwMisalignmentZ', dimension = 1, datatype = 'f'),
         PayloadItem(name = 'minVel', dimension = 1, datatype = 'f'),
         PayloadItem(name = 'maxVel', dimension = 1, datatype = 'f'),
-        PayloadItem(name = 'useAvgInno', dimension = 1, datatype = 'H'),
-        PayloadItem(name = 'enableCoarseCal', dimension = 1, datatype = 'H'),
+        PayloadItem(name = 'useAvgInno', dimension = 1, datatype = 'B'),
+        PayloadItem(name = 'misalignment_estimation_enable', dimension = 1, datatype = 'B'),
+        PayloadItem(name = 'enableCoarseCal', dimension = 1, datatype = 'B'),
+        PayloadItem(name = 'res', dimension = 1, datatype = 'B'),
     ])
 
 @parameter(725)
@@ -619,6 +590,13 @@ class PARXCOM_SERIALPORT_Payload(DefaultParameterPayload):
 
     def get_port_number(self):
         return self.data.get('port')
+    
+    def get_name(self = None): 
+        if self:
+            if hasattr(self,"data"):
+                return super().get_name() + '_COM' + str(self.data.get('port'))
+        return "PARXCOM_SERIALPORT"
+
 
 @parameter(903)
 class PARXCOM_NETCONFIG_Payload(DefaultParameterPayload):
@@ -764,7 +742,7 @@ class PARODO_DIRECTION_Payload(DefaultParameterPayload):
 class PARODO_CONSTRAINTS_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'enable', dimension = 1, datatype = 'B'),
-        PayloadItem(name = 'reserved2', dimension = 1, datatype = 'B'),
+        PayloadItem(name = 'standalone', dimension = 1, datatype = 'B'),
         PayloadItem(name = 'reserved3', dimension = 1, datatype = 'H'),
         PayloadItem(name = 'stdDev', dimension = 1, datatype = 'f'),
     ])
@@ -781,67 +759,6 @@ class PARODO_THR_Payload(DefaultParameterPayload):
         PayloadItem(name = 'thrAcc', dimension = 1, datatype = 'f'),
         PayloadItem(name = 'thrOmg', dimension = 1, datatype = 'f'),
     ])
-
-@parameter(1200)
-class PARARINC825_PORT_Payload(DefaultParameterPayload):
-    parameter_payload = Message([
-        PayloadItem(name = 'port', dimension = 1, datatype = 'I'),
-    ])
-
-@parameter(1201)
-class PARARINC825_BAUD_Payload(DefaultParameterPayload):
-    parameter_payload = Message([
-        PayloadItem(name = 'baud', dimension = 1, datatype = 'I'),
-    ])
-
-@parameter(1202)
-class PARARINC825_ENABLE_Payload(DefaultParameterPayload):
-    parameter_payload = Message([
-        PayloadItem(name = 'reserved2', dimension = 1, datatype = 'H'),
-        PayloadItem(name = 'enable', dimension = 1, datatype = 'H'),
-    ])
-
-@parameter(1204)
-class PARARINC825_LOGLIST_Payload(DefaultParameterPayload):
-    __sub_payload = Message([
-            PayloadItem(name = f'divider', dimension = 1, datatype = 'H'),
-            PayloadItem(name = f'reserved', dimension = 1, datatype = 'H'),
-            PayloadItem(name = f'docnumber', dimension = 1, datatype = 'I')
-            ])
-
-    parameter_payload = Message([
-        PayloadItem(name = 'logs', dimension = 30, datatype = __sub_payload)
-    ])
-
-@parameter(1205)
-class PARARINC825_BUSRECOVERY_Payload(DefaultParameterPayload):
-    parameter_payload = Message([
-        PayloadItem(name = 'enable', dimension = 1, datatype = 'H'),
-        PayloadItem(name = 'reserved2', dimension = 1, datatype = 'H'),
-    ])
-
-@parameter(1207)
-class PARARINC825_SCALEFACTOR_Payload(DefaultParameterPayload):
-    parameter_payload = Message([
-        PayloadItem(name = 'ScfAcc', dimension = 1, datatype = 'd'),
-        PayloadItem(name = 'ScfOmg', dimension = 1, datatype = 'd'),
-        PayloadItem(name = 'ScfRPY', dimension = 3, datatype = 'd'),
-        PayloadItem(name = 'ScfVel', dimension = 1, datatype = 'd'),
-        PayloadItem(name = 'ScfTime', dimension = 1, datatype = 'd'),
-        PayloadItem(name = 'ScfPos', dimension = 3, datatype = 'd'),
-        PayloadItem(name = 'ScfRPYStdDev', dimension = 1, datatype = 'd'),
-        PayloadItem(name = 'ScfInsPosStdDev', dimension = 1, datatype = 'd'),
-        PayloadItem(name = 'ScfVelStdDev', dimension = 1, datatype = 'd'),
-        PayloadItem(name = 'ScfGnssPosStdDev', dimension = 1, datatype = 'd'),
-        PayloadItem(name = 'ScfSideSlip', dimension = 1, datatype = 'd'),
-    ])
-
-@parameter(1208)
-class PARARINC825_EVENTMASK_Payload(DefaultParameterPayload):
-    parameter_payload = Message([
-        PayloadItem(name = 'eventMask', dimension = 1, datatype = 'I'),
-    ])
-
 @parameter(1300)
 class PARNMEA_COM_Payload(DefaultParameterPayload):
     parameter_payload = Message([
@@ -872,14 +789,6 @@ class PARNMEA_TXMASK_Payload(DefaultParameterPayload):
     parameter_payload = Message([
         PayloadItem(name = 'txMask', dimension = 1, datatype = 'I'),
         PayloadItem(name = 'txMaskUDP', dimension = 1, datatype = 'I'),
-    ])
-
-@parameter(1303)
-class PARNMEA_DECPLACES_Payload(DefaultParameterPayload):
-    parameter_payload = Message([
-        PayloadItem(name = 'digitsPos', dimension = 1, datatype = 'B'),
-        PayloadItem(name = 'digitsHdg', dimension = 1, datatype = 'B'),
-        PayloadItem(name = 'reserved2', dimension = 1, datatype = 'H'),
     ])
 
 @parameter(1304)
@@ -930,11 +839,38 @@ class PARIO_HW245_Payload(DefaultParameterPayload):
         PayloadItem(name = 'configIO', dimension = 1, datatype = 'I'),
     ])
 
-@parameter(1501)
-class PARIO_HW288_Payload(DefaultParameterPayload):
+
+class PARSCU_VAR_Payload(DefaultParameterPayload):
     parameter_payload = Message([
-        PayloadItem(name = 'toDef', dimension = 1, datatype = 'I'),
+        PayloadItem(name = 'payload_buffer', dimension = 4096-4-20, datatype = 'B'),
     ])
+
+    def get_varsize_item_list(self, payload_length):
+        _item_list = [
+            PayloadItem(name = 'payload_buffer', dimension = payload_length, datatype = 'B'),
+        ]
+        return _item_list
+
+    def get_varsize_arg_from_bytes(self, inBytes):
+        payload_length = len(inBytes) - 4
+        return payload_length
+
+@parameter(1600)
+class PARSCU_NADIR_Payload(PARSCU_VAR_Payload):
+    pass
+
+@parameter(1601)
+class PARSCU_STAB_Payload(PARSCU_VAR_Payload):
+    pass
+
+@parameter(1602)
+class PARSCU_PARAM_Payload(PARSCU_VAR_Payload):
+    pass
+
+
+@parameter(1603)
+class PARSCU_ERRBUF_Payload(PARSCU_VAR_Payload):
+    pass
 
 
 """

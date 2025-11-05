@@ -1,0 +1,24 @@
+{
+    "domain": "public",
+    "id": "0747",
+    "name": "PAREKF_FHUPD",
+    "payload": [
+        {
+            "format": "B",
+            "var": "enable"
+        },
+        {
+            "format": "3B",
+            "var": "reserved"
+        },
+        {
+            "format": "d",
+            "var": "delta_t"
+        },
+        {
+            "format": "d",
+            "var": "stddev"
+        }
+    ],
+    "type": "parameter"
+}

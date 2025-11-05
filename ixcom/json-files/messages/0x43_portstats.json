@@ -1,0 +1,58 @@
+{
+    "domain": "public",
+    "id": "0x43",
+    "name": "PORTSTATS",
+    "payload": [
+        {
+            "format": "i",
+            "var": "number_of_elements"
+        },
+        {
+            "format": "3t",
+            "structFields": [
+                {
+                    "format": "I",
+                    "var": "port"
+                },
+                {
+                    "format": "I",
+                    "var": "rx_chars"
+                },
+                {
+                    "format": "I",
+                    "var": "tx_chars"
+                },
+                {
+                    "format": "I",
+                    "var": "acc_rx_chars"
+                },
+                {
+                    "format": "I",
+                    "var": "droppped_rx_chars"
+                },
+                {
+                    "format": "I",
+                    "var": "interrupts"
+                },
+                {
+                    "format": "I",
+                    "var": "breaks"
+                },
+                {
+                    "format": "I",
+                    "var": "parity_errors"
+                },
+                {
+                    "format": "I",
+                    "var": "frame_errors"
+                },
+                {
+                    "format": "I",
+                    "var": "rx_overrun"
+                }
+            ],
+            "var": "stats"
+        }
+    ],
+    "type": "message"
+}

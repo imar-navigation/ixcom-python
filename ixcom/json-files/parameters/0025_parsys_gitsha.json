@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0025",
+    "name": "PARSYS_GITSHA",
+    "payload": [
+        {
+            "format": "128b",
+            "var": "sha"
+        }
+    ],
+    "type": "parameter"
+}

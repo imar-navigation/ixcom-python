@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "2102",
+    "name": "PAREXTSENSOR_VBODYMISALIGN",
+    "payload": [
+        {
+            "format": "9d",
+            "var": "c_body_sensor"
+        }
+    ],
+    "type": "parameter"
+}

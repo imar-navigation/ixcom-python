@@ -1,0 +1,24 @@
+{
+    "domain": "public",
+    "id": "0752",
+    "name": "PAREKF_ODOLEVERARMEST",
+    "payload": [
+        {
+            "format": "B",
+            "var": "lever_arm_estimation_enable"
+        },
+        {
+            "format": "3B",
+            "var": "reserved"
+        },
+        {
+            "format": "3f",
+            "var": "lever_arm_stddev"
+        },
+        {
+            "format": "f",
+            "var": "lever_arm_rw"
+        }
+    ],
+    "type": "parameter"
+}

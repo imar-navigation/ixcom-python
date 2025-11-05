@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0x73",
+    "name": "NMEA0183_GLL",
+    "payload": [
+        {
+            "format": "4076B",
+            "var": "payload_buffer"
+        }
+    ],
+    "type": "message"
+}

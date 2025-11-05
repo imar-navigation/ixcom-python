@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "1902",
+    "name": "PARCAN_BUSTERMINATION",
+    "payload": [
+        {
+            "format": "B",
+            "var": "activation_mask"
+        },
+        {
+            "format": "3B",
+            "var": "reserved"
+        }
+    ],
+    "type": "parameter"
+}

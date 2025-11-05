@@ -1,0 +1,20 @@
+{
+    "domain": "public",
+    "id": "0016",
+    "name": "PARSYS_FPGAVERSION",
+    "payload": [
+        {
+            "format": "B",
+            "var": "major"
+        },
+        {
+            "format": "B",
+            "var": "minor"
+        },
+        {
+            "format": "H",
+            "var": "imu_type"
+        }
+    ],
+    "type": "parameter"
+}

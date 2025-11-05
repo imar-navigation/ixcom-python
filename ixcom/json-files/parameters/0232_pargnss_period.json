@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0232",
+    "name": "PARGNSS_PERIOD",
+    "payload": [
+        {
+            "format": "f",
+            "var": "period"
+        }
+    ],
+    "type": "parameter"
+}

@@ -1,0 +1,20 @@
+{
+    "domain": "public",
+    "id": "0613",
+    "name": "PARREC_MOTION",
+    "payload": [
+        {
+            "format": "B",
+            "var": "enable"
+        },
+        {
+            "format": "3B",
+            "var": "reserved"
+        },
+        {
+            "format": "I",
+            "var": "motion_delay"
+        }
+    ],
+    "type": "parameter"
+}

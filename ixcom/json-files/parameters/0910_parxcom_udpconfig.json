@@ -1,0 +1,32 @@
+{
+    "domain": "public",
+    "id": "0910",
+    "name": "PARXCOM_UDPCONFIG",
+    "payload": [
+        {
+            "format": "I",
+            "var": "srv_addr"
+        },
+        {
+            "format": "I",
+            "var": "port"
+        },
+        {
+            "format": "B",
+            "var": "enable"
+        },
+        {
+            "format": "B",
+            "var": "xcom_channel"
+        },
+        {
+            "format": "B",
+            "var": "enable_abd"
+        },
+        {
+            "format": "B",
+            "var": "instance"
+        }
+    ],
+    "type": "parameter"
+}

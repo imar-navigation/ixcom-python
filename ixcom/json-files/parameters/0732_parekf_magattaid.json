@@ -1,0 +1,40 @@
+{
+    "domain": "public",
+    "id": "0732",
+    "name": "PAREKF_MAGATTAID",
+    "payload": [
+        {
+            "format": "I",
+            "var": "sample_period"
+        },
+        {
+            "format": "f",
+            "var": "hdg_stddev"
+        },
+        {
+            "format": "f",
+            "var": "latency"
+        },
+        {
+            "format": "f",
+            "var": "ins_yaw_thr"
+        },
+        {
+            "format": "B",
+            "var": "aiding_mode"
+        },
+        {
+            "format": "B",
+            "var": "update_mode"
+        },
+        {
+            "format": "H",
+            "var": "aiding_interval"
+        },
+        {
+            "format": "3f",
+            "var": "mag_field_stddev"
+        }
+    ],
+    "type": "parameter"
+}

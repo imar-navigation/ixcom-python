@@ -1,0 +1,32 @@
+{
+    "domain": "public",
+    "id": "0754",
+    "name": "PAREKF_AUTOHEIGHT",
+    "payload": [
+        {
+            "format": "B",
+            "var": "enable"
+        },
+        {
+            "format": "B",
+            "var": "enable_frozen_height_update"
+        },
+        {
+            "format": "2B",
+            "var": "reserved"
+        },
+        {
+            "format": "d",
+            "var": "height_stddev"
+        },
+        {
+            "format": "d",
+            "var": "aiding_interval"
+        },
+        {
+            "format": "d",
+            "var": "timeout"
+        }
+    ],
+    "type": "parameter"
+}

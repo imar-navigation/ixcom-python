@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0612",
+    "name": "PARREC_FILESIZE",
+    "payload": [
+        {
+            "format": "L",
+            "var": "max_file_size"
+        }
+    ],
+    "type": "parameter"
+}

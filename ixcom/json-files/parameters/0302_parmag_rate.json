@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0302",
+    "name": "PARMAG_RATE",
+    "payload": [
+        {
+            "format": "I",
+            "var": "period"
+        }
+    ],
+    "type": "parameter"
+}

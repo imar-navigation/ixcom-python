@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0x34",
+    "name": "EVENTTIME",
+    "payload": [
+        {
+            "format": "2d",
+            "var": "time_event"
+        }
+    ],
+    "type": "message"
+}

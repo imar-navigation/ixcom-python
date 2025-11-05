@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "65535",
+    "name": "PARINVALID",
+    "payload": [
+        {
+            "format": "4072B",
+            "var": "payload_buffer"
+        }
+    ],
+    "type": "parameter"
+}

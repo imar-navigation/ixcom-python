@@ -1,0 +1,88 @@
+{
+    "defines": [
+        {
+            "int_value": 0,
+            "name": "XCOMMSG_CANSTATUS2_IDX_TRANSMITTED_FRAMES"
+        },
+        {
+            "int_value": 1,
+            "name": "XCOMMSG_CANSTATUS2_IDX_RECEIVED_FRAMES"
+        },
+        {
+            "int_value": 2,
+            "name": "XCOMMSG_CANSTATUS2_IDX_MISSING_ACK"
+        },
+        {
+            "int_value": 3,
+            "name": "XCOMMSG_CANSTATUS2_IDX_FRAME_ERRORS"
+        },
+        {
+            "int_value": 4,
+            "name": "XCOMMSG_CANSTATUS2_IDX_STUFF_ERRORS"
+        },
+        {
+            "int_value": 5,
+            "name": "XCOMMSG_CANSTATUS2_IDX_FORM_ERRORS"
+        },
+        {
+            "int_value": 6,
+            "name": "XCOMMSG_CANSTATUS2_IDX_DOM_BIT_RECESS_ERRORS"
+        },
+        {
+            "int_value": 7,
+            "name": "XCOMMSG_CANSTATUS2_IDX_RECESS_BIT_DOM_ERRORS"
+        },
+        {
+            "int_value": 8,
+            "name": "XCOMMSG_CANSTATUS2_IDX_PARITY_ERRORS"
+        },
+        {
+            "int_value": 9,
+            "name": "XCOMMSG_CANSTATUS2_IDX_CRC_ERRORS"
+        },
+        {
+            "int_value": 10,
+            "name": "XCOMMSG_CANSTATUS2_IDX_HW_RECEIVE_OVERFLOWS"
+        },
+        {
+            "int_value": 11,
+            "name": "XCOMMSG_CANSTATUS2_IDX_SW_RECEIVE_OVERFLOWS"
+        },
+        {
+            "int_value": 12,
+            "name": "XCOMMSG_CANSTATUS2_IDX_ERROR_WARN_STATE_COUNTER"
+        },
+        {
+            "int_value": 13,
+            "name": "XCOMMSG_CANSTATUS2_IDX_ERROR_PASSIVE_STATE_COUNTER"
+        },
+        {
+            "int_value": 14,
+            "name": "XCOMMSG_CANSTATUS2_IDX_BUS_OFF_STATE_COUNTER"
+        },
+        {
+            "int_value": 15,
+            "name": "XCOMMSG_CANSTATUS2_IDX_BUS_IDLE_COUNTER"
+        },
+        {
+            "int_value": 16,
+            "name": "XCOMMSG_CANSTATUS2_IDX_POWER_DOWN_COUNTER"
+        },
+        {
+            "int_value": 17,
+            "name": "XCOMMSG_CANSTATUS2_IDX_WAKE_UP_COUNTER"
+        },
+        {
+            "int_value": 18,
+            "name": "XCOMMSG_CANSTATUS2_IDX_RX_INTERRUPTS"
+        },
+        {
+            "int_value": 19,
+            "name": "XCOMMSG_CANSTATUS2_IDX_TX_INTERRUPTS"
+        },
+        {
+            "int_value": 20,
+            "name": "XCOMMSG_CANSTATUS2_IDX_TOTAL_INTERRUPTS"
+        }
+    ]
+}

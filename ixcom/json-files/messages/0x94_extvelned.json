@@ -1,0 +1,32 @@
+{
+    "domain": "public",
+    "id": "0x94",
+    "name": "EXTVELNED",
+    "payload": [
+        {
+            "format": "d",
+            "var": "time"
+        },
+        {
+            "format": "3f",
+            "var": "vel_ned"
+        },
+        {
+            "format": "3f",
+            "var": "vel_ned_stddev"
+        },
+        {
+            "format": "B",
+            "var": "solution_valid"
+        },
+        {
+            "format": "B",
+            "var": "obs_used"
+        },
+        {
+            "format": "6B",
+            "var": "reserved"
+        }
+    ],
+    "type": "message"
+}

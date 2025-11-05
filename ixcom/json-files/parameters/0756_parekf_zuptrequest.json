@@ -1,0 +1,28 @@
+{
+    "domain": "public",
+    "id": "0756",
+    "name": "PAREKF_ZUPTREQUEST",
+    "payload": [
+        {
+            "format": "f",
+            "var": "pos_stddev_thr"
+        },
+        {
+            "format": "f",
+            "var": "vel_stddev_thr"
+        },
+        {
+            "format": "f",
+            "var": "distance_thr"
+        },
+        {
+            "format": "f",
+            "var": "time_thr"
+        },
+        {
+            "format": "I",
+            "var": "activation_mask"
+        }
+    ],
+    "type": "parameter"
+}

@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0706",
+    "name": "PAREKF_DELAY",
+    "payload": [
+        {
+            "format": "I",
+            "var": "delay"
+        }
+    ],
+    "type": "parameter"
+}

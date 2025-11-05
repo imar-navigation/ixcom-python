@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "1108",
+    "name": "PARODO_THR",
+    "payload": [
+        {
+            "format": "f",
+            "var": "thr_acc"
+        },
+        {
+            "format": "f",
+            "var": "thr_omg"
+        }
+    ],
+    "type": "parameter"
+}

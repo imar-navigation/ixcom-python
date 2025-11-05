@@ -1,0 +1,84 @@
+{
+    "domain": "public",
+    "id": "0x42",
+    "name": "CSACDATA",
+    "payload": [
+        {
+            "format": "I",
+            "var": "status"
+        },
+        {
+            "format": "I",
+            "var": "alarm"
+        },
+        {
+            "format": "32B",
+            "var": "serial_number"
+        },
+        {
+            "format": "I",
+            "var": "mode"
+        },
+        {
+            "format": "I",
+            "var": "contrast"
+        },
+        {
+            "format": "f",
+            "var": "laser_current"
+        },
+        {
+            "format": "f",
+            "var": "tcx0"
+        },
+        {
+            "format": "f",
+            "var": "heat_p"
+        },
+        {
+            "format": "f",
+            "var": "sig"
+        },
+        {
+            "format": "f",
+            "var": "temperature"
+        },
+        {
+            "format": "i",
+            "var": "steer"
+        },
+        {
+            "format": "f",
+            "var": "atune"
+        },
+        {
+            "format": "i",
+            "var": "phase"
+        },
+        {
+            "format": "I",
+            "var": "disc_ok"
+        },
+        {
+            "format": "I",
+            "var": "time_since_power_on"
+        },
+        {
+            "format": "I",
+            "var": "time_since_lock"
+        },
+        {
+            "format": "B",
+            "var": "data_valid"
+        },
+        {
+            "format": "B",
+            "var": "reserved"
+        },
+        {
+            "format": "H",
+            "var": "fw_version"
+        }
+    ],
+    "type": "message"
+}

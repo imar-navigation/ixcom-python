@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0009",
+    "name": "PARSYS_NAVNUM",
+    "payload": [
+        {
+            "format": "32B",
+            "var": "payload"
+        }
+    ],
+    "type": "parameter"
+}

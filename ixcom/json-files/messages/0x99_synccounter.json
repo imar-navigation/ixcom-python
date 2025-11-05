@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0x99",
+    "name": "SYNCCOUNTER",
+    "payload": [
+        {
+            "format": "d",
+            "var": "system_time"
+        },
+        {
+            "format": "3i",
+            "var": "sync_counter"
+        }
+    ],
+    "type": "message"
+}

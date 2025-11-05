@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0759",
+    "name": "PAREKF_EXTAIDREFFRAME",
+    "payload": [
+        {
+            "format": "B",
+            "var": "reference_frame"
+        },
+        {
+            "format": "3B",
+            "var": "reserved"
+        }
+    ],
+    "type": "parameter"
+}

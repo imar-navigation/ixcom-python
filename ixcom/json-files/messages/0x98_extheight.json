@@ -1,0 +1,28 @@
+{
+    "domain": "public",
+    "id": "0x98",
+    "name": "EXTHEIGHT",
+    "payload": [
+        {
+            "format": "d",
+            "var": "time"
+        },
+        {
+            "format": "f",
+            "var": "height"
+        },
+        {
+            "format": "f",
+            "var": "height_stddev"
+        },
+        {
+            "format": "B",
+            "var": "solution_valid"
+        },
+        {
+            "format": "7B",
+            "var": "reserved"
+        }
+    ],
+    "type": "message"
+}

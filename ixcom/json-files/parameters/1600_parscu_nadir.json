@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "1600",
+    "name": "PARSCU_NADIR",
+    "payload": [
+        {
+            "format": "4072B",
+            "var": "payload_buffer"
+        }
+    ],
+    "type": "parameter"
+}

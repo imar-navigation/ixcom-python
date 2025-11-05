@@ -1,0 +1,20 @@
+{
+    "domain": "public",
+    "id": "0x0A",
+    "name": "INSPOSLLH",
+    "payload": [
+        {
+            "format": "d",
+            "var": "longitude"
+        },
+        {
+            "format": "d",
+            "var": "latitude"
+        },
+        {
+            "format": "f",
+            "var": "altitude"
+        }
+    ],
+    "type": "message"
+}

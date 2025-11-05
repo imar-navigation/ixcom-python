@@ -1,0 +1,32 @@
+{
+    "domain": "public",
+    "id": "0023",
+    "name": "PARSYS_EEPROM",
+    "payload": [
+        {
+            "format": "I",
+            "var": "imu_type"
+        },
+        {
+            "format": "I",
+            "var": "gnss_type"
+        },
+        {
+            "format": "I",
+            "var": "hw_type"
+        },
+        {
+            "format": "16b",
+            "var": "mac_addr"
+        },
+        {
+            "format": "16b",
+            "var": "cpu_serial_number"
+        },
+        {
+            "format": "64b",
+            "var": "cpu_order_code"
+        }
+    ],
+    "type": "parameter"
+}

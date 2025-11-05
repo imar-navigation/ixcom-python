@@ -1,0 +1,28 @@
+{
+    "domain": "public",
+    "id": "1305",
+    "name": "PARNMEA0183_UDP",
+    "payload": [
+        {
+            "format": "I",
+            "var": "server_addr"
+        },
+        {
+            "format": "I",
+            "var": "port"
+        },
+        {
+            "format": "B",
+            "var": "enable"
+        },
+        {
+            "format": "B",
+            "var": "reserved0"
+        },
+        {
+            "format": "H",
+            "var": "reserved1"
+        }
+    ],
+    "type": "parameter"
+}

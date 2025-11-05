@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0740",
+    "name": "PAREKF_STATEFREEZE",
+    "payload": [
+        {
+            "format": "I",
+            "var": "state_freeze_mask"
+        }
+    ],
+    "type": "parameter"
+}

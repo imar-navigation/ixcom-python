@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0x29",
+    "name": "EKFPOSCOVAR",
+    "payload": [
+        {
+            "format": "9f",
+            "var": "covar"
+        }
+    ],
+    "type": "message"
+}

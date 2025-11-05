@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "2000",
+    "name": "PARPLUGIN_GENERIC",
+    "payload": [
+        {
+            "format": "4072B",
+            "var": "payload_buffer"
+        }
+    ],
+    "type": "parameter"
+}

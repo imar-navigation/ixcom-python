@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0x0E",
+    "name": "INSTRACKACC",
+    "payload": [
+        {
+            "format": "3f",
+            "var": "acc"
+        }
+    ],
+    "type": "message"
+}

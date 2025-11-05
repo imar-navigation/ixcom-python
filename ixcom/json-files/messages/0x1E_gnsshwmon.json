@@ -1,0 +1,22 @@
+{
+    "domain": "public",
+    "id": "0x1E",
+    "name": "GNSSHWMON",
+    "payload": [
+        {
+            "format": "16t",
+            "structFields": [
+                {
+                    "format": "f",
+                    "var": "val"
+                },
+                {
+                    "format": "I",
+                    "var": "status"
+                }
+            ],
+            "var": "GnssHwMonitor"
+        }
+    ],
+    "type": "message"
+}

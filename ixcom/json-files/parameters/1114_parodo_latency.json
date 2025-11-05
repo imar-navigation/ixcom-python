@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "1114",
+    "name": "PARODO_LATENCY",
+    "payload": [
+        {
+            "format": "3f",
+            "var": "latency"
+        }
+    ],
+    "type": "parameter"
+}

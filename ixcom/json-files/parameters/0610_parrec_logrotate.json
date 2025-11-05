@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0610",
+    "name": "PARREC_LOGROTATE",
+    "payload": [
+        {
+            "format": "I",
+            "var": "enable"
+        }
+    ],
+    "type": "parameter"
+}

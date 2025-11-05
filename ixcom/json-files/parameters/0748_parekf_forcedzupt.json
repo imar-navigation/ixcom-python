@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0748",
+    "name": "PAREKF_FORCEDZUPT",
+    "payload": [
+        {
+            "format": "B",
+            "var": "enable"
+        },
+        {
+            "format": "3B",
+            "var": "reserved"
+        }
+    ],
+    "type": "parameter"
+}

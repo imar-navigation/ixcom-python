@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0718",
+    "name": "PAREKF_EARTHRAD",
+    "payload": [
+        {
+            "format": "2f",
+            "var": "radii"
+        }
+    ],
+    "type": "parameter"
+}

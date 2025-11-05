@@ -1,0 +1,20 @@
+{
+    "domain": "public",
+    "id": "0x1A",
+    "name": "INSMAGHDG",
+    "payload": [
+        {
+            "format": "f",
+            "var": "magnetic_heading"
+        },
+        {
+            "format": "f",
+            "var": "magnetic_cog"
+        },
+        {
+            "format": "f",
+            "var": "magnetic_deviation"
+        }
+    ],
+    "type": "message"
+}

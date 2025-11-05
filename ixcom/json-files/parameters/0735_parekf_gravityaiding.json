@@ -1,0 +1,32 @@
+{
+    "domain": "public",
+    "id": "0735",
+    "name": "PAREKF_GRAVITYAIDING",
+    "payload": [
+        {
+            "format": "I",
+            "var": "enable"
+        },
+        {
+            "format": "f",
+            "var": "omg_thr"
+        },
+        {
+            "format": "f",
+            "var": "acc_thr"
+        },
+        {
+            "format": "f",
+            "var": "stddev"
+        },
+        {
+            "format": "f",
+            "var": "gnss_timeout"
+        },
+        {
+            "format": "f",
+            "var": "aiding_interval"
+        }
+    ],
+    "type": "parameter"
+}

@@ -1,0 +1,32 @@
+{
+    "domain": "public",
+    "id": "0719",
+    "name": "PAREKF_STOREDPOS",
+    "payload": [
+        {
+            "format": "d",
+            "var": "lon"
+        },
+        {
+            "format": "d",
+            "var": "lat"
+        },
+        {
+            "format": "d",
+            "var": "alt"
+        },
+        {
+            "format": "d",
+            "var": "lon_stddev"
+        },
+        {
+            "format": "d",
+            "var": "lat_stddev"
+        },
+        {
+            "format": "d",
+            "var": "alt_stddev"
+        }
+    ],
+    "type": "parameter"
+}

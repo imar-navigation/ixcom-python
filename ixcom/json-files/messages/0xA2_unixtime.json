@@ -1,0 +1,20 @@
+{
+    "domain": "public",
+    "id": "0xA2",
+    "name": "UNIXTIME",
+    "payload": [
+        {
+            "format": "I",
+            "var": "unix_time_sec"
+        },
+        {
+            "format": "I",
+            "var": "unix_time_usec"
+        },
+        {
+            "format": "2I",
+            "var": "reserved"
+        }
+    ],
+    "type": "message"
+}

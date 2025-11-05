@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0x58",
+    "name": "GNSSSTREAM",
+    "payload": [
+        {
+            "format": "4076B",
+            "var": "payload_buffer"
+        }
+    ],
+    "type": "message"
+}

@@ -1,0 +1,40 @@
+{
+    "domain": "public",
+    "id": "0x1C",
+    "name": "GNSSVOTER",
+    "payload": [
+        {
+            "format": "B",
+            "var": "sats_used_int"
+        },
+        {
+            "format": "B",
+            "var": "sats_used_ext"
+        },
+        {
+            "format": "H",
+            "var": "reserved"
+        },
+        {
+            "format": "f",
+            "var": "stddev_hdg_int"
+        },
+        {
+            "format": "f",
+            "var": "stddev_hdg_ext"
+        },
+        {
+            "format": "f",
+            "var": "stddev_pos_int"
+        },
+        {
+            "format": "f",
+            "var": "stddev_pos_ext"
+        },
+        {
+            "format": "I",
+            "var": "status"
+        }
+    ],
+    "type": "message"
+}

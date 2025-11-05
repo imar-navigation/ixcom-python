@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0237",
+    "name": "PARGNSS_GGAQUALITY",
+    "payload": [
+        {
+            "format": "B",
+            "var": "enable_legacy_indicator"
+        },
+        {
+            "format": "3B",
+            "var": "reserved"
+        }
+    ],
+    "type": "parameter"
+}

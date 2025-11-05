@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0x16",
+    "name": "WHEELDATA",
+    "payload": [
+        {
+            "format": "f",
+            "var": "speed"
+        },
+        {
+            "format": "i",
+            "var": "ticks"
+        }
+    ],
+    "type": "message"
+}

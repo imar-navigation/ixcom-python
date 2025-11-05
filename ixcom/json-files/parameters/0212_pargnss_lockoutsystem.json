@@ -1,0 +1,20 @@
+{
+    "domain": "public",
+    "id": "0212",
+    "name": "PARGNSS_LOCKOUTSYSTEM",
+    "payload": [
+        {
+            "format": "B",
+            "var": "lockoutsystem_mask"
+        },
+        {
+            "format": "B",
+            "var": "reserved1"
+        },
+        {
+            "format": "H",
+            "var": "reserved2"
+        }
+    ],
+    "type": "parameter"
+}

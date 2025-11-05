@@ -7,6 +7,7 @@ import socket
 import struct
 import threading
 import time
+import json
 from enum import IntEnum
 from typing import Sequence
 
@@ -16,6 +17,15 @@ from .data import (BROADCAST_PORT, GENERAL_PORT, LAST_CHANNEL_NUMBER,
 from .exceptions import (ClientTimeoutError, CommunicationError, ParseError,
                          ResponseError)
 from .protocol import ParamID, ProtocolHeader, ProtocolBottom
+
+import logging
+_logger = logging.getLogger("IXCOM")
+
+try:
+    import ixcom_c_ext
+    ixcom_c_ext_installed = True
+except ImportError:
+    ixcom_c_ext_installed = False
 
 PositionTuple = collections.namedtuple('PositionTuple', 'Lon Lat Alt')
 
@@ -27,46 +37,81 @@ class MessageSearcherState(IntEnum):
 XCOM_MAX_MESSAGE_LENGTH = 4096
 XCOM_HEADER_LENGTH = ProtocolHeader().size()
 XCOM_BOTTOM_LENGTH = ProtocolBottom().size()
-TOTAL_MAX_MESSAGE_LENGTH = XCOM_MAX_MESSAGE_LENGTH + XCOM_HEADER_LENGTH + XCOM_BOTTOM_LENGTH
+TOTAL_MAX_MESSAGE_LENGTH = XCOM_MAX_MESSAGE_LENGTH
 
 class MessageSearcher:
-    def __init__(self, parserDelegate = None, disable_crc = False):
+    def __init__(self, parserDelegate = None, disable_crc = False, ignore_c_ext = False):
         self.searcherState = MessageSearcherState.waiting_for_sync
-        self.currentBytes = bytearray(512)
+        self.currentBytes = bytearray(4096)
         self.currentByteIdx = 0
         self.remainingByteCount = 0
         self.msgLength = 0
+        self.file_read_chunk_length = 2**22
+        self.file_write_buffer_length = 2**22
+        self.remaining_bytes_from_unsafe_process = bytes()
         self.disableCRC = disable_crc
+        self.process_buffer_unsafe = self.process_buffer_unsafe_python
+        self.process_bytes = self.process_bytes_python
+        self.cfg_json = None
+        if ixcom_c_ext_installed and not ignore_c_ext:
+            self.ixcom_c_ext_obj = ixcom_c_ext.Ixcom_c_ext(valid_trigger_source_range = 6)
+            self.ixcom_c_ext_obj.set_crc_disable(disable_crc)
+            self.ixcom_c_ext_obj.set_process_bytes_callback(self.publish)
+            self.process_buffer_unsafe = self.ixcom_c_ext_obj.process_bytes_fast
+            self.process_bytes = self.ixcom_c_ext_obj.process_bytes_fast
         self.callbacks = []
         if parserDelegate is not None:
             self.callbacks.append(parserDelegate.parse)
 
     def handle_v5_json(self, inBytes):
-        if inBytes[0] == SYNC_BYTE:
+        if len(inBytes) < 9 * 4:  # header is 8 * uint32 and crc
             return 0
-        else:
-            json_hdr_len_pos = 7*4
-            return int.from_bytes(inBytes[json_hdr_len_pos:json_hdr_len_pos+4], byteorder='little')
+        no_sync = inBytes[0] != SYNC_BYTE
+        header_len = int.from_bytes(inBytes[7 * 4:8 * 4], byteorder='little')
+        if len(inBytes) < 9 * 4 + header_len:
+            return 0
+        start_braket = chr(inBytes[9 * 4]) == '{'
+        end_braket = chr(inBytes[header_len - 1]) == '}'
+        if no_sync and start_braket and end_braket:
+            self.cfg_json = json.loads(bytes(inBytes[9*4:header_len]))
+            return header_len
+        return 0
 
-    def process_buffer_unsafe(self, buffer):
+        
+    def process_file_handle(self, file_handle):
+        while self.process_bytes(file_handle.read(self.file_read_chunk_length)):
+            pass
+
+    def process_file_handle_unsafe(self, file_handle):
+        while self.process_buffer_unsafe(file_handle.read(self.file_read_chunk_length)):
+            pass
+
+    def process_buffer_unsafe_python(self, buffer):
+        if len(buffer) == 0:
+            return 0
         current_msg_start_idx = 0
         last_msg_start_id = -1
-        inBytes = memoryview(buffer)
+        inBytes = memoryview(self.remaining_bytes_from_unsafe_process+buffer)
         inbytelen = len(inBytes)
-        current_msg_start_idx = self.handle_v5_json(inBytes)
+        if not self.remaining_bytes_from_unsafe_process:
+            current_msg_start_idx = self.handle_v5_json(inBytes)
         while current_msg_start_idx + 5 < inbytelen:
             
-            current_msg_length = inBytes[current_msg_start_idx + 4] + 256*inBytes[current_msg_start_idx + 5]
-
-            if current_msg_start_idx + current_msg_length > inbytelen: # Message nicht mehr komplett
+            current_msg_length = inBytes[current_msg_start_idx + 4] + 256 * inBytes[current_msg_start_idx + 5]
+            if current_msg_length < 20 or current_msg_length > TOTAL_MAX_MESSAGE_LENGTH:
+                raise Exception("File is corrupted, try xcom-remove-partial-msgs on XCOMStream file")
+            if current_msg_start_idx + current_msg_length > inbytelen: # Message not completely in this chunk
+                self.remaining_bytes_from_unsafe_process = bytes(inBytes[current_msg_start_idx:])
                 break
             self.publish(inBytes[current_msg_start_idx:current_msg_start_idx+current_msg_length])
             if current_msg_start_idx <= last_msg_start_id:
                 raise Exception("File is corrupted, try xcom-remove-partial-msgs on XCOMStream file")
             last_msg_start_id = current_msg_start_idx
             current_msg_start_idx += current_msg_length
+        self.remaining_bytes_from_unsafe_process = bytes(inBytes[current_msg_start_idx:])
+        return len(buffer)
 
-    def process_bytes(self, inBytes):
+    def process_bytes_python(self, inBytes):
         inByteIdx = 0
         while inByteIdx < len(inBytes):
             if self.searcherState == MessageSearcherState.waiting_for_sync:
@@ -86,7 +131,7 @@ class MessageSearcher:
                 if self.remainingByteCount == 0:
                     self.msgLength = self.currentBytes[self.currentByteIdx - 1] * 256 + self.currentBytes[self.currentByteIdx - 2]
                     self.remainingByteCount = self.msgLength - 6
-                    if self.remainingByteCount < TOTAL_MAX_MESSAGE_LENGTH and self.remainingByteCount > 0:
+                    if self.remainingByteCount <= (TOTAL_MAX_MESSAGE_LENGTH-6) and self.remainingByteCount >= 14: #ten more bytes from header and 4 from footer
                         self.searcherState = MessageSearcherState.fetching_bytes
                     else:
                         self.searcherState = MessageSearcherState.waiting_for_sync
@@ -112,6 +157,7 @@ class MessageSearcher:
                         else:
                             pass
                     self.searcherState = MessageSearcherState.waiting_for_sync
+        return len(inBytes)
 
     def publish(self, msg_bytes):
         for callback in self.callbacks:
@@ -128,7 +174,7 @@ class MessageParser:
     def __init__(self):
         self.subscribers = set()
         self.callbacks = list()
-        self.messageSearcher = MessageSearcher(self)
+        self.messageSearcher = MessageSearcher(parserDelegate = self)
         self.nothrow = False
 
     def parse_response(self, inBytes):
@@ -149,8 +195,8 @@ class MessageParser:
             try:
                 message.from_bytes(inBytes)
                 self.publish(message)
-            except Exception:
-                print('Error: Parameter with ID: {} ({}) could not be parsed!'.format(parameterID, message.payload.get_name()))
+            except Exception as ee:
+                _logger.error('Error: Parameter with ID: {} ({}) could not be parsed! Reason: {}'.format(parameterID, message.payload.get_name(), repr(ee)))
         else:
             data.handle_undefined_parameter(parameterID)
 
@@ -170,8 +216,8 @@ class MessageParser:
             try:
                 message.from_bytes(inBytes)
                 self.publish(message)
-            except Exception:
-                print('Error: Plugin Message with ID: {} ({}) could not be parsed!'.format(plugin_message_id, message.payload.get_name()))
+            except ParseError as ee:
+                _logger.error('Error: Plugin Message with ID: {} ({}) could not be parsed! Reason: {}'.format(plugin_message_id, message.payload.get_name(), repr(ee)))
         else:
             data.handle_undefined_plugin_message(plugin_message_id)
 
@@ -195,7 +241,7 @@ class MessageParser:
                     self.publish(message)
         except ParseError as err:
             if self.nothrow:
-                print(err)
+                _logger.error("MessageParser problem: %r", err)
             else:
                 raise
 
@@ -223,6 +269,93 @@ class MessageParser:
             subscriber.handle_message(message, from_device=self)
         for callback in self.callbacks:
             callback(message, from_device=self)
+
+
+class NpMessageParser(MessageParser):
+
+    def parse_response(self, inBytes):
+        return
+
+    def parse_parameter(self, inBytes):
+        parameterID = inBytes[16] + (inBytes[17] << 8)
+        if parameterID != ParamID.PARPLUGIN:
+            message = data.getStashedParameterWithID(parameterID, inBytes)
+        else:
+            pluginParameterID = inBytes[22] + (inBytes[23] << 8)
+            message = data.getStashedPluginParameterWithID(pluginParameterID, inBytes)
+        if message is not None:
+            try:
+                message.from_bytes_faster(inBytes)
+                self.publish(message)
+            except Exception as ee:
+                _logger.error('Error: Parameter with ID: {} ({}) could not be parsed! Reason: {}'.format(parameterID, message.payload.get_name(), repr(ee)))
+        else:
+            data.handle_undefined_parameter(parameterID)
+
+    def parse_command(self, inBytes):
+        cmdID = inBytes[16] + (inBytes[17] << 8)
+        message = data.getStashedCommandWithID(cmdID, inBytes)
+        if message is not None:
+            message.from_bytes_faster(inBytes)
+            self.publish(message)
+        else:
+            pass
+
+    def parse_plugin_message(self, inBytes):
+        plugin_message_id = inBytes[16] + (inBytes[17] << 8)
+        message = data.getStashedPluginMessageWithID(plugin_message_id, inBytes)
+        if message is not None:
+            try:
+                message.from_bytes_faster(inBytes)
+                self.publish(message)
+            except ParseError as ee:#Exception:
+                _logger.error('Error: Plugin Message with ID: {} ({}) could not be parsed! Reason: {}'.format(plugin_message_id, message.payload.get_name(), repr(ee)))
+        else:
+            data.handle_undefined_plugin_message(plugin_message_id)
+
+
+    def get_stashed_msg(self, inBytes, extra_desc = None):
+        msgID = inBytes[1]
+        if msgID >= 0xfd:
+            if msgID == data.MessageID.RESPONSE:
+                return None
+            elif msgID == data.MessageID.PARAMETER:
+                parameterID = inBytes[16] + (inBytes[17] << 8)
+                if parameterID != ParamID.PARPLUGIN:
+                    message = data.getStashedParameterWithID(parameterID, inBytes, extra_desc = extra_desc)
+                else:
+                    pluginParameterID = inBytes[22] + (inBytes[23] << 8)
+                    message = data.getStashedPluginParameterWithID(pluginParameterID, inBytes, extra_desc = extra_desc)
+            elif msgID == data.MessageID.COMMAND:
+                cmdID = inBytes[16] + (inBytes[17] << 8)
+                message = data.getStashedCommandWithID(cmdID, inBytes, extra_desc = extra_desc)
+        elif msgID == data.MessageID.PLUGIN:
+            plugin_message_id = inBytes[16] + (inBytes[17] << 8)
+            message = data.getStashedPluginMessageWithID(plugin_message_id, inBytes, extra_desc = extra_desc)
+        else:
+            message = data.getStashedMessageWithID(msgID, inBytes, extra_desc = extra_desc)
+        if message is not None:
+            return message
+        else:
+            return None
+
+
+    def parse(self, inBytes):
+        msgID = inBytes[1]
+        if msgID >= 0xfd:
+            if msgID == data.MessageID.RESPONSE:
+                self.parse_response(inBytes)
+            elif msgID == data.MessageID.PARAMETER:
+                self.parse_parameter(inBytes)
+            elif msgID == data.MessageID.COMMAND:
+                self.parse_command(inBytes)
+        elif msgID == data.MessageID.PLUGIN:
+            self.parse_plugin_message(inBytes)
+        else:
+            message = data.getStashedMessageWithID(msgID, inBytes)
+            if message is not None:
+                message.from_bytes_faster(inBytes)
+                self.publish(message)
 
 class MessageCallback:
     def __init__(self, callback, msg, client):
@@ -362,8 +495,14 @@ class Client(MessageParser):
                 if self.sock.fileno() != -1:
                     try:
                         _data = self.sock.recv(2048)
+                        if len(_data) == 0:
+                            # The socket has been closed. The above select will NOT
+                            # wait for timeout in this case, so we would run in busy
+                            # loop unless we wait a bit here.
+                            time.sleep(0.1)
+                            break   # break the for-loop, test for stop event
                         if len(_data) >= 1024:
-                            print('max bytes read:', len(_data))
+                            _logger.info('max bytes read: %s', len(_data))
                         self.messageSearcher.process_bytes(_data)
                         # self.messageSearcher.process_bytes(self.sock.recv(1024))
                     except OSError:
@@ -453,7 +592,7 @@ class Client(MessageParser):
         '''
         msgToSend = data.getCommandWithID(data.XcomCommandPayload.command_id)
         msgToSend.payload.data['mode'] = data.XcomCommandParameter.channel_close
-        msgToSend.payload.data['channelNumber'] = 0
+        msgToSend.payload.data['channelNumber'] = self._open_channel
         self.send_msg_and_waitfor_okay(msgToSend)
         self._open_channel = -1
 
@@ -471,6 +610,7 @@ class Client(MessageParser):
         msgToSend = data.getCommandWithID(data.XcomCommandPayload.command_id)
         msgToSend.payload.data['mode'] = data.XcomCommandParameter.reboot
         self.send_msg_and_waitfor_okay(msgToSend)
+
 
     def get_parameter(self, parameterID: int):
         '''Gets parameter from device with specified ID
@@ -518,7 +658,7 @@ class Client(MessageParser):
         '''Completes the alignment
 
         Completes system alignment by sending the EKF ALIGN_COMPLETE command. Blocks until system
-        repsonse is received.
+        response is received.
 
  
         Raises:
@@ -534,7 +674,7 @@ class Client(MessageParser):
         '''Initiates a new alignment
 
         Initiates a new system alignment by sending the EKF ALIGN command. Blocks until system 
-        repsonse is received.
+        response is received.
 
  
         Raises:
@@ -606,7 +746,7 @@ class Client(MessageParser):
         Raises:
             ClientTimeoutError: Timeout while waiting for response from the XCOM server
             ResponseError: The response from the system was not 'OK'
-        
+
         '''
         msgToSend = data.getCommandWithID(data.CMD_EKF_Payload.command_id)
         msgToSend.payload.data['subcommand'] = data.EkfCommand.SAVEANTOFFSET
@@ -642,6 +782,18 @@ class Client(MessageParser):
         msgToSend.payload.data['configAction'] = 1
         self.send_msg_and_waitfor_okay(msgToSend)
 
+    def load_delivery_settings(self):
+        '''
+        The current configuration will be deleted and the delivery settings will be restored after an automatic reboot
+
+        Raises:
+            ClientTimeoutError: Timeout while waiting for response from the XCOM server
+            ResponseError: The response from the system was not 'OK'
+        '''
+        msgToSend = data.getCommandWithID(data.CMD_CONF_Payload.command_id)
+        msgToSend.payload.data['configAction'] = 2
+        self.send_msg_and_waitfor_okay(msgToSend)
+
     def factory_reset(self):
         '''Performs a factory reset
 
@@ -663,7 +815,7 @@ class Client(MessageParser):
         taking into account the MAINTIMING and PRESCALER system parameters.
         
         Args:
-            msgID: Mesage ID which should be requested.
+            msgID: Message ID which should be requested.
             rate: Requested log rate in Hz
             
  
@@ -704,7 +856,7 @@ class Client(MessageParser):
         Adds a log with a specific message ID with a divider.
         
         Args:
-            msgID: Mesage ID which should be requested.
+            msgID: Message ID which should be requested.
             divider: divider to use
             
  
@@ -727,7 +879,7 @@ class Client(MessageParser):
         e.g. for GNSSSOL, an event trigger will trigger the log with every new solution.
         
         Args:
-            msgID: Mesage ID which should be requested.
+            msgID: Message ID which should be requested.
             
  
         Raises:
@@ -765,7 +917,7 @@ class Client(MessageParser):
         Clears a log with a specific message ID.
 
         Args:
-            msgID: Mesage ID which should be requested.
+            msgID: Message ID which should be requested.
 
         Raises:
             ClientTimeoutError: Timeout while waiting for response from the XCOM server
@@ -954,7 +1106,7 @@ class Client(MessageParser):
         '''
         msgToSend = data.getParameterWithID(data.PARREC_SUFFIX_Payload.parameter_id)
         msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
-        msgToSend.payload.data['suffix'] = suffix.ljust(128, '\0')
+        msgToSend.payload.data['suffix'] = bytes(suffix.ljust(128, '\0'), encoding='utf8')
         self.send_msg_and_waitfor_okay(msgToSend)
 
     def enable_full_sysstatus(self):
@@ -1109,7 +1261,7 @@ class Client(MessageParser):
     def set_startup(self, initPos=PositionTuple(Lon=0.1249596927, Lat=0.8599914412, Alt=311.9),
                     initPosStdDev: Sequence[float] = [10, 10, 10], posMode: data.StartupPositionMode = data.StartupPositionMode.GNSSPOS, initHdg: float = 0,
                     initHdgStdDev: float = 1, hdgMode: data.StartupHeadingMode = data.StartupHeadingMode.DEFAULT, realign: bool = False, inMotion: bool = False,
-                    leverArm: Sequence[float] = [0, 0, 0], leverArmStdDev: Sequence[float] = [1, 1, 1], autorestart: bool = False, gnssTimeout: int = 0):
+                    leverArm: Sequence[float] = [0, 0, 0], leverArmStdDev: Sequence[float] = [1, 1, 1], autorestart: bool = False, gnssTimeout: int = 0, altMSL = False):
         '''Sets the startup parameters of the device.
 
         Args:
@@ -1143,7 +1295,7 @@ class Client(MessageParser):
         msgToSend.payload.data['leverArm'] = leverArm
         msgToSend.payload.data['stdLeverArm'] = leverArmStdDev
         msgToSend.payload.data['gnssTimeout'] = gnssTimeout
-        msgToSend.payload.data['altMSL'] = 0
+        msgToSend.payload.data['altMSL'] = altMSL
         msgToSend.payload.data['realign'] = realign
         msgToSend.payload.data['inMotion'] = inMotion
         msgToSend.payload.data['autoRestart'] = autorestart
@@ -1388,6 +1540,65 @@ class Client(MessageParser):
         msgToSend.payload.data['vDStdDev'] = vNEDStdDev[2]
         self.send_msg_and_waitfor_okay(msgToSend)
 
+    def aid_vel_body(self, v_body: Sequence[float], v_body_stddev: Sequence[float], leverarm_body: Sequence[float] = [0.,0.,0.], leverarm_body_stddev: Sequence[float] = [0.1,0.1,0.1], time: float = 0, time_mode: protocol.ExtAidingTimeMode = protocol.ExtAidingTimeMode.LATENCY):
+        '''External velocity body aiding
+
+        Args:
+            v_body: Body velocity in m/s
+            v_body_stddev: Standard deviation of v_body in m/s
+            leverarm_body: Leverarm to v_body measurement
+            leverarm_body_stddev: Standard deviation of leverarm
+            time: Timestamp or latency, depending on the timeMode argument
+            timeMode (protocol.ExtAidingTimeMode): Selects whether the timestamp is a GPS second of week or a latency.
+
+        Raises:
+            ClientTimeoutError: Timeout while waiting for response or log from the XCOM server
+            ResponseError: The response from the system was not 'OK'.
+        '''
+        msgToSend = data.getCommandWithID(data.CMD_EXTAID_Payload.command_id)
+        msgToSend.payload.data['time'] = time
+        msgToSend.payload.data['timeMode'] = time_mode
+        msgToSend.payload.data['cmdParamID'] = 7
+        msgToSend.payload.structString += 'dddddddddddd'
+        msgToSend.payload.data['v_x'] = v_body[0]
+        msgToSend.payload.data['v_y'] = v_body[1]
+        msgToSend.payload.data['v_z'] = v_body[2]
+        msgToSend.payload.data['v_x_stddev'] = v_body_stddev[0]
+        msgToSend.payload.data['v_y_stddev'] = v_body_stddev[1]
+        msgToSend.payload.data['v_z_stddev'] = v_body_stddev[2]
+        msgToSend.payload.data['la_x'] = leverarm_body[0]
+        msgToSend.payload.data['la_y'] = leverarm_body[1]
+        msgToSend.payload.data['la_z'] = leverarm_body[2]
+        msgToSend.payload.data['la_x_stddev'] = leverarm_body_stddev[0]
+        msgToSend.payload.data['la_y_stddev'] = leverarm_body_stddev[1]
+        msgToSend.payload.data['la_z_stddev'] = leverarm_body_stddev[2]
+        self.send_msg_and_waitfor_okay(msgToSend)
+
+    def aid_vel_body2(self, v_body: Sequence[float], v_body_stddev: Sequence[float], leverarm_body: Sequence[float] = [0.,0.,0.], leverarm_body_stddev: Sequence[float] = [0.1,0.1,0.1], time: float = 0, time_mode: protocol.ExtAidingTimeMode = protocol.ExtAidingTimeMode.LATENCY):
+        '''External velocity body aiding
+
+        Args:
+            v_body: Body velocity in m/s
+            v_body_stddev: Standard deviation of v_body in m/s
+            leverarm_body: Leverarm to v_body measurement
+            leverarm_body_stddev: Standard deviation of leverarm
+            time: Timestamp or latency, depending on the timeMode argument
+            timeMode (protocol.ExtAidingTimeMode): Selects whether the timestamp is a GPS second of week or a latency.
+
+        Raises:
+            ClientTimeoutError: Timeout while waiting for response or log from the XCOM server
+            ResponseError: The response from the system was not 'OK'.
+        '''
+        msgToSend = data.getCommandWithID(data.CMD_EXTAID_Payload.command_id)
+        msgToSend.payload.data['time'] = time
+        msgToSend.payload.data['timeMode'] = time_mode
+        msgToSend.payload.data['cmdParamID'] = 7
+        msgToSend.payload.data['vel'] = v_body
+        msgToSend.payload.data['vel_stddev'] = v_body_stddev
+        msgToSend.payload.data['la'] = leverarm_body
+        msgToSend.payload.data['la_stddev'] = leverarm_body_stddev
+        self.send_msg_and_waitfor_okay(msgToSend)
+
     def aid_heading(self, heading: float, standard_dev: float, time: float = 0, timeMode: protocol.ExtAidingTimeMode = protocol.ExtAidingTimeMode.LATENCY):
         '''External heading aiding
 
@@ -1532,6 +1743,28 @@ class Client(MessageParser):
         msgToSend.payload.data['leverArm'] = offset
         self.send_msg_and_waitfor_okay(msgToSend)
 
+    def set_odoconstraints(self, enable=False, standalone=False, standard_deviation = 2):
+        '''Convenience setter for odometer constraints
+
+        Sets the odometer constraints
+
+        Args:
+            enable: enables odometer constraints.
+            standalone: uses odometer constraints without odometer.
+            standard_deviation: standard deviation of odometer constraints in m/s.
+
+        Raises:
+            ClientTimeoutError: Timeout while waiting for response or parameter from the XCOM server
+            ResponseError: The response from the system was not 'OK'.
+
+        '''
+        msgToSend = data.getParameterWithID(data.PARODO_CONSTRAINTS_Payload.parameter_id)
+        msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
+        msgToSend.payload.data['enable'] = enable
+        msgToSend.payload.data['standalone'] = standalone
+        msgToSend.payload.data['stdDev'] = standard_deviation
+        self.send_msg_and_waitfor_okay(msgToSend)
+
     def get_virtual_meas_pt(self, channel=0):
         '''Convenience getter for virtual measpoint offset
 
@@ -1588,7 +1821,7 @@ class Client(MessageParser):
         '''Change angulare limits of actuators
 
         Changes the angular limits of the actuators. Blocks until system
-        repsonse is received.
+        response is received.
 
 
         Raises:

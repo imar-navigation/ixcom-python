@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0xA5",
+    "name": "INSRPYACCEL",
+    "payload": [
+        {
+            "format": "3d",
+            "var": "rpy_accel"
+        }
+    ],
+    "type": "message"
+}

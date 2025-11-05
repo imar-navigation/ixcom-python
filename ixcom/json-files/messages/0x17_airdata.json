@@ -1,0 +1,56 @@
+{
+    "domain": "public",
+    "id": "0x17",
+    "name": "AIRDATA",
+    "payload": [
+        {
+            "format": "f",
+            "var": "tas"
+        },
+        {
+            "format": "f",
+            "var": "ias"
+        },
+        {
+            "format": "f",
+            "var": "baro_altitude"
+        },
+        {
+            "format": "f",
+            "var": "baro_altitude_rate"
+        },
+        {
+            "format": "f",
+            "var": "pd"
+        },
+        {
+            "format": "f",
+            "var": "ps"
+        },
+        {
+            "format": "f",
+            "var": "oat"
+        },
+        {
+            "format": "f",
+            "var": "estimated_bias"
+        },
+        {
+            "format": "f",
+            "var": "estimated_scalefactor"
+        },
+        {
+            "format": "f",
+            "var": "estimated_bias_stddev"
+        },
+        {
+            "format": "f",
+            "var": "estimated_scalefactor_stddev"
+        },
+        {
+            "format": "I",
+            "var": "status"
+        }
+    ],
+    "type": "message"
+}

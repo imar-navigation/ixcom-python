@@ -1,0 +1,20 @@
+{
+    "domain": "public",
+    "id": "0908",
+    "name": "PARXCOM_POSTPROC",
+    "payload": [
+        {
+            "format": "B",
+            "var": "enable"
+        },
+        {
+            "format": "B",
+            "var": "channel"
+        },
+        {
+            "format": "H",
+            "var": "resetved"
+        }
+    ],
+    "type": "parameter"
+}

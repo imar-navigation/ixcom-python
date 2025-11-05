@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0018",
+    "name": "PARSYS_OSVERSION",
+    "payload": [
+        {
+            "format": "32B",
+            "var": "payload"
+        }
+    ],
+    "type": "parameter"
+}

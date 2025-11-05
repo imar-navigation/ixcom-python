@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0744",
+    "name": "PAREKF_ODOREVDETECT",
+    "payload": [
+        {
+            "format": "I",
+            "var": "enable_detector"
+        },
+        {
+            "format": "f",
+            "var": "velocity_thr"
+        }
+    ],
+    "type": "parameter"
+}

@@ -1,149 +1,68 @@
 {
-    "created": "2018-07-11",
     "domain": "public",
+    "id": "0731",
+    "name": "PAREKF_STARTUPV2",
     "payload": [
         {
-            "fieldSize": "8",
-            "fieldOffset": "20",
-            "var": "initpos_lon",
             "format": "d",
-            "fieldName": "Initpos_Lon",
-            "type": "d",
-            "description": "Initial longitude position in WGS84 in \\textit{rad}"
+            "var": "initpos_lon"
         },
         {
-            "fieldSize": "8",
-            "fieldOffset": "28",
-            "var": "initpos_lat",
             "format": "d",
-            "fieldName": "Initpos_Lat",
-            "type": "d",
-            "description": "Initial latitude position in WGS84 in \\textit{rad}"
+            "var": "initpos_lat"
         },
         {
-            "fieldSize": "4",
-            "fieldOffset": "36",
-            "var": "initpos_alt",
             "format": "f",
-            "fieldName": "Initpos_ALT",
-            "type": "f",
-            "description": "Initial altitude in WGS84 in \\ensuremath{m}"
+            "var": "initpos_alt"
         },
         {
-            "fieldSize": "12",
-            "fieldOffset": "40",
-            "var": "initpos_stddev",
             "format": "3f",
-            "fieldName": "Initpos_Stddev",
-            "type": "3f",
-            "description": "Standard deviation of initial position and altitude in \\ensuremath{m}"
+            "var": "initpos_stddev"
         },
         {
-            "fieldSize": "4",
-            "fieldOffset": "52",
-            "var": "inithdg",
             "format": "f",
-            "fieldName": "InitHDG",
-            "type": "f",
-            "description": "Initial heading in \\textit{rad} (in NED) Range: \\ensuremath{\\pm}\\ensuremath{\\pi}"
+            "var": "inithdg"
         },
         {
-            "fieldSize": "4",
-            "fieldOffset": "56",
-            "var": "inithdg_stdddev",
             "format": "f",
-            "fieldName": "InitHDG_Stdddev",
-            "type": "f",
-            "description": "Standard deviation of initial heading in \\textit{rad}"
+            "var": "inithdg_stdddev"
         },
         {
-            "fieldSize": "12",
-            "fieldOffset": "60",
-            "var": "lever_arm",
             "format": "3f",
-            "fieldName": "Lever_Arm",
-            "type": "3f",
-            "description": "Lever arm in x-, y- and z-direction in \\ensuremath{m}"
+            "var": "lever_arm"
         },
         {
-            "fieldSize": "12",
-            "fieldOffset": "72",
-            "var": "lever_arm_stddev",
             "format": "3f",
-            "fieldName": "Lever_Arm_Stddev",
-            "type": "3f",
-            "description": "Lever arm standard deviation in x-, y- and z-direction in \\ensuremath{m}"
+            "var": "lever_arm_stddev"
         },
         {
-            "fieldSize": "1",
-            "fieldOffset": "84",
-            "var": "position_mode",
             "format": "B",
-            "fieldName": "Position_Mode",
-            "type": "B",
-            "description": "Position initialization mode"
+            "var": "position_mode"
         },
         {
-            "fieldSize": "1",
-            "fieldOffset": "85",
-            "var": "hdg_mode",
             "format": "B",
-            "fieldName": "HDG_Mode",
-            "type": "B",
-            "description": "Heading initialization mode"
+            "var": "hdg_mode"
         },
         {
-            "fieldSize": "2",
-            "fieldOffset": "86",
-            "var": "gnss_timeout",
             "format": "H",
-            "fieldName": "GNSS_Timeout",
-            "type": "H",
-            "description": "GNSS timeout in \\ensuremath{s} Set to \\texttt{0} to wait forever"
+            "var": "gnss_timeout"
         },
         {
-            "fieldSize": "1",
-            "fieldOffset": "88",
-            "var": "enable_alt_msl",
             "format": "B",
-            "fieldName": "Enable_ALT_MSL",
-            "type": "B",
-            "description": "Alternate Mean Sea"
+            "var": "enable_alt_msl"
         },
         {
-            "fieldSize": "1",
-            "fieldOffset": "89",
-            "var": "realignment",
             "format": "B",
-            "fieldName": "Realignment",
-            "type": "B",
-            "description": "0: Store parameters without execution of an alignment; 1: Start alignment immediately with the transmitted alignment parameters"
+            "var": "realignment"
         },
         {
-            "fieldSize": "1",
-            "fieldOffset": "90",
-            "var": "forced_inmotion",
             "format": "B",
-            "fieldName": "Forced_Inmotion",
-            "type": "B",
-            "description": "During alignment, system is 0: Static; 1: In-motion"
+            "var": "forced_inmotion"
         },
         {
-            "fieldSize": "1",
-            "fieldOffset": "91",
-            "var": "automatic_restart",
             "format": "B",
-            "fieldName": "Automatic_Restart",
-            "type": "B",
-            "description": "The levelling will be restarted if movement of the system is detected during the levelling phase. The fine alignment will be finished if movement of the system is detected"
+            "var": "automatic_restart"
         }
     ],
-    "name": "PAREKF_STARTUPV2",
-    "version": "0.0.0",
-    "scope": "read only",
-    "synopsis": "This parameter can be used to define the initialization behaviour of the Kalman filter.",
-    "id": "0731",
-    "type": "parameter",
-    "revision": "svn 116",
-    "description": ""
+    "type": "parameter"
 }

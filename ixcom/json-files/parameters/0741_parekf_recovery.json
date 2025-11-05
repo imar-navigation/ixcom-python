@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0741",
+    "name": "PAREKF_RECOVERY",
+    "payload": [
+        {
+            "format": "I",
+            "var": "recovery_mask"
+        }
+    ],
+    "type": "parameter"
+}

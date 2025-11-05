@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0802",
+    "name": "PARDAT_IMU",
+    "payload": [
+        {
+            "format": "I",
+            "var": "mode"
+        }
+    ],
+    "type": "parameter"
+}

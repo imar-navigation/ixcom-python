@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0311",
+    "name": "PARMAG_ENABLE",
+    "payload": [
+        {
+            "format": "I",
+            "var": "enable"
+        }
+    ],
+    "type": "parameter"
+}

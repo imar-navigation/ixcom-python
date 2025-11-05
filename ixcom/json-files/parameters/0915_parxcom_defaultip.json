@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0915",
+    "name": "PARXCOM_DEFAULTIP",
+    "payload": [
+        {
+            "format": "I",
+            "var": "ip_addr"
+        }
+    ],
+    "type": "parameter"
+}

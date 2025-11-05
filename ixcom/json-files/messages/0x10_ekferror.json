@@ -1,0 +1,32 @@
+{
+    "domain": "public",
+    "id": "0x10",
+    "name": "EKFERROR",
+    "payload": [
+        {
+            "format": "3f",
+            "var": "bias_acc"
+        },
+        {
+            "format": "3f",
+            "var": "bias_omg"
+        },
+        {
+            "format": "3f",
+            "var": "scf_acc"
+        },
+        {
+            "format": "3f",
+            "var": "scf_omg"
+        },
+        {
+            "format": "f",
+            "var": "scf_odo"
+        },
+        {
+            "format": "2f",
+            "var": "odo_misalign"
+        }
+    ],
+    "type": "message"
+}

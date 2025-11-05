@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0736",
+    "name": "PAREKF_FEEDBACK",
+    "payload": [
+        {
+            "format": "I",
+            "var": "feedback"
+        }
+    ],
+    "type": "parameter"
+}

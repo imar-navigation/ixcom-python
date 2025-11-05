@@ -1,0 +1,24 @@
+{
+    "domain": "public",
+    "id": "1308",
+    "name": "PARNMEA0183_LOCALZONE",
+    "payload": [
+        {
+            "format": "B",
+            "var": "enable_local_zone"
+        },
+        {
+            "format": "3B",
+            "var": "reserved"
+        },
+        {
+            "format": "i",
+            "var": "local_zone_hours"
+        },
+        {
+            "format": "I",
+            "var": "local_zone_minutes"
+        }
+    ],
+    "type": "parameter"
+}

@@ -1,0 +1,36 @@
+{
+    "domain": "public",
+    "id": "1503",
+    "name": "PARIO_SYNCOUT2",
+    "payload": [
+        {
+            "format": "B",
+            "var": "module_mode"
+        },
+        {
+            "format": "B",
+            "var": "sync_out_pinmux"
+        },
+        {
+            "format": "B",
+            "var": "discrete_output_pin_number"
+        },
+        {
+            "format": "B",
+            "var": "timer_matrix_row_idx"
+        },
+        {
+            "format": "B",
+            "var": "compare_value_selection"
+        },
+        {
+            "format": "3B",
+            "var": "reserved"
+        },
+        {
+            "format": "I",
+            "var": "compare_mask"
+        }
+    ],
+    "type": "parameter"
+}

@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0x77",
+    "name": "NMEA0183_VTG",
+    "payload": [
+        {
+            "format": "4076B",
+            "var": "payload_buffer"
+        }
+    ],
+    "type": "message"
+}

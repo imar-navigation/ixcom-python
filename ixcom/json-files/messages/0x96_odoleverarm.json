@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0x96",
+    "name": "ODOLEVERARM",
+    "payload": [
+        {
+            "format": "3f",
+            "var": "lever_arm_est"
+        },
+        {
+            "format": "3f",
+            "var": "lever_arm_stddev_est"
+        }
+    ],
+    "type": "message"
+}

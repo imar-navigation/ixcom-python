@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0723",
+    "name": "PAREKF_STOREDATT",
+    "payload": [
+        {
+            "format": "3f",
+            "var": "rpy"
+        },
+        {
+            "format": "3f",
+            "var": "rpy_stddev"
+        }
+    ],
+    "type": "parameter"
+}

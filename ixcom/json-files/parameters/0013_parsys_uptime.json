@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0013",
+    "name": "PARSYS_UPTIME",
+    "payload": [
+        {
+            "format": "f",
+            "var": "up_time"
+        }
+    ],
+    "type": "parameter"
+}

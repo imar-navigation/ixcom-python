@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0x05",
+    "name": "INSDCM",
+    "payload": [
+        {
+            "format": "9f",
+            "var": "c_nb"
+        }
+    ],
+    "type": "message"
+}

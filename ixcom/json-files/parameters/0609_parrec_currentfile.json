@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0609",
+    "name": "PARREC_CURRENTFILE",
+    "payload": [
+        {
+            "format": "256b",
+            "var": "file_name"
+        }
+    ],
+    "type": "parameter"
+}

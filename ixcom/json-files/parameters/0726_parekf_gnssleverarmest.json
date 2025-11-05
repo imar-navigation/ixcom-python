@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0726",
+    "name": "PAREKF_GNSSLEVERARMEST",
+    "payload": [
+        {
+            "format": "H",
+            "var": "primary_antenna"
+        },
+        {
+            "format": "H",
+            "var": "secondary_antenna"
+        }
+    ],
+    "type": "parameter"
+}

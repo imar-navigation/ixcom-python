@@ -1,0 +1,20 @@
+{
+    "domain": "public",
+    "id": "0x45",
+    "name": "NTRIPSTATUS",
+    "payload": [
+        {
+            "format": "I",
+            "var": "status"
+        },
+        {
+            "format": "256b",
+            "var": "last_msg"
+        },
+        {
+            "format": "I",
+            "var": "error_counter"
+        }
+    ],
+    "type": "message"
+}

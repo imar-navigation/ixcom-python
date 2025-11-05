@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0019",
+    "name": "PARSYS_SYSNAME",
+    "payload": [
+        {
+            "format": "64B",
+            "var": "payload"
+        }
+    ],
+    "type": "parameter"
+}

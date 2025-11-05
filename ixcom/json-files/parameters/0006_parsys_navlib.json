@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0006",
+    "name": "PARSYS_NAVLIB",
+    "payload": [
+        {
+            "format": "32B",
+            "var": "payload"
+        }
+    ],
+    "type": "parameter"
+}

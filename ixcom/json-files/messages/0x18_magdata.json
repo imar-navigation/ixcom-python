@@ -1,0 +1,32 @@
+{
+    "domain": "public",
+    "id": "0x18",
+    "name": "MAGDATA",
+    "payload": [
+        {
+            "format": "3f",
+            "var": "field"
+        },
+        {
+            "format": "f",
+            "var": "heading"
+        },
+        {
+            "format": "f",
+            "var": "bank"
+        },
+        {
+            "format": "f",
+            "var": "elevation"
+        },
+        {
+            "format": "f",
+            "var": "deviation"
+        },
+        {
+            "format": "I",
+            "var": "status"
+        }
+    ],
+    "type": "message"
+}

@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0022",
+    "name": "PARSYS_CALIBID",
+    "payload": [
+        {
+            "format": "I",
+            "var": "calib_id"
+        }
+    ],
+    "type": "parameter"
+}

@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0204",
+    "name": "PARGNSS_ANTOFFSET",
+    "payload": [
+        {
+            "format": "3f",
+            "var": "lever_arm"
+        },
+        {
+            "format": "3f",
+            "var": "stddev"
+        }
+    ],
+    "type": "parameter"
+}

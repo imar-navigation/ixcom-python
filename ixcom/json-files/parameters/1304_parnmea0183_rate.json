@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "1304",
+    "name": "PARNMEA0183_RATE",
+    "payload": [
+        {
+            "format": "2I",
+            "var": "divisor"
+        }
+    ],
+    "type": "parameter"
+}

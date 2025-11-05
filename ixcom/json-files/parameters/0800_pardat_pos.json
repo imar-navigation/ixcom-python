@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0800",
+    "name": "PARDAT_POS",
+    "payload": [
+        {
+            "format": "H",
+            "var": "position_mode"
+        },
+        {
+            "format": "H",
+            "var": "altitude_mode"
+        }
+    ],
+    "type": "parameter"
+}

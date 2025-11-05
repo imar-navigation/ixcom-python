@@ -1,0 +1,28 @@
+{
+    "domain": "public",
+    "id": "1800",
+    "name": "PARTIMESYNC_NTP",
+    "payload": [
+        {
+            "format": "B",
+            "var": "enable"
+        },
+        {
+            "format": "B",
+            "var": "log_statistics"
+        },
+        {
+            "format": "B",
+            "var": "enable_gnss_ntp_server"
+        },
+        {
+            "format": "B",
+            "var": "mode"
+        },
+        {
+            "format": "I",
+            "var": "reserved2"
+        }
+    ],
+    "type": "parameter"
+}

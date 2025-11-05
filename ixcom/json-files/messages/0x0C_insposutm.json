@@ -1,0 +1,28 @@
+{
+    "domain": "public",
+    "id": "0x0C",
+    "name": "INSPOSUTM",
+    "payload": [
+        {
+            "format": "i",
+            "var": "zone"
+        },
+        {
+            "format": "d",
+            "var": "easting"
+        },
+        {
+            "format": "d",
+            "var": "northing"
+        },
+        {
+            "format": "f",
+            "var": "height"
+        },
+        {
+            "format": "d",
+            "var": "grid_north"
+        }
+    ],
+    "type": "message"
+}

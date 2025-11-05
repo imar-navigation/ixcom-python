@@ -1,0 +1,34 @@
+{
+    "domain": "public",
+    "id": "0917",
+    "name": "PARXCOM_LOGLIST2",
+    "payload": [
+        {
+            "format": "16t",
+            "structFields": [
+                {
+                    "format": "H",
+                    "var": "divider"
+                },
+                {
+                    "format": "H",
+                    "var": "msg_id"
+                },
+                {
+                    "format": "B",
+                    "var": "running"
+                },
+                {
+                    "format": "B",
+                    "var": "trigger"
+                },
+                {
+                    "format": "H",
+                    "var": "reserved1"
+                }
+            ],
+            "var": "log_list"
+        }
+    ],
+    "type": "parameter"
+}

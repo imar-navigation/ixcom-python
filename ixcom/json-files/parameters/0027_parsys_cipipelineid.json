@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0027",
+    "name": "PARSYS_CIPIPELINEID",
+    "payload": [
+        {
+            "format": "128b",
+            "var": "pipeline_id"
+        }
+    ],
+    "type": "parameter"
+}

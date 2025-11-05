@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0229",
+    "name": "PARGNSS_HDGOFFSET",
+    "payload": [
+        {
+            "format": "f",
+            "var": "offset"
+        }
+    ],
+    "type": "parameter"
+}

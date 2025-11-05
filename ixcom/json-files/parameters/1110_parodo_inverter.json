@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "1110",
+    "name": "PARODO_INVERTER",
+    "payload": [
+        {
+            "format": "I",
+            "var": "mode"
+        }
+    ],
+    "type": "parameter"
+}

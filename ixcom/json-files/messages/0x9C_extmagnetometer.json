@@ -1,0 +1,28 @@
+{
+    "domain": "public",
+    "id": "0x9C",
+    "name": "EXTMAGNETOMETER",
+    "payload": [
+        {
+            "format": "d",
+            "var": "time"
+        },
+        {
+            "format": "3f",
+            "var": "magnetic_field"
+        },
+        {
+            "format": "B",
+            "var": "measurement_valid"
+        },
+        {
+            "format": "B",
+            "var": "calib_state"
+        },
+        {
+            "format": "6B",
+            "var": "reserved"
+        }
+    ],
+    "type": "message"
+}

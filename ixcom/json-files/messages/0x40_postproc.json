@@ -1,0 +1,68 @@
+{
+    "domain": "public",
+    "id": "0x40",
+    "name": "POSTPROC",
+    "payload": [
+        {
+            "format": "3f",
+            "var": "accel"
+        },
+        {
+            "format": "3f",
+            "var": "omg"
+        },
+        {
+            "format": "12f",
+            "var": "delta_theta"
+        },
+        {
+            "format": "12f",
+            "var": "delta_velocity"
+        },
+        {
+            "format": "4d",
+            "var": "q_nb"
+        },
+        {
+            "format": "3d",
+            "var": "pos_llh"
+        },
+        {
+            "format": "3d",
+            "var": "vel_ned"
+        },
+        {
+            "format": "I",
+            "var": "sys_stat"
+        },
+        {
+            "format": "I",
+            "var": "ekf_stat_low"
+        },
+        {
+            "format": "I",
+            "var": "ekf_stat_hi"
+        },
+        {
+            "format": "f",
+            "var": "odo_speed"
+        },
+        {
+            "format": "i",
+            "var": "odo_ticks"
+        },
+        {
+            "format": "I",
+            "var": "odo_interval"
+        },
+        {
+            "format": "I",
+            "var": "odo_trig_event"
+        },
+        {
+            "format": "I",
+            "var": "odo_trig_next_event"
+        }
+    ],
+    "type": "message"
+}

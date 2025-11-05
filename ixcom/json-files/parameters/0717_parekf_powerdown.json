@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0717",
+    "name": "PAREKF_POWERDOWN",
+    "payload": [
+        {
+            "format": "I",
+            "var": "store_state"
+        }
+    ],
+    "type": "parameter"
+}

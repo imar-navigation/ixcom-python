@@ -190,6 +190,8 @@ def monitor2xcom(argv = None):
             except ixcom.data.ParseError as e:
                 frame_name = str(e).split('convert ')[1]
                 args.output.write(f'Corrupt {frame_name} frame\n\n')
+            except SystemError:
+                pass
                 
 
 def split_config(argv = None):
@@ -213,7 +215,7 @@ def split_config(argv = None):
                 args.output.write(msg_bytes)
             
         xcomparser.add_callback(callback)
-        xcomparser.process_bytes(args.inputfile.read())
+        xcomparser.process_file_handle(args.inputfile)
         sys.exit(0)
     except Exception as ex:
         print(ex)
@@ -221,18 +223,26 @@ def split_config(argv = None):
 
 def remove_partial_msgs(argv = None):
     parser = argparse.ArgumentParser(description='Removes Partial Messages from XCOMStream')
-    parser.add_argument('inputfile', metavar='inputfile', type=argparse.FileType('rb'), nargs='?',
+    parser.add_argument('inputfile', metavar='inputfile', type=argparse.FileType('rb'),
                        help='Name of the binary XCOMStream file', default = 'XCOMStream.bin')
-    parser.add_argument('-o', '--output', metavar='output_filename', type=argparse.FileType(mode='wb'),
+    parser.add_argument('-o', '--output',
                        help='Filename of the output file', default = 'XCOMStream.clean.bin')  
-    args = parser.parse_args()
+    parser.add_argument('-rimui', '--remove_imu_invalid',action="store_true", help='Remove POSTPROC and RAWDATA msgs with IMU invalid status')
+    args = parser.parse_args(argv)
     xcomparser = ixcom.parser.MessageSearcher(disable_crc = False)
 
-    iob = io.BytesIO(b'')
+    f = open(args.output,"wb", buffering=xcomparser.file_write_buffer_length)
+
     def r_callback(in_bytes):
-        iob.write(in_bytes)
+        if args.remove_imu_invalid:
+            if in_bytes[1]==0x40:#POSTPROC
+                if in_bytes[216] & 0x01:
+                    return
+            if in_bytes[1]==0x67:#RAWDATA
+                if in_bytes[80] & 0x01:
+                    return
+        f.write(in_bytes)
 
     xcomparser.add_callback(r_callback)
-    xcomparser.process_bytes(args.inputfile.read())
-    iob.seek(0, os.SEEK_SET)
-    args.output.write(iob.read())
+    xcomparser.process_file_handle(args.inputfile)
+    f.close()

@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0107",
+    "name": "PARIMU_TYPE",
+    "payload": [
+        {
+            "format": "I",
+            "var": "type"
+        }
+    ],
+    "type": "parameter"
+}

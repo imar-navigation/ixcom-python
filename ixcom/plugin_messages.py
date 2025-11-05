@@ -4,5 +4,6 @@ from .protocol import plugin_message, DefaultPluginMessagePayload, Message, Payl
 
 class GenericPluginMessagePayload(DefaultPluginMessagePayload):
     plugin_message_payload = Message([
-        PayloadItem(name = 'data', dimension = 4096-4, datatype = "B"),
+        PayloadItem(name = 'data', dimension = 4096-4-20, datatype = "B"),
     ])
+

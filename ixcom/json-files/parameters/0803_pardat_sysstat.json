@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0803",
+    "name": "PARDAT_SYSSTAT",
+    "payload": [
+        {
+            "format": "I",
+            "var": "mode"
+        }
+    ],
+    "type": "parameter"
+}

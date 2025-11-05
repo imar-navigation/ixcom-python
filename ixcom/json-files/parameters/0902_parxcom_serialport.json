@@ -1,0 +1,24 @@
+{
+    "domain": "public",
+    "id": "0902",
+    "name": "PARXCOM_SERIALPORT",
+    "payload": [
+        {
+            "format": "B",
+            "var": "port"
+        },
+        {
+            "format": "B",
+            "var": "options"
+        },
+        {
+            "format": "H",
+            "var": "reserved"
+        },
+        {
+            "format": "I",
+            "var": "baud_rate"
+        }
+    ],
+    "type": "parameter"
+}

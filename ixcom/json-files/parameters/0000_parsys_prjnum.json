@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0000",
+    "name": "PARSYS_PRJNUM",
+    "payload": [
+        {
+            "format": "32B",
+            "var": "payload"
+        }
+    ],
+    "type": "parameter"
+}

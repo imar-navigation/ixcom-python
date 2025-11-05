@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0003",
+    "name": "PARSYS_MFG",
+    "payload": [
+        {
+            "format": "32B",
+            "var": "payload"
+        }
+    ],
+    "type": "parameter"
+}

@@ -1,0 +1,56 @@
+{
+    "domain": "public",
+    "id": "1903",
+    "name": "PARCAN_VRUCAN",
+    "payload": [
+        {
+            "format": "B",
+            "var": "device_idx"
+        },
+        {
+            "format": "2B",
+            "var": "reserved"
+        },
+        {
+            "format": "B",
+            "var": "imu_mode"
+        },
+        {
+            "format": "I",
+            "var": "tx_mask"
+        },
+        {
+            "format": "I",
+            "var": "base_id"
+        },
+        {
+            "format": "I",
+            "var": "sync_id"
+        },
+        {
+            "format": "I",
+            "var": "emcy_id"
+        },
+        {
+            "format": "I",
+            "var": "divider"
+        },
+        {
+            "format": "3f",
+            "var": "scale_attitude"
+        },
+        {
+            "format": "3f",
+            "var": "scale_accel"
+        },
+        {
+            "format": "3f",
+            "var": "scale_omg"
+        },
+        {
+            "format": "f",
+            "var": "scale_temperature"
+        }
+    ],
+    "type": "parameter"
+}

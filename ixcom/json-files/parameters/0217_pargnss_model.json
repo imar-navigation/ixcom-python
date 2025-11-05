@@ -1,0 +1,42 @@
+{
+    "domain": "public",
+    "id": "0217",
+    "name": "PARGNSS_MODEL",
+    "payload": [
+        {
+            "format": "B",
+            "var": "rtk_code"
+        },
+        {
+            "format": "B",
+            "var": "reserved1"
+        },
+        {
+            "format": "H",
+            "var": "reserved2"
+        },
+        {
+            "format": "6t",
+            "structFields": [
+                {
+                    "format": "16B",
+                    "var": "model_name"
+                },
+                {
+                    "format": "I",
+                    "var": "year"
+                },
+                {
+                    "format": "I",
+                    "var": "month"
+                },
+                {
+                    "format": "I",
+                    "var": "day"
+                }
+            ],
+            "var": "models"
+        }
+    ],
+    "type": "parameter"
+}

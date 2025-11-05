@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0017",
+    "name": "PARSYS_CONFIGCRC",
+    "payload": [
+        {
+            "format": "H",
+            "var": "rom_crc"
+        },
+        {
+            "format": "H",
+            "var": "ram_crc"
+        }
+    ],
+    "type": "parameter"
+}

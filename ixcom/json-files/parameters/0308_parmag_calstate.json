@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0308",
+    "name": "PARMAG_CALSTATE",
+    "payload": [
+        {
+            "format": "i",
+            "var": "state"
+        }
+    ],
+    "type": "parameter"
+}

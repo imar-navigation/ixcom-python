@@ -1,0 +1,20 @@
+{
+    "domain": "public",
+    "id": "0714",
+    "name": "PAREKF_DEFPOS",
+    "payload": [
+        {
+            "format": "d",
+            "var": "lon"
+        },
+        {
+            "format": "d",
+            "var": "lat"
+        },
+        {
+            "format": "f",
+            "var": "alt"
+        }
+    ],
+    "type": "parameter"
+}

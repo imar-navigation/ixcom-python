@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0751",
+    "name": "PAREKF_SLEWMODE",
+    "payload": [
+        {
+            "format": "I",
+            "var": "mode"
+        }
+    ],
+    "type": "parameter"
+}

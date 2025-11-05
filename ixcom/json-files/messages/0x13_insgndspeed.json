@@ -1,0 +1,20 @@
+{
+    "domain": "public",
+    "id": "0x13",
+    "name": "INSGNDSPEED",
+    "payload": [
+        {
+            "format": "f",
+            "var": "gnd_speed"
+        },
+        {
+            "format": "f",
+            "var": "track_angle"
+        },
+        {
+            "format": "f",
+            "var": "v_down"
+        }
+    ],
+    "type": "message"
+}

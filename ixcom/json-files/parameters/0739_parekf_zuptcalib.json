@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0739",
+    "name": "PAREKF_ZUPTCALIB",
+    "payload": [
+        {
+            "format": "H",
+            "var": "calib_time"
+        },
+        {
+            "format": "H",
+            "var": "reserved1"
+        }
+    ],
+    "type": "parameter"
+}

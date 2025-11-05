@@ -1,0 +1,24 @@
+{
+    "domain": "public",
+    "id": "0228",
+    "name": "PARGNSS_PPSCONTROL",
+    "payload": [
+        {
+            "format": "I",
+            "var": "pps_switch"
+        },
+        {
+            "format": "I",
+            "var": "polarity"
+        },
+        {
+            "format": "d",
+            "var": "period"
+        },
+        {
+            "format": "I",
+            "var": "pulse_width_us"
+        }
+    ],
+    "type": "parameter"
+}

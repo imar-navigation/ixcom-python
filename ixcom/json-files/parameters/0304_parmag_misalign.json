@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0304",
+    "name": "PARMAG_MISALIGN",
+    "payload": [
+        {
+            "format": "3f",
+            "var": "misalign"
+        }
+    ],
+    "type": "parameter"
+}

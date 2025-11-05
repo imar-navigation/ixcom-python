@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0700",
+    "name": "PAREKF_ALIGNMODE",
+    "payload": [
+        {
+            "format": "I",
+            "var": "align_mode"
+        }
+    ],
+    "type": "parameter"
+}

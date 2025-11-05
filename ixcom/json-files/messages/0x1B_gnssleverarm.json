@@ -1,0 +1,24 @@
+{
+    "domain": "public",
+    "id": "0x1B",
+    "name": "GNSSLEVERARM",
+    "payload": [
+        {
+            "format": "3f",
+            "var": "primary_ant_offset"
+        },
+        {
+            "format": "3f",
+            "var": "primary_ant_offset_stddev"
+        },
+        {
+            "format": "3f",
+            "var": "secondary_ant_offset"
+        },
+        {
+            "format": "3f",
+            "var": "secondary_ant_offset_stddev"
+        }
+    ],
+    "type": "message"
+}

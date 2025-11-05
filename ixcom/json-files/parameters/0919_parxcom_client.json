@@ -1,0 +1,60 @@
+{
+    "domain": "public",
+    "id": "0919",
+    "name": "PARXCOM_CLIENT",
+    "payload": [
+        {
+            "format": "8t",
+            "structFields": [
+                {
+                    "format": "I",
+                    "var": "ip_addr"
+                },
+                {
+                    "format": "I",
+                    "var": "port"
+                },
+                {
+                    "format": "B",
+                    "var": "enable"
+                },
+                {
+                    "format": "B",
+                    "var": "channel"
+                },
+                {
+                    "format": "H",
+                    "var": "connection_retries"
+                },
+                {
+                    "format": "8t",
+                    "structFields": [
+                        {
+                            "format": "B",
+                            "var": "msg_id"
+                        },
+                        {
+                            "format": "B",
+                            "var": "trigger"
+                        },
+                        {
+                            "format": "H",
+                            "var": "divider"
+                        }
+                    ],
+                    "var": "LOGS"
+                }
+            ],
+            "var": "CONF"
+        },
+        {
+            "format": "B",
+            "var": "use_udp_interface"
+        },
+        {
+            "format": "3B",
+            "var": "reserved"
+        }
+    ],
+    "type": "parameter"
+}

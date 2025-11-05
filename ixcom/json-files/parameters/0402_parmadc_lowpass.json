@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0402",
+    "name": "PARMADC_LOWPASS",
+    "payload": [
+        {
+            "format": "f",
+            "var": "cutoff_freq"
+        },
+        {
+            "format": "I",
+            "var": "enable_filter"
+        }
+    ],
+    "type": "parameter"
+}

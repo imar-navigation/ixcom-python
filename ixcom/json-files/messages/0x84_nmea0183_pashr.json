@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0x84",
+    "name": "NMEA0183_PASHR",
+    "payload": [
+        {
+            "format": "4076B",
+            "var": "payload_buffer"
+        }
+    ],
+    "type": "message"
+}

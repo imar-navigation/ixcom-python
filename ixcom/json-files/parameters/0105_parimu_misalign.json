@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0105",
+    "name": "PARIMU_MISALIGN",
+    "payload": [
+        {
+            "format": "3f",
+            "var": "xyz"
+        }
+    ],
+    "type": "parameter"
+}

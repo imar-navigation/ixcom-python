@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "1302",
+    "name": "PARNMEA0183_TXMASK",
+    "payload": [
+        {
+            "format": "2I",
+            "var": "tx_mask"
+        }
+    ],
+    "type": "parameter"
+}

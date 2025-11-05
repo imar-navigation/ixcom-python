@@ -1,0 +1,20 @@
+{
+    "domain": "public",
+    "id": "0x92",
+    "name": "CANSTATUS2",
+    "payload": [
+        {
+            "format": "B",
+            "var": "device"
+        },
+        {
+            "format": "3B",
+            "var": "reserved"
+        },
+        {
+            "format": "32I",
+            "var": "status_registers"
+        }
+    ],
+    "type": "message"
+}

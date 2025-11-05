@@ -1,0 +1,50 @@
+{
+    "domain": "public",
+    "id": "1401",
+    "name": "PARARINC429_LIST",
+    "payload": [
+        {
+            "format": "32t",
+            "structFields": [
+                {
+                    "format": "B",
+                    "var": "channel"
+                },
+                {
+                    "format": "B",
+                    "var": "label"
+                },
+                {
+                    "format": "B",
+                    "var": "dat_idx"
+                },
+                {
+                    "format": "B",
+                    "var": "enable"
+                },
+                {
+                    "format": "d",
+                    "var": "range"
+                },
+                {
+                    "format": "d",
+                    "var": "scale"
+                },
+                {
+                    "format": "B",
+                    "var": "width"
+                },
+                {
+                    "format": "I",
+                    "var": "period"
+                },
+                {
+                    "format": "I",
+                    "var": "timer"
+                }
+            ],
+            "var": "list"
+        }
+    ],
+    "type": "parameter"
+}

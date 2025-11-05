@@ -1,5 +1,4 @@
 import collections
-from collections.abc import Iterable
 import struct
 from enum import Flag, IntEnum, IntFlag, auto
 from typing import NamedTuple, List
@@ -9,6 +8,10 @@ from .exceptions import ParseError
 
 import os
 import json
+import numpy as np
+
+import logging
+_logger = logging.getLogger("IXCOM")
 
 class msg_iterator:
     def __init__(self, msg, in_bytes):
@@ -53,31 +56,40 @@ class Response(IntEnum):
     InvalidTrigger      = 0xB
     InternalError       = 0xC
 
-class DatatSelectionMask(IntEnum):
+class DataSelectionMask(IntFlag):
     '''Enumeration for the mask bits in the datsel field of the INSSOL message'''
     
-    IMURAW  = 0b0000000000000001
+    IMURAW  = auto()
     '''Inertial data as measured by the ISA'''
-    IMUCORR = 0b0000000000000010
+    IMUCORR = auto()
     '''Inertial data as measured by the ISA, corrected for sensor errors (scale factor, bias, misalignments, nontorthogonality, etc...) estimated by the EKF'''
-    IMUCOMP = 0b0000000000000100
+    IMUCOMP = auto()
     '''Inertial data corrected for sensor errors (scale factor, bias, misalignments, nontorthogonality, etc...) estimated by the EKF and compensated for gravity/earth rate'''
-    VELNED  = 0b0000000000001000
+    VELNED = auto()
     '''Velocity is in NED frame'''
-    VELECEF = 0b0000000000010000
+    VELENU = auto()
+    '''Velocity is in ENU frame'''
+    VELECEF = auto()
     '''Velocity is in ECEF frame'''
-    VELBDY  = 0b0000000000100000
+    VELBDY  = auto()
     '''Velocity is in body frame'''
-    ALTITUDE_WGS84 = 0b0000000001000000
+    ALTITUDE_WGS84 = auto()
     '''Altitude is height above WGS84 ellipsoid'''
-    ALTITUDE_MSL     = 0b0000000010000000
+    ALTITUDE_MSL = auto()
     '''Altitude is height above geoid'''
-    ALTITUDE_BARO = 0b0000000100000000
+    ALTITUDE_BARO = auto()
     '''Altitude is baro altitude'''
-    WGS84POS= 0b0000001000000000
+    WGS84POS= auto()
     '''Position is longitude, latitude, altitude'''
-    ECEFPOS = 0b0000010000000000
+    ECEFPOS = auto()
     '''Position is ECEF X,Y,Z'''
+    RESERVED_12 = auto()
+    RESERVED_13 = auto()
+    RESERVED_14 = auto()
+    RPY_DIN70000 = auto()
+    '''Attitude in DIN70000 convention (DIN9300 otherwise)'''
+
+DatatSelectionMask = DataSelectionMask
 
 class ParDatVelMode(IntEnum):
     '''Enumeration for the velocity output frame of the INSSOL message'''
@@ -110,12 +122,16 @@ class EkfCommand(IntEnum):
     SAVEANTOFFSET   = 3
     FORCED_ZUPT     = 4
     ALIGN_COMPLETE  = 5
+    COPYODOSCF      = 6
+    ZUPTCALIBRATION = 8
 
 class LogTrigger(IntEnum):
     '''Logs can be triggered with a certain divider from the inertial sensor samples, polled, or triggered by events.'''
-    SYNC          = 0
-    EVENT         = 1
-    POLLED        = 2
+    SYNC            = 0
+    EVENT           = 1
+    POLLED          = 2
+    EXTERNAL_EVENT  = 3
+    PPT_EVENT       = 4
 
 class LogCommand(IntEnum):
     '''This enum contains possible log command'''
@@ -202,7 +218,7 @@ class GlobalAlignStatus(IntEnum):
     '''Heading is being estimated from available aiding data'''
     
     ALIGN_COMPLETE = 2
-    '''Alignment is complete, the system is allowed to be moved.'''
+    '''Stationary alignment is complete, the system is allowed to be moved.'''
 
     HDG_GOOD = 3
     '''Heading standard deviation is lower than the threshold defined in PAREKF_HDGPOSTHR'''
@@ -342,42 +358,38 @@ class EKF_STATUS_LOW(IntFlag):
 
 class EKF_STATUS_HIGH(IntFlag):
     '''An enumeration for the status bits in the higher EKF status word'''
-    EKF_RTKLLH_UPDATE = 1 << 0
-    EKF_RTKLLH_LAT_OUTLIER = 1 << 1
-    EKF_RTKLLH_LON_OUTLIER = 1 << 2
-    EKF_RTKLLH_ALT_OUTLIER = 1 << 3
-
-    EKF_DUALANT_UPDATE = 1 << 4
-    EKF_DUALANT_OUTLIER = 1 << 5
-    EKF_COG_UPDATE = 1 << 6
-    EKF_COG_OUTLIER = 1 << 7
-
-    EKF_TDCP_UPDATE = 1 << 8
-    EKF_TDCP_DD_UPDATE = 1 << 9
-    EKF_ODO_ALONGTRACK_UPDATE = 1 << 10
-    EKF_ODO_ALONGTRACK_OUTLIER = 1 << 11        
-
-    EKF_ODO_CONSTRAINT_UPDATE = 1 << 12
-    EKF_ODO_CONSTRAINT_OUTLIER = 1 << 13
-    EKF_GRAVITY_UPDATE = 1 << 14
-    EKF_GRAVITY_OUTLIER = 1 << 15
-
-    EKF_EXTPOS_UPDATE = 1 << 16
-    EKF_EXTPOS_OUTLIER = 1 << 17
-    EKF_EXTVEL_UPDATE = 1 << 18
-    EKF_EXTVEL_OUTLIER = 1 << 19
-
-    EKF_ZARU_UPDATE = 1 << 20
-
-    EKF_WAHBA_UPDATE = 1 << 24
-    EKF_WAHBA_FILTER = 1 << 25
-    EKF_FILTER_MODE_1 = 1 << 26
-    EKF_FILTER_MODE_2 = 1 << 27
-
-    EKF_WAHBA_INTERNAL = 1 << 28
-    EKF_LEVELLING_COMPLETE = 1 << 29
-    EKF_STATIONARY_ALIGN_COMPLETE = 1 << 30
-    EKF_POSITION_VALID = 1 << 31
+    EKF_RTKLLH_UPDATE = auto()
+    EKF_RTKLLH_LON_OUTLIER = auto()
+    EKF_RTKLLH_LAT_OUTLIER = auto()
+    EKF_RTKLLH_ALT_OUTLIER = auto()
+    EKF_DUALANT_UPDATE = auto()
+    EKF_DUALANT_OUTLIER = auto()
+    EKF_COG_UPDATE = auto()
+    EKF_COG_OUTLIER = auto()
+    EKF_TDCP_UPDATE = auto()
+    EKF_TDCP_DD_UPDATE = auto()
+    EKF_ODO_ALONGTRACK_UPDATE = auto()
+    EKF_ODO_ALONGTRACK_OUTLIER = auto()
+    EKF_ODO_CONSTRAINT_UPDATE = auto()
+    EKF_ODO_CONSTRAINT_OUTLIER = auto()
+    EKF_GRAVITY_UPDATE = auto()
+    EKF_GRAVITY_OUTLIER = auto()
+    EKF_EXTPOS_UPDATE = auto()
+    EKF_EXTPOS_OUTLIER = auto()
+    EKF_EXTVEL_UPDATE = auto()
+    EKF_EXTVEL_OUTLIER = auto()
+    EKF_ZARU_UPDATE = auto()
+    EKF_WAHBA_VEL_TOO_OLD = auto()
+    EKF_WAHBA_POS_TOO_OLD = auto()
+    EKF_WAHBA_INSUFFOBS = auto()
+    EKF_WAHBA_UPDATE = auto()
+    EKF_WAHBA_FILTER = auto()
+    EKF_FILTER_MODE_0 = auto()
+    EKF_FILTER_MODE_1 = auto()
+    EKF_WAHBA_INTERNAL = auto()
+    EKF_LEVELLING_COMPLETE = auto()
+    EKF_STATIONARY_ALIGN_COMPLETE = auto()
+    EKF_POSITION_VALID = auto()
 
 class XcomCommandParameter(IntEnum):
     '''Parameters to the XCOM command'''
@@ -387,14 +399,6 @@ class XcomCommandParameter(IntEnum):
     '''Open an XCOM channel'''
     reboot         = 2
     '''Reboot the device'''
-    _warmreset      = 3
-    '''Do a warm reset'''
-    _reset_omg_int  = 4
-    '''Reset integration for OMGINT log'''
-    _update_svn     = 5
-    '''Update firmware from SVN'''
-    _reset_timebias = 6
-    '''Reset the time bias between system time and GNSS time'''
 
 class ParameterAction(IntEnum):
     '''Allowed parameter actions'''
@@ -433,6 +437,7 @@ class PayloadItem(NamedTuple):
             'f': 'int8_t',
             'd': 'int8_t',
             's': 'char',
+            'z': 'char*'
         }
         result = f'{d.get(self.datatype, "struct")} {self.name}'
         if self.dimension > 1:
@@ -458,7 +463,8 @@ class PayloadItem(NamedTuple):
         return struct_string
 
     def get_size(self):
-        basic_sizes = {'b': 1, 'B': 1, 's': 1, 'h': 2, 'H': 2, 'i': 4, 'I': 4, 'l': 4, 'L': 4, 'f': 4, 'd': 8, 'q': 8, 'Q': 8}
+        basic_sizes = {'b': 1, 'B': 1, 's': 1, 'h': 2, 'H': 2, 'i': 4, 'I': 4, 'l': 4, 'L': 4, 'f': 4, 'd': 8, 'q': 8, 'Q': 8,
+                       'z': 1} # z is null-terminated var-length string, we return size for empty string
         if isinstance(self.datatype, str):
             return basic_sizes[self.datatype]*self.dimension
         elif isinstance(self.datatype, Message):
@@ -472,6 +478,8 @@ class PayloadItem(NamedTuple):
                 dt_null = 0
             elif self.datatype in 'fd':
                 dt_null = 0.0
+            elif self.datatype == 'z':
+                dt_null = b'' # for "z" the dimension is regular count, not width like for "s"
         elif isinstance(self.datatype, Message):
             dt_null = self.datatype.get_null_item()
         else:
@@ -511,8 +519,8 @@ class Message:
         try:
             values = list(self.struct_inst.unpack_from(buffer, offset))
             return self.consume(values)
-        except struct.error:
-            raise ParseError(f'Could not convert {self.name}')
+        except struct.error as ee:
+            raise ParseError(f'Could not convert {self.name}. Reason: {repr(ee)}')
 
     def __repr__(self):
         result = 'Message([...])'
@@ -531,7 +539,7 @@ class Message:
         return result
 
     def generate_final_struct_string(self):
-        return '=' + self.get_struct_string()
+        return '<' + self.get_struct_string()
 
     def generate_data_dict(self):
         data = collections.OrderedDict()
@@ -575,7 +583,7 @@ class MessageItem:
 
 
 class ProtocolHeader(MessageItem):
-    structString = "=BBBBHHII"
+    structString = "<BBBBHHII"
 
     def __init__(self):
         self.sync               = 0x7E
@@ -601,6 +609,16 @@ class ProtocolHeader(MessageItem):
     def from_bytes(self, inBytes):
         self.sync, self.msgID, self.frameCounter, self.reserved, self.msgLength, self.week, self.timeOfWeek_sec, self.timeOfWeek_usec = self.struct_inst.unpack(inBytes[:16])
 
+    def get_desc(self):
+        return ['sync',
+            'msg_id',
+            'frame_counter',
+            'reserved_header',
+            'msg_length',
+            'week',
+            'time_of_week_sec',
+            'time_of_week_usec']
+
     def get_data(self):
         d = {
             'sync': self.sync, 
@@ -624,8 +642,41 @@ class ProtocolHeader(MessageItem):
         self.timeOfWeek_usec = d['time_of_week_usec']
 
 
+class ProtocolBottomWithoutStatus(MessageItem):
+    """Some application-dependend xcom-parameters may not have a
+    standard ProtocolBottom; in particular they may not have the
+    'global status' field.
+
+    When declaring ixcom parameter classes using the @parameter-decocation,
+    then a non-standard ixcom protocol bottom can be defined for the
+    parameter like this:
+        @parameter(id, ixcom_bottom = ProtocolBottomWithoutStatus)
+        class XYZ_PARM(DefaultParameterPayload): ....
+    """
+    structString = "<H"
+
+    def __init__(self):
+        self.crc = 0
+        self.struct_inst = struct.Struct(self.structString)
+
+    def to_bytes(self):
+        return bytearray(self.struct_inst.pack(self.crc))
+
+    def from_bytes(self, inBytes):
+        self.crc, = self.struct_inst.unpack(inBytes)
+
+    def get_desc(self):
+        return ['crc']
+
+    def get_data(self):
+        return {'crc': self.crc}
+
+    def set_data(self, d):
+        self.crc = d['crc']
+
+
 class ProtocolBottom(MessageItem):
-    structString = "=HH"
+    structString = "<HH"
 
     def __init__(self):
         self.gStatus = 0
@@ -637,6 +688,10 @@ class ProtocolBottom(MessageItem):
 
     def from_bytes(self, inBytes):
         self.gStatus, self.crc = self.struct_inst.unpack(inBytes)
+
+    def get_desc(self):
+        return ['global_status',
+                'crc']
 
     def get_data(self):
         d = {
@@ -690,6 +745,9 @@ class ProtocolPayload(MessageItem):
         # alwalys create own data dict
         self.data = self.message_description.generate_data_dict()
         self._initarg = varsize_arg
+
+    def get_desc(self):
+        return list(self.data.keys())
 
     @classmethod
     def _is_varsize(cls):
@@ -745,32 +803,55 @@ class ProtocolMessage(MessageItem):
         self.header  = ProtocolHeader()
         self.payload = ProtocolPayload()
         self.bottom  = ProtocolBottom()
+        self.get_data = self._data
+
+    def set_desc(self):
+        self.raw_dtype = self.get_numpy_dtype()
+        self.dtype = np.dtype(self.raw_dtype)
+
+    def set_extra_desc(self, exra_desc):
+        if exra_desc:
+            self.raw_extra_dtype = self.raw_dtype + exra_desc
+            self.extra_dtype = np.dtype(self.raw_extra_dtype)
+        else:
+            self.raw_extra_dtype = self.raw_dtype
+            self.extra_dtype = self.dtype
 
     def to_bytes(self):
         self.header.msgLength = self.size()
         header = self.header.to_bytes()
         payload = self.payload.to_bytes()
         bottom = self.bottom.to_bytes()
-        msgBytes = header + payload + bottom[:2]
+        msgBytes = header + payload + bottom[:-2]
         self.bottom.crc = crc16.crc16xmodem(bytes(msgBytes))
         bottom = self.bottom.to_bytes()
         return header + payload + bottom
 
+    def from_bytes_faster(self, inBytes):
+        self.np_data = np.frombuffer(inBytes, self.dtype, count=1)[0]
+        self.get_data = self._np_data
+
     def from_bytes(self, inBytes):
         headerBytes = inBytes[:16]
         self.header.from_bytes(headerBytes)
-        messageBytes = inBytes[16:self.header.msgLength-4]
+        bottomSize = self.bottom.size()
+        messageBytes = inBytes[16:self.header.msgLength-bottomSize]
         self.payload.from_bytes(messageBytes)
-        bottomBytes = inBytes[self.header.msgLength-4:self.header.msgLength]
+        bottomBytes = inBytes[self.header.msgLength-bottomSize:self.header.msgLength]
         self.bottom.from_bytes(bottomBytes)
 
     @property
     def data(self):
+        return self.get_data()
+
+    def _data(self):
         result = self.header.get_data()
         result.update(self.payload.data)
-        result['global_status'] = self.bottom.gStatus
-        result['crc'] = self.bottom.crc
+        result.update(self.bottom.get_data())
         return result
+    
+    def _np_data(self):
+        return self.np_data
 
     @property
     def structString(self):
@@ -796,7 +877,7 @@ class ProtocolMessage(MessageItem):
         return tmp
 
     def iter_unpack(self, buffer):
-        struct_string = '=' + self.header.structString[1:] + self.payload.structString[1:] + self.bottom.structString[1:]
+        struct_string = '<' + self.header.structString[1:] + self.payload.structString[1:] + self.bottom.structString[1:]
         struct_inst = struct.Struct(struct_string)
         return struct_inst.iter_unpack(buffer)
 
@@ -837,10 +918,10 @@ class ProtocolMessage(MessageItem):
             elif dtype in 'fd':
                 out_type = 'f'
             elif dtype in 's':
-                out_type = 'S'
+                out_type = 'V'
 
-            if out_type == 'S':
-                out_type = 'S'+str(cardinality)
+            if out_type == 'V':
+                out_type = 'V'+str(cardinality)
                 item_spec = (fieldname, out_type)
             else:
                 out_type = out_type + byte_size
@@ -1024,8 +1105,19 @@ def plugin_message(plugin_message_id):
 
     return decorator
 
+ParameterBottomDictionary = dict()  # parameter_id -> NonStandardProtocolBottom class (default is ProtocolBottom)
+
 ParameterPayloadDictionary = dict()
-def parameter(parameter_id):
+def parameter(parameter_id, ixcom_bottom = None):
+    """
+    Make @parameter a decocation to define python classes for ixcom parameters, where
+    parameter_id must be specified as the numeric identifier of the parameter and the optional
+    ixcom_bottom can be specified if the parameter does not have a standard ixcom protocol
+    bottom (e.g. ixcom_bottom = ProtocolBottomWithoutStatus).
+    The effect of the decoration is that the function getParameterWithID() knows the
+    parameter id and returns a ProtocolMessage() with payload that is initialized
+    according the decorated parameter class.
+    """
     def decorator(cls):
         cls.__doc__ = f'''Parameter (ID = {parameter_id}) with the following payload:\n\n{cls.parameter_payload.describe()}'''
         cls.parameter_id = parameter_id
@@ -1033,6 +1125,9 @@ def parameter(parameter_id):
             assert("use plugin_parameter decorator for plugin parameter")
         ParameterPayloadDictionary[parameter_id] = cls
         PayloadNameDictionary[cls.get_name()] = cls
+        if ixcom_bottom is not None:
+            assert issubclass(ixcom_bottom, MessageItem), "ixcom_buttom must be derived from MessageItem"
+            ParameterBottomDictionary[parameter_id] = ixcom_bottom
         return cls
 
     return decorator
@@ -1104,6 +1199,8 @@ def getParameterWithID(parameterID, varsize_arg=None):
     if parameterID == ParamID.PARPLUGIN:
         assert ("use getPluginParameterWithID for plugin parameter")
     if parameterID in ParameterPayloadDictionary:
+        if parameterID in ParameterBottomDictionary:
+            message.bottom = ParameterBottomDictionary[parameterID]()
         message.payload = ParameterPayloadDictionary[parameterID](varsize_arg)
         message.payload.data['parameterID'] = parameterID
         return message
@@ -1142,6 +1239,130 @@ def getMessageByName(msg_name, varsize_arg=None):
     else:
         return getMessageWithID(cls.message_id, varsize_arg)
 
+MessageStashDictionary = dict()
+ParameterStashDictionary = dict()
+PluginMessageStashDictionary = dict()
+PluginParameterStashDictionary = dict()
+CommandStashDictionary = dict()
+
+
+def handle_stashed_msg(md, in_bytes,extra_desc = None):
+    if md["is_varsize"]:
+        vsa = md["msg"].payload.get_varsize_arg_from_bytes(in_bytes[16:-4])
+        if vsa in md["varsize_msgs"]:
+            return md["varsize_msgs"][vsa]
+        else:
+            md["varsize_msgs"][vsa] = ProtocolMessage()
+            md["varsize_msgs"][vsa].header.msgID = md["msg"].header.msgID
+            md["varsize_msgs"][vsa].payload = md["pl_cls"](vsa)
+            md["varsize_msgs"][vsa].set_desc()
+            md["varsize_msgs"][vsa].set_extra_desc(extra_desc)
+            return md["varsize_msgs"][vsa]
+    else:
+        return md["msg"]
+
+def getStashedMessageWithID(msgID, in_bytes,extra_desc = None):
+    if msgID in MessageStashDictionary:
+        md = MessageStashDictionary[msgID]
+        return handle_stashed_msg(md, in_bytes, extra_desc = extra_desc)
+    elif msgID in MessagePayloadDictionary:
+        message = ProtocolMessage()
+        message.header.msgID = msgID
+        cla = MessagePayloadDictionary[msgID]
+        message.payload = cla()
+        message.set_desc()
+        message.set_extra_desc(extra_desc)
+        MessageStashDictionary[msgID] = dict()
+        MessageStashDictionary[msgID]["msg"] = message
+        MessageStashDictionary[msgID]["pl_cls"] = cla
+        MessageStashDictionary[msgID]["is_varsize"] = cla._is_varsize()
+        MessageStashDictionary[msgID]["varsize_msgs"] = dict()
+        return getStashedMessageWithID(msgID, in_bytes, extra_desc = extra_desc)
+    else:
+        return None
+
+def getStashedPluginMessageWithID(pluginMsgID, in_bytes,extra_desc = None):
+    if pluginMsgID in PluginMessageStashDictionary:
+        md = PluginMessageStashDictionary[pluginMsgID]
+        return handle_stashed_msg(md, in_bytes, extra_desc = extra_desc)
+    elif pluginMsgID in PluginMessagePayloadDictionary:
+        message = ProtocolMessage()
+        message.header.msgID = MessageID.PLUGIN
+        cla = PluginMessagePayloadDictionary[pluginMsgID]
+        message.payload = cla()
+        message.set_desc()
+        message.set_extra_desc(extra_desc)
+        PluginMessageStashDictionary[pluginMsgID] = dict()
+        PluginMessageStashDictionary[pluginMsgID]["msg"] = message
+        PluginMessageStashDictionary[pluginMsgID]["pl_cls"] = cla
+        PluginMessageStashDictionary[pluginMsgID]["is_varsize"] = cla._is_varsize()
+        PluginMessageStashDictionary[pluginMsgID]["varsize_msgs"] = dict()
+        return getStashedPluginMessageWithID(pluginMsgID, in_bytes, extra_desc = extra_desc)
+    else:
+        return None
+
+def getStashedParameterWithID(parameterID, in_bytes,extra_desc = None):
+    if parameterID in ParameterStashDictionary:
+        md = ParameterStashDictionary[parameterID]
+        return handle_stashed_msg(md, in_bytes, extra_desc = extra_desc)
+    elif parameterID in ParameterPayloadDictionary:
+        message = ProtocolMessage()
+        message.header.msgID = MessageID.PARAMETER
+        cla = ParameterPayloadDictionary[parameterID]
+        message.payload = cla()
+        message.set_desc()
+        message.set_extra_desc(extra_desc)
+        ParameterStashDictionary[parameterID] = dict()
+        ParameterStashDictionary[parameterID]["msg"] = message
+        ParameterStashDictionary[parameterID]["pl_cls"] = cla
+        ParameterStashDictionary[parameterID]["is_varsize"] = cla._is_varsize()
+        ParameterStashDictionary[parameterID]["varsize_msgs"] = dict()
+        return getStashedParameterWithID(parameterID, in_bytes, extra_desc = extra_desc)
+    else:
+        return None
+
+def getStashedPluginParameterWithID(pluginParameterID, in_bytes,extra_desc = None):
+    if pluginParameterID in PluginParameterStashDictionary:
+        md = PluginParameterStashDictionary[pluginParameterID]
+        return handle_stashed_msg(md, in_bytes, extra_desc = extra_desc)
+    elif pluginParameterID in PluginParameterPayloadDictionary:
+        message = ProtocolMessage()
+        message.header.msgID = MessageID.PARAMETER
+        cla = PluginParameterPayloadDictionary[pluginParameterID]
+        message.payload = cla()
+        message.set_desc()
+        message.set_extra_desc(extra_desc)
+        PluginParameterStashDictionary[pluginParameterID] = dict()
+        PluginParameterStashDictionary[pluginParameterID]["msg"] = message
+        PluginParameterStashDictionary[pluginParameterID]["pl_cls"] = cla
+        PluginParameterStashDictionary[pluginParameterID]["is_varsize"] = cla._is_varsize()
+        PluginParameterStashDictionary[pluginParameterID]["varsize_msgs"] = dict()
+        return getStashedPluginParameterWithID(pluginParameterID, in_bytes, extra_desc = extra_desc)
+    else:
+        return None
+
+def getStashedCommandWithID(commandID, in_bytes,extra_desc = None):
+    if commandID in CommandStashDictionary:
+        md = CommandStashDictionary[commandID]
+        return handle_stashed_msg(md, in_bytes, extra_desc = extra_desc)
+    elif commandID in CommandPayloadDictionary:
+        message = ProtocolMessage()
+        message.header.msgID = MessageID.COMMAND
+        cla = CommandPayloadDictionary[commandID]
+        message.payload = cla()
+        message.set_desc()
+        message.set_extra_desc(extra_desc)
+        CommandStashDictionary[commandID] = dict()
+        CommandStashDictionary[commandID]["msg"] = message
+        CommandStashDictionary[commandID]["pl_cls"] = cla
+        CommandStashDictionary[commandID]["is_varsize"] = cla._is_varsize()
+        CommandStashDictionary[commandID]["varsize_msgs"] = dict()
+        return getStashedCommandWithID(commandID, in_bytes, extra_desc = extra_desc)
+    else:
+        return None
+
+def get_message_id_from_name(msg_name):
+    return PayloadNameDictionary[msg_name].message_id
 
 # json parsing
 def split_string(string):
@@ -1187,8 +1408,8 @@ def parse_parameter_json_folder(path_json):
                     parcls.parameter_payload = Message(itemlist)
                     ParameterPayloadDictionary[parid] = parcls
                     PayloadNameDictionary[parcls.get_name()] = parcls
-            except Exception:
-                print("error parsing parameterfile:", f)
+            except BaseException as ee:
+                _logger.error("error parsing parameterfile %r: %r", f, ee)
 
 def parse_messages_json_folder(path_json):
     if os.path.isdir(path_json):
@@ -1205,6 +1426,6 @@ def parse_messages_json_folder(path_json):
                     msgcls.message_description = Message(itemlist)
                     MessagePayloadDictionary[msgid] = msgcls
                     PayloadNameDictionary[msgcls.get_name()] = msgcls
-            except Exception:
-                print("error parsing messagefile:", f)
+            except BaseException as ee:
+                _logger.error("error parsing messagefile %r: %r", f, ee)
 

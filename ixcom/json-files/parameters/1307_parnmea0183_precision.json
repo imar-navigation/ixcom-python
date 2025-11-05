@@ -1,0 +1,32 @@
+{
+    "domain": "public",
+    "id": "1307",
+    "name": "PARNMEA0183_PRECISION",
+    "payload": [
+        {
+            "format": "B",
+            "var": "message_select"
+        },
+        {
+            "format": "B",
+            "var": "latitude_precision"
+        },
+        {
+            "format": "B",
+            "var": "longitude_precision"
+        },
+        {
+            "format": "B",
+            "var": "undulation_precision"
+        },
+        {
+            "format": "B",
+            "var": "diffage_precision"
+        },
+        {
+            "format": "3B",
+            "var": "reserved"
+        }
+    ],
+    "type": "parameter"
+}

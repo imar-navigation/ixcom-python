@@ -1,0 +1,84 @@
+{
+    "domain": "public",
+    "id": "2100",
+    "name": "PAREXTSENSOR_NMEA0183",
+    "payload": [
+        {
+            "format": "B",
+            "var": "enable"
+        },
+        {
+            "format": "B",
+            "var": "port"
+        },
+        {
+            "format": "H",
+            "var": "reserved"
+        },
+        {
+            "format": "I",
+            "var": "baud"
+        },
+        {
+            "format": "t",
+            "structFields": [
+                {
+                    "format": "3f",
+                    "var": "lever_arm"
+                },
+                {
+                    "format": "3f",
+                    "var": "lever_arm_stddev"
+                },
+                {
+                    "format": "3f",
+                    "var": "stddev"
+                },
+                {
+                    "format": "f",
+                    "var": "latency"
+                },
+                {
+                    "format": "B",
+                    "var": "enable"
+                },
+                {
+                    "format": "3B",
+                    "var": "reserved"
+                }
+            ],
+            "var": "body_vel"
+        },
+        {
+            "format": "t",
+            "structFields": [
+                {
+                    "format": "3f",
+                    "var": "lever_arm"
+                },
+                {
+                    "format": "3f",
+                    "var": "lever_arm_stddev"
+                },
+                {
+                    "format": "f",
+                    "var": "stddev"
+                },
+                {
+                    "format": "f",
+                    "var": "latency"
+                },
+                {
+                    "format": "B",
+                    "var": "enable"
+                },
+                {
+                    "format": "3B",
+                    "var": "reserved"
+                }
+            ],
+            "var": "height"
+        }
+    ],
+    "type": "parameter"
+}

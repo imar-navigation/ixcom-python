@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "1306",
+    "name": "PARNMEA0183_VTGSELECT",
+    "payload": [
+        {
+            "format": "I",
+            "var": "selector"
+        }
+    ],
+    "type": "parameter"
+}

@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0611",
+    "name": "PARREC_DEVICE",
+    "payload": [
+        {
+            "format": "B",
+            "var": "device"
+        },
+        {
+            "format": "3B",
+            "var": "reserved"
+        }
+    ],
+    "type": "parameter"
+}

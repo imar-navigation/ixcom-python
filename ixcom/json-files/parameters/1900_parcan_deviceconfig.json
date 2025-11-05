@@ -1,0 +1,28 @@
+{
+    "domain": "public",
+    "id": "1900",
+    "name": "PARCAN_DEVICECONFIG",
+    "payload": [
+        {
+            "format": "B",
+            "var": "device_idx"
+        },
+        {
+            "format": "3B",
+            "var": "reserved"
+        },
+        {
+            "format": "I",
+            "var": "baud_rate"
+        },
+        {
+            "format": "H",
+            "var": "config_options"
+        },
+        {
+            "format": "H",
+            "var": "mode"
+        }
+    ],
+    "type": "parameter"
+}

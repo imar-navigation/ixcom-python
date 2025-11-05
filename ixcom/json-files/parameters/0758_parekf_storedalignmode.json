@@ -1,0 +1,24 @@
+{
+    "domain": "public",
+    "id": "0758",
+    "name": "PAREKF_STOREDALIGNMODE",
+    "payload": [
+        {
+            "format": "B",
+            "var": "verified_mode"
+        },
+        {
+            "format": "3B",
+            "var": "reserved"
+        },
+        {
+            "format": "d",
+            "var": "verification_time"
+        },
+        {
+            "format": "d",
+            "var": "heading_stddev_thr"
+        }
+    ],
+    "type": "parameter"
+}

@@ -1,0 +1,20 @@
+{
+    "domain": "public",
+    "id": "1502",
+    "name": "PARIO_SYNCOUT",
+    "payload": [
+        {
+            "format": "I",
+            "var": "mode"
+        },
+        {
+            "format": "I",
+            "var": "mask"
+        },
+        {
+            "format": "I",
+            "var": "matrix_row"
+        }
+    ],
+    "type": "parameter"
+}

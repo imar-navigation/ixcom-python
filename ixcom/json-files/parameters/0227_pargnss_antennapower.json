@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0227",
+    "name": "PARGNSS_ANTENNAPOWER",
+    "payload": [
+        {
+            "format": "I",
+            "var": "power_mask"
+        }
+    ],
+    "type": "parameter"
+}

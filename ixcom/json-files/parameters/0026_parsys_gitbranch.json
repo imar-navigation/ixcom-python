@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0026",
+    "name": "PARSYS_GITBRANCH",
+    "payload": [
+        {
+            "format": "128b",
+            "var": "branch_name"
+        }
+    ],
+    "type": "parameter"
+}

@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0x07",
+    "name": "INSVELNED",
+    "payload": [
+        {
+            "format": "3f",
+            "var": "velocity"
+        }
+    ],
+    "type": "message"
+}

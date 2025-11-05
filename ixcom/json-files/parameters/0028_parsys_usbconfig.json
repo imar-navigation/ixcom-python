@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0028",
+    "name": "PARSYS_USBCONFIG",
+    "payload": [
+        {
+            "format": "B",
+            "var": "usb_config"
+        },
+        {
+            "format": "3B",
+            "var": "reserved"
+        }
+    ],
+    "type": "parameter"
+}

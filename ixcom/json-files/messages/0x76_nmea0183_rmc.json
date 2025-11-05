@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0x76",
+    "name": "NMEA0183_RMC",
+    "payload": [
+        {
+            "format": "4076B",
+            "var": "payload_buffer"
+        }
+    ],
+    "type": "message"
+}

@@ -1,0 +1,26 @@
+{
+    "domain": "public",
+    "id": "0x91",
+    "name": "CANGATEWAY",
+    "payload": [
+        {
+            "format": "t",
+            "structFields": [
+                {
+                    "format": "B",
+                    "var": "device"
+                },
+                {
+                    "format": "3B",
+                    "var": "reserved"
+                }
+            ],
+            "var": "subheader"
+        },
+        {
+            "format": "512B",
+            "var": "buffer"
+        }
+    ],
+    "type": "message"
+}

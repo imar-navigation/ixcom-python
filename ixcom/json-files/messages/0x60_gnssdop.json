@@ -1,0 +1,32 @@
+{
+    "domain": "public",
+    "id": "0x60",
+    "name": "GNSSDOP",
+    "payload": [
+        {
+            "format": "f",
+            "var": "pdop"
+        },
+        {
+            "format": "f",
+            "var": "hdop"
+        },
+        {
+            "format": "f",
+            "var": "vdop"
+        },
+        {
+            "format": "f",
+            "var": "gdop"
+        },
+        {
+            "format": "f",
+            "var": "htdop"
+        },
+        {
+            "format": "f",
+            "var": "tdop"
+        }
+    ],
+    "type": "message"
+}

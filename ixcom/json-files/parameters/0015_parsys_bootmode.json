@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0015",
+    "name": "PARSYS_BOOTMODE",
+    "payload": [
+        {
+            "format": "I",
+            "var": "boot_mode"
+        }
+    ],
+    "type": "parameter"
+}

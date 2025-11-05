@@ -1,0 +1,20 @@
+{
+    "domain": "public",
+    "id": "0020",
+    "name": "PARSYS_MINFPGAVER",
+    "payload": [
+        {
+            "format": "B",
+            "var": "major"
+        },
+        {
+            "format": "B",
+            "var": "minor"
+        },
+        {
+            "format": "H",
+            "var": "imu_type"
+        }
+    ],
+    "type": "parameter"
+}

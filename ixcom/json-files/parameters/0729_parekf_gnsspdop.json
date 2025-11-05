@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0729",
+    "name": "PAREKF_GNSSPDOP",
+    "payload": [
+        {
+            "format": "f",
+            "var": "pdop"
+        }
+    ],
+    "type": "parameter"
+}

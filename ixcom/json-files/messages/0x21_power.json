@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0x21",
+    "name": "POWER",
+    "payload": [
+        {
+            "format": "32f",
+            "var": "power"
+        }
+    ],
+    "type": "message"
+}

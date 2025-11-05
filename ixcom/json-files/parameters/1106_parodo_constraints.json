@@ -1,0 +1,24 @@
+{
+    "domain": "public",
+    "id": "1106",
+    "name": "PARODO_CONSTRAINTS",
+    "payload": [
+        {
+            "format": "B",
+            "var": "enable"
+        },
+        {
+            "format": "B",
+            "var": "standalone"
+        },
+        {
+            "format": "H",
+            "var": "reserved2"
+        },
+        {
+            "format": "f",
+            "var": "constraints_stddev"
+        }
+    ],
+    "type": "parameter"
+}

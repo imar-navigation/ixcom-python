@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0749",
+    "name": "PAREKF_ZARUSTDDEV",
+    "payload": [
+        {
+            "format": "f",
+            "var": "stddev"
+        }
+    ],
+    "type": "parameter"
+}

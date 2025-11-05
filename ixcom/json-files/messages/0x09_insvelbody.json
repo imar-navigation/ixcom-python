@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0x09",
+    "name": "INSVELBODY",
+    "payload": [
+        {
+            "format": "3f",
+            "var": "velocity"
+        }
+    ],
+    "type": "message"
+}

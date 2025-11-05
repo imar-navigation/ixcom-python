@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0x04",
+    "name": "INSRPY",
+    "payload": [
+        {
+            "format": "3f",
+            "var": "rpy"
+        }
+    ],
+    "type": "message"
+}

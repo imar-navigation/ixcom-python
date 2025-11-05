@@ -1,0 +1,20 @@
+{
+    "domain": "public",
+    "id": "0703",
+    "name": "PAREKF_VMP",
+    "payload": [
+        {
+            "format": "3f",
+            "var": "leverarm"
+        },
+        {
+            "format": "H",
+            "var": "mask"
+        },
+        {
+            "format": "H",
+            "var": "cut_off"
+        }
+    ],
+    "type": "parameter"
+}

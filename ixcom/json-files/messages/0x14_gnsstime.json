@@ -1,0 +1,44 @@
+{
+    "domain": "public",
+    "id": "0x14",
+    "name": "GNSSTIME",
+    "payload": [
+        {
+            "format": "d",
+            "var": "utc_offset"
+        },
+        {
+            "format": "d",
+            "var": "offset"
+        },
+        {
+            "format": "I",
+            "var": "utc_year"
+        },
+        {
+            "format": "B",
+            "var": "utc_month"
+        },
+        {
+            "format": "B",
+            "var": "utc_day"
+        },
+        {
+            "format": "B",
+            "var": "utc_hour"
+        },
+        {
+            "format": "B",
+            "var": "utc_min"
+        },
+        {
+            "format": "I",
+            "var": "utc_ms"
+        },
+        {
+            "format": "I",
+            "var": "utc_status"
+        }
+    ],
+    "type": "message"
+}

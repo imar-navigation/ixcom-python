@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0400",
+    "name": "PARMADC_ENABLE",
+    "payload": [
+        {
+            "format": "I",
+            "var": "enable"
+        }
+    ],
+    "type": "parameter"
+}

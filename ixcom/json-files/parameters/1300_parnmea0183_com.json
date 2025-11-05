@@ -1,0 +1,24 @@
+{
+    "domain": "public",
+    "id": "1300",
+    "name": "PARNMEA0183_COM",
+    "payload": [
+        {
+            "format": "B",
+            "var": "port"
+        },
+        {
+            "format": "B",
+            "var": "enable"
+        },
+        {
+            "format": "H",
+            "var": "reserved1"
+        },
+        {
+            "format": "I",
+            "var": "baud_rate"
+        }
+    ],
+    "type": "parameter"
+}

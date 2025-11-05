@@ -1,0 +1,24 @@
+{
+    "domain": "public",
+    "id": "1504",
+    "name": "PARIO_SYNCIN",
+    "payload": [
+        {
+            "format": "B",
+            "var": "module_mode"
+        },
+        {
+            "format": "B",
+            "var": "timer_matrix_col_idx"
+        },
+        {
+            "format": "B",
+            "var": "sync_input_function"
+        },
+        {
+            "format": "B",
+            "var": "reserved"
+        }
+    ],
+    "type": "parameter"
+}

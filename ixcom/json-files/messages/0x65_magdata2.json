@@ -1,0 +1,24 @@
+{
+    "domain": "public",
+    "id": "0x65",
+    "name": "MAGDATA2",
+    "payload": [
+        {
+            "format": "3f",
+            "var": "raw_values"
+        },
+        {
+            "format": "B",
+            "var": "bit_error"
+        },
+        {
+            "format": "B",
+            "var": "temperature_idx"
+        },
+        {
+            "format": "h",
+            "var": "temperature"
+        }
+    ],
+    "type": "message"
+}

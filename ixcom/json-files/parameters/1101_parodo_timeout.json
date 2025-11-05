@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "1101",
+    "name": "PARODO_TIMEOUT",
+    "payload": [
+        {
+            "format": "f",
+            "var": "timeout"
+        }
+    ],
+    "type": "parameter"
+}

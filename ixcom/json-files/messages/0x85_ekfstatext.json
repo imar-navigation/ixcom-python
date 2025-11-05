@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0x85",
+    "name": "EKFSTATEXT",
+    "payload": [
+        {
+            "format": "I",
+            "var": "ext_status"
+        },
+        {
+            "format": "4I",
+            "var": "reserved"
+        }
+    ],
+    "type": "message"
+}

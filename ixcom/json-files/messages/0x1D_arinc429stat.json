@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0x1D",
+    "name": "ARINC429STAT",
+    "payload": [
+        {
+            "format": "I",
+            "var": "status"
+        }
+    ],
+    "type": "message"
+}

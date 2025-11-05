@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0112",
+    "name": "PARIMU_BANDSTOP",
+    "payload": [
+        {
+            "format": "f",
+            "var": "bandwidth"
+        },
+        {
+            "format": "f",
+            "var": "center"
+        }
+    ],
+    "type": "parameter"
+}

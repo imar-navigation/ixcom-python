@@ -1,0 +1,24 @@
+{
+    "domain": "public",
+    "id": "0730",
+    "name": "PAREKF_DUALANTAID",
+    "payload": [
+        {
+            "format": "f",
+            "var": "threshold_heading_stddev"
+        },
+        {
+            "format": "f",
+            "var": "threshold_pitch_stddev"
+        },
+        {
+            "format": "f",
+            "var": "threshold_ins_yaw_stddev"
+        },
+        {
+            "format": "I",
+            "var": "aiding_mode"
+        }
+    ],
+    "type": "parameter"
+}

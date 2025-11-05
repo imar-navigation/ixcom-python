@@ -1,0 +1,46 @@
+{
+    "domain": "public",
+    "id": "0x51",
+    "name": "GNSSSATINF",
+    "payload": [
+        {
+            "format": "I",
+            "var": "num_obs"
+        },
+        {
+            "format": "128t",
+            "structFields": [
+                {
+                    "format": "I",
+                    "var": "sat_system"
+                },
+                {
+                    "format": "H",
+                    "var": "sat_id"
+                },
+                {
+                    "format": "h",
+                    "var": "glo_freq"
+                },
+                {
+                    "format": "f",
+                    "var": "cn0"
+                },
+                {
+                    "format": "I",
+                    "var": "reject"
+                },
+                {
+                    "format": "f",
+                    "var": "azimuth"
+                },
+                {
+                    "format": "f",
+                    "var": "elevation"
+                }
+            ],
+            "var": "sat_observations"
+        }
+    ],
+    "type": "message"
+}

@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0x0B",
+    "name": "INSPOSECEF",
+    "payload": [
+        {
+            "format": "3d",
+            "var": "pos_ecef"
+        }
+    ],
+    "type": "message"
+}

@@ -1,0 +1,28 @@
+{
+    "domain": "public",
+    "id": "0x9B",
+    "name": "EXTHEADING",
+    "payload": [
+        {
+            "format": "d",
+            "var": "time"
+        },
+        {
+            "format": "f",
+            "var": "heading"
+        },
+        {
+            "format": "f",
+            "var": "heading_stddev"
+        },
+        {
+            "format": "B",
+            "var": "measurement_valid"
+        },
+        {
+            "format": "7B",
+            "var": "reserved"
+        }
+    ],
+    "type": "message"
+}

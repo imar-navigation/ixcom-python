@@ -1,0 +1,24 @@
+{
+    "domain": "public",
+    "id": "1301",
+    "name": "PARNMEA0183_ENABLE",
+    "payload": [
+        {
+            "format": "B",
+            "var": "reserved1"
+        },
+        {
+            "format": "B",
+            "var": "gps_quality_mode"
+        },
+        {
+            "format": "B",
+            "var": "source_selection"
+        },
+        {
+            "format": "B",
+            "var": "reserved2"
+        }
+    ],
+    "type": "parameter"
+}

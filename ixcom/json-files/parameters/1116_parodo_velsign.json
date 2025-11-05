@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "1116",
+    "name": "PARODO_VELSIGN",
+    "payload": [
+        {
+            "format": "B",
+            "var": "sign"
+        },
+        {
+            "format": "3B",
+            "var": "reserved"
+        }
+    ],
+    "type": "parameter"
+}

@@ -1,0 +1,98 @@
+{
+    "domain": "public",
+    "id": "0x82",
+    "name": "BATSTAT2",
+    "payload": [
+        {
+            "format": "t",
+            "structFields": [
+                {
+                    "format": "H",
+                    "var": "system_state"
+                },
+                {
+                    "format": "H",
+                    "var": "system_state_continue"
+                },
+                {
+                    "format": "t",
+                    "structFields": [
+                        {
+                            "format": "f",
+                            "var": "temperatureInCelsius"
+                        },
+                        {
+                            "format": "f",
+                            "var": "voltageInVolt"
+                        },
+                        {
+                            "format": "f",
+                            "var": "currentInAmpere"
+                        },
+                        {
+                            "format": "H",
+                            "var": "alarmWarning"
+                        },
+                        {
+                            "format": "H",
+                            "var": "averageTimeTillFullyLoadedInMinutes"
+                        },
+                        {
+                            "format": "H",
+                            "var": "averageTimeTillEmptyInMinutes"
+                        },
+                        {
+                            "format": "B",
+                            "var": "chargeInPercent"
+                        },
+                        {
+                            "format": "H",
+                            "var": "CycleCount"
+                        }
+                    ],
+                    "var": "battery1"
+                },
+                {
+                    "format": "t",
+                    "structFields": [
+                        {
+                            "format": "f",
+                            "var": "temperatureInCelsius"
+                        },
+                        {
+                            "format": "f",
+                            "var": "voltageInVolt"
+                        },
+                        {
+                            "format": "f",
+                            "var": "currentInAmpere"
+                        },
+                        {
+                            "format": "H",
+                            "var": "alarmWarning"
+                        },
+                        {
+                            "format": "H",
+                            "var": "averageTimeTillFullyLoadedInMinutes"
+                        },
+                        {
+                            "format": "H",
+                            "var": "averageTimeTillEmptyInMinutes"
+                        },
+                        {
+                            "format": "B",
+                            "var": "chargeInPercent"
+                        },
+                        {
+                            "format": "H",
+                            "var": "CycleCount"
+                        }
+                    ],
+                    "var": "battery2"
+                }
+            ],
+            "var": "bat_state"
+        }
+    ],
+    "type": "message"
+}

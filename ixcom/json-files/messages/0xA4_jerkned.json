@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0xA4",
+    "name": "JERKNED",
+    "payload": [
+        {
+            "format": "3d",
+            "var": "jerk_ned"
+        }
+    ],
+    "type": "message"
+}

@@ -1,0 +1,28 @@
+{
+    "domain": "public",
+    "id": "0x95",
+    "name": "EXTVELBODY",
+    "payload": [
+        {
+            "format": "d",
+            "var": "time"
+        },
+        {
+            "format": "3f",
+            "var": "vel_body"
+        },
+        {
+            "format": "3f",
+            "var": "vel_body_stddev"
+        },
+        {
+            "format": "B",
+            "var": "solution_valid"
+        },
+        {
+            "format": "7B",
+            "var": "reserved"
+        }
+    ],
+    "type": "message"
+}

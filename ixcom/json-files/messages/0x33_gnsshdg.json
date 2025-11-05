@@ -1,0 +1,48 @@
+{
+    "domain": "public",
+    "id": "0x33",
+    "name": "GNSSHDG",
+    "payload": [
+        {
+            "format": "f",
+            "var": "heading"
+        },
+        {
+            "format": "f",
+            "var": "heading_stddev"
+        },
+        {
+            "format": "f",
+            "var": "pitch"
+        },
+        {
+            "format": "f",
+            "var": "pitch_stddev"
+        },
+        {
+            "format": "H",
+            "var": "solution_status"
+        },
+        {
+            "format": "H",
+            "var": "position_type"
+        },
+        {
+            "format": "H",
+            "var": "reserved"
+        },
+        {
+            "format": "B",
+            "var": "sats_used"
+        },
+        {
+            "format": "B",
+            "var": "sats_tracked"
+        },
+        {
+            "format": "I",
+            "var": "gnss_status"
+        }
+    ],
+    "type": "message"
+}

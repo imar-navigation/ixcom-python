@@ -1,0 +1,52 @@
+{
+    "domain": "public",
+    "id": "0x61",
+    "name": "GNSSPOSECEF",
+    "payload": [
+        {
+            "format": "3d",
+            "var": "pos"
+        },
+        {
+            "format": "3f",
+            "var": "stddev"
+        },
+        {
+            "format": "H",
+            "var": "solution_status"
+        },
+        {
+            "format": "H",
+            "var": "position_type"
+        },
+        {
+            "format": "f",
+            "var": "pdop"
+        },
+        {
+            "format": "B",
+            "var": "sats_used"
+        },
+        {
+            "format": "B",
+            "var": "sats_tracked"
+        },
+        {
+            "format": "H",
+            "var": "station_id"
+        },
+        {
+            "format": "f",
+            "var": "diff_age"
+        },
+        {
+            "format": "f",
+            "var": "solution_age"
+        },
+        {
+            "format": "I",
+            "var": "gnss_status"
+        }
+    ],
+    "type": "message"
+}

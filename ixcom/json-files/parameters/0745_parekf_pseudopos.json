@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0745",
+    "name": "PAREKF_PSEUDOPOS",
+    "payload": [
+        {
+            "format": "I",
+            "var": "enable"
+        }
+    ],
+    "type": "parameter"
+}

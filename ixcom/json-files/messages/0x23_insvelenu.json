@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0x23",
+    "name": "INSVELENU",
+    "payload": [
+        {
+            "format": "3f",
+            "var": "velocity"
+        }
+    ],
+    "type": "message"
+}

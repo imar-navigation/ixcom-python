@@ -1,0 +1,40 @@
+{
+    "domain": "public",
+    "id": "0907",
+    "name": "PARXCOM_NTRIP",
+    "payload": [
+        {
+            "format": "128B",
+            "var": "mount_point"
+        },
+        {
+            "format": "128B",
+            "var": "user_name"
+        },
+        {
+            "format": "128B",
+            "var": "password"
+        },
+        {
+            "format": "128B",
+            "var": "server"
+        },
+        {
+            "format": "B",
+            "var": "send_position_on_login"
+        },
+        {
+            "format": "B",
+            "var": "enable"
+        },
+        {
+            "format": "H",
+            "var": "port"
+        },
+        {
+            "format": "I",
+            "var": "gga_send_period"
+        }
+    ],
+    "type": "parameter"
+}

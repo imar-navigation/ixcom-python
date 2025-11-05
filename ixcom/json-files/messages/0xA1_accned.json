@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0xA1",
+    "name": "ACCNED",
+    "payload": [
+        {
+            "format": "3d",
+            "var": "acc_ned"
+        }
+    ],
+    "type": "message"
+}

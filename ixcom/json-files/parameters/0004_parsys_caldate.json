@@ -1,0 +1,20 @@
+{
+    "domain": "public",
+    "id": "0004",
+    "name": "PARSYS_CALDATE",
+    "payload": [
+        {
+            "format": "H",
+            "var": "password"
+        },
+        {
+            "format": "H",
+            "var": "reserved1"
+        },
+        {
+            "format": "32B",
+            "var": "payload"
+        }
+    ],
+    "type": "parameter"
+}

@@ -1,0 +1,24 @@
+{
+    "domain": "public",
+    "id": "0750",
+    "name": "PAREKF_FPUPD",
+    "payload": [
+        {
+            "format": "B",
+            "var": "enable"
+        },
+        {
+            "format": "3B",
+            "var": "reserved"
+        },
+        {
+            "format": "d",
+            "var": "delta_t"
+        },
+        {
+            "format": "3d",
+            "var": "stddev"
+        }
+    ],
+    "type": "parameter"
+}

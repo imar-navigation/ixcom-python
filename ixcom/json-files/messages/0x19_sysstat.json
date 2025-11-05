@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0x19",
+    "name": "SYSSTAT",
+    "payload": [
+        {
+            "format": "I",
+            "var": "mode"
+        },
+        {
+            "format": "I",
+            "var": "sysstat"
+        }
+    ],
+    "type": "message"
+}

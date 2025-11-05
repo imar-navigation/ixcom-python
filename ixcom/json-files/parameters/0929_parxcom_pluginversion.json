@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0929",
+    "name": "PARXCOM_PLUGINVERSION",
+    "payload": [
+        {
+            "format": "256b",
+            "var": "plugin_version"
+        },
+        {
+            "format": "256b",
+            "var": "plugin_api_version"
+        }
+    ],
+    "type": "parameter"
+}

@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0603",
+    "name": "PARREC_START",
+    "payload": [
+        {
+            "format": "128B",
+            "var": "path"
+        }
+    ],
+    "type": "parameter"
+}

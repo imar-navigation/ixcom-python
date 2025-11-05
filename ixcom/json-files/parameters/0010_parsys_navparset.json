@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0010",
+    "name": "PARSYS_NAVPARSET",
+    "payload": [
+        {
+            "format": "32B",
+            "var": "payload"
+        }
+    ],
+    "type": "parameter"
+}

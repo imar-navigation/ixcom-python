@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "1603",
+    "name": "PARSCU_ERRBUF",
+    "payload": [
+        {
+            "format": "4072B",
+            "var": "payload_buffer"
+        }
+    ],
+    "type": "parameter"
+}

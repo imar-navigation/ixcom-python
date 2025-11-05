@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0607",
+    "name": "PARREC_DISKSPACE",
+    "payload": [
+        {
+            "format": "d",
+            "var": "free_space"
+        }
+    ],
+    "type": "parameter"
+}

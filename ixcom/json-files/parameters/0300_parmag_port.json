@@ -1,0 +1,20 @@
+{
+    "domain": "public",
+    "id": "0300",
+    "name": "PARMAG_PORT",
+    "payload": [
+        {
+            "format": "B",
+            "var": "port"
+        },
+        {
+            "format": "3B",
+            "var": "reserved2"
+        },
+        {
+            "format": "I",
+            "var": "baudrate"
+        }
+    ],
+    "type": "parameter"
+}

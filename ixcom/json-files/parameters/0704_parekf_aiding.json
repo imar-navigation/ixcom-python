@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0704",
+    "name": "PAREKF_AIDING",
+    "payload": [
+        {
+            "format": "I",
+            "var": "mode"
+        },
+        {
+            "format": "I",
+            "var": "mask"
+        }
+    ],
+    "type": "parameter"
+}

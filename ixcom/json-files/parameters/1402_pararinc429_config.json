@@ -1,0 +1,20 @@
+{
+    "domain": "public",
+    "id": "1402",
+    "name": "PARARINC429_CONFIG",
+    "payload": [
+        {
+            "format": "H",
+            "var": "divider"
+        },
+        {
+            "format": "B",
+            "var": "channel"
+        },
+        {
+            "format": "B",
+            "var": "high_speed"
+        }
+    ],
+    "type": "parameter"
+}

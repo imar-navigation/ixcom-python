@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "1111",
+    "name": "PARODO_SWAP",
+    "payload": [
+        {
+            "format": "I",
+            "var": "swap_inputs"
+        }
+    ],
+    "type": "parameter"
+}

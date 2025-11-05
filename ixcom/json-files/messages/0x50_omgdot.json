@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0x50",
+    "name": "OMGDOT",
+    "payload": [
+        {
+            "format": "3f",
+            "var": "omg_dot"
+        }
+    ],
+    "type": "message"
+}

@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0x7B",
+    "name": "NMEA0183_PISTATUS1",
+    "payload": [
+        {
+            "format": "4076B",
+            "var": "payload_buffer"
+        }
+    ],
+    "type": "message"
+}

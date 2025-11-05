@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "1105",
+    "name": "PARODO_DIRECTION",
+    "payload": [
+        {
+            "format": "3f",
+            "var": "direction"
+        }
+    ],
+    "type": "parameter"
+}

@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0002",
+    "name": "PARSYS_SERIALNUM",
+    "payload": [
+        {
+            "format": "32B",
+            "var": "payload"
+        }
+    ],
+    "type": "parameter"
+}

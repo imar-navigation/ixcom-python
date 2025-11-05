@@ -1,0 +1,20 @@
+{
+    "domain": "public",
+    "id": "1102",
+    "name": "PARODO_MODE",
+    "payload": [
+        {
+            "format": "H",
+            "var": "enable"
+        },
+        {
+            "format": "H",
+            "var": "mode"
+        },
+        {
+            "format": "2H",
+            "var": "deglitcher"
+        }
+    ],
+    "type": "parameter"
+}

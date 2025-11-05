@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0606",
+    "name": "PARREC_SUFFIX",
+    "payload": [
+        {
+            "format": "128B",
+            "var": "suffix"
+        }
+    ],
+    "type": "parameter"
+}

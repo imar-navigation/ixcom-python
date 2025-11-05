@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0309",
+    "name": "PARMAG_FOM",
+    "payload": [
+        {
+            "format": "f",
+            "var": "fom"
+        }
+    ],
+    "type": "parameter"
+}

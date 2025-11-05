@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0801",
+    "name": "PARDAT_VEL",
+    "payload": [
+        {
+            "format": "I",
+            "var": "mode"
+        }
+    ],
+    "type": "parameter"
+}

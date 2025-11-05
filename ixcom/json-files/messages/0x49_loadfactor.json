@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0x49",
+    "name": "LOADFACTOR",
+    "payload": [
+        {
+            "format": "3f",
+            "var": "load_factor"
+        }
+    ],
+    "type": "message"
+}

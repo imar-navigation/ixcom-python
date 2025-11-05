@@ -1,0 +1,40 @@
+{
+    "domain": "public",
+    "id": "0x0F",
+    "name": "EKFSTDDEV",
+    "payload": [
+        {
+            "format": "3f",
+            "var": "pos"
+        },
+        {
+            "format": "3f",
+            "var": "vel"
+        },
+        {
+            "format": "3f",
+            "var": "tilt"
+        },
+        {
+            "format": "3f",
+            "var": "bias_acc"
+        },
+        {
+            "format": "3f",
+            "var": "bias_omg"
+        },
+        {
+            "format": "3f",
+            "var": "scf_acc"
+        },
+        {
+            "format": "3f",
+            "var": "scf_omg"
+        },
+        {
+            "format": "f",
+            "var": "scf_odo"
+        }
+    ],
+    "type": "message"
+}

@@ -1,0 +1,56 @@
+{
+    "domain": "public",
+    "id": "2101",
+    "name": "PAREXTSENSOR_VIPS",
+    "payload": [
+        {
+            "format": "B",
+            "var": "enable"
+        },
+        {
+            "format": "B",
+            "var": "port"
+        },
+        {
+            "format": "H",
+            "var": "reserved"
+        },
+        {
+            "format": "I",
+            "var": "baud"
+        },
+        {
+            "format": "3f",
+            "var": "lever_arm"
+        },
+        {
+            "format": "3f",
+            "var": "lever_arm_stddev"
+        },
+        {
+            "format": "f",
+            "var": "latency"
+        },
+        {
+            "format": "f",
+            "var": "period"
+        },
+        {
+            "format": "f",
+            "var": "min_stddev_pos"
+        },
+        {
+            "format": "f",
+            "var": "scale_stddev_pos"
+        },
+        {
+            "format": "f",
+            "var": "min_stddev_vel"
+        },
+        {
+            "format": "f",
+            "var": "scale_stddev_vel"
+        }
+    ],
+    "type": "parameter"
+}

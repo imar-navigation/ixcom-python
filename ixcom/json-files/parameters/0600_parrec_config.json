@@ -1,0 +1,20 @@
+{
+    "domain": "public",
+    "id": "0600",
+    "name": "PARREC_CONFIG",
+    "payload": [
+        {
+            "format": "B",
+            "var": "xcom_channel"
+        },
+        {
+            "format": "B",
+            "var": "enable"
+        },
+        {
+            "format": "H",
+            "var": "reserved"
+        }
+    ],
+    "type": "parameter"
+}

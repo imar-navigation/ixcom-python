@@ -1,0 +1,20 @@
+{
+    "domain": "public",
+    "id": "0x46",
+    "name": "INSMGRS",
+    "payload": [
+        {
+            "format": "I",
+            "var": "error_code"
+        },
+        {
+            "format": "64B",
+            "var": "mgrs"
+        },
+        {
+            "format": "d",
+            "var": "grid_north"
+        }
+    ],
+    "type": "message"
+}

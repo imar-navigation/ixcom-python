@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "1112",
+    "name": "PARODO_PPDDIVIDER",
+    "payload": [
+        {
+            "format": "3H",
+            "var": "ppd_divider"
+        },
+        {
+            "format": "H",
+            "var": "ppd_reserved"
+        }
+    ],
+    "type": "parameter"
+}

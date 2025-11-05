@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "1103",
+    "name": "PARODO_LEVERARM",
+    "payload": [
+        {
+            "format": "3f",
+            "var": "lever_arm"
+        }
+    ],
+    "type": "parameter"
+}

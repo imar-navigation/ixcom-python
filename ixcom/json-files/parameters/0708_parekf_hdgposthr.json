@@ -1,0 +1,20 @@
+{
+    "domain": "public",
+    "id": "0708",
+    "name": "PAREKF_HDGPOSTHR",
+    "payload": [
+        {
+            "format": "f",
+            "var": "thr_heading"
+        },
+        {
+            "format": "f",
+            "var": "thr_pos_med"
+        },
+        {
+            "format": "f",
+            "var": "thr_pos_hi"
+        }
+    ],
+    "type": "parameter"
+}

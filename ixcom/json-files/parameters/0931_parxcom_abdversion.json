@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0931",
+    "name": "PARXCOM_ABDVERSION",
+    "payload": [
+        {
+            "format": "B",
+            "var": "protocol_version"
+        },
+        {
+            "format": "3B",
+            "var": "reserved"
+        }
+    ],
+    "type": "parameter"
+}

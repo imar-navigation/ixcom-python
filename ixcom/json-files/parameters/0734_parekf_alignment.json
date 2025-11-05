@@ -1,0 +1,48 @@
+{
+    "domain": "public",
+    "id": "0734",
+    "name": "PAREKF_ALIGNMENT",
+    "payload": [
+        {
+            "format": "I",
+            "var": "align_method"
+        },
+        {
+            "format": "H",
+            "var": "levelling_duration"
+        },
+        {
+            "format": "H",
+            "var": "stationaryalign_duration"
+        },
+        {
+            "format": "d",
+            "var": "align_zupt_stddev"
+        },
+        {
+            "format": "B",
+            "var": "enable_gyro_avg"
+        },
+        {
+            "format": "B",
+            "var": "enable_track_align"
+        },
+        {
+            "format": "f",
+            "var": "track_align_thr"
+        },
+        {
+            "format": "3f",
+            "var": "track_align_direction"
+        },
+        {
+            "format": "H",
+            "var": "reserved_1"
+        },
+        {
+            "format": "3I",
+            "var": "reserved_2"
+        }
+    ],
+    "type": "parameter"
+}

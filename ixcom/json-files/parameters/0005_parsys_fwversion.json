@@ -1,0 +1,12 @@
+{
+    "domain": "public",
+    "id": "0005",
+    "name": "PARSYS_FWVERSION",
+    "payload": [
+        {
+            "format": "32B",
+            "var": "payload"
+        }
+    ],
+    "type": "parameter"
+}

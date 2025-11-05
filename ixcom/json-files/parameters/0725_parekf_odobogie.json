@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "0725",
+    "name": "PAREKF_ODOBOGIE",
+    "payload": [
+        {
+            "format": "f",
+            "var": "bogie_distance"
+        },
+        {
+            "format": "I",
+            "var": "enable_bogie_compensation"
+        }
+    ],
+    "type": "parameter"
+}

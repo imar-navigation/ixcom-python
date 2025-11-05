@@ -1,0 +1,36 @@
+{
+    "domain": "public",
+    "id": "0x26",
+    "name": "TIME",
+    "payload": [
+        {
+            "format": "d",
+            "var": "sys_time"
+        },
+        {
+            "format": "d",
+            "var": "imu_interval"
+        },
+        {
+            "format": "d",
+            "var": "time_since_pps"
+        },
+        {
+            "format": "d",
+            "var": "pps_imu_time"
+        },
+        {
+            "format": "d",
+            "var": "pps_gnss_time"
+        },
+        {
+            "format": "d",
+            "var": "gnss_bias"
+        },
+        {
+            "format": "d",
+            "var": "gnss_bias_smoothed"
+        }
+    ],
+    "type": "message"
+}
