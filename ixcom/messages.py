@@ -598,6 +598,37 @@ class GNSSSATINFO_Payload(ProtocolPayload):
         PayloadItem(name = 'Azimuth', dimension = 1, datatype = 'f'),
     ])
 
+@message(0x51)
+class GNSSSATINF_Payload(ProtocolPayload):
+
+    _satellite_info = Message([
+            PayloadItem(name='sat_system', dimension=1, datatype='I'),
+            PayloadItem(name='sat_id', dimension=1, datatype='H'),
+            PayloadItem(name='glo_freq', dimension=1, datatype='h'),
+            PayloadItem(name='cn0', dimension=1, datatype='f'),
+            PayloadItem(name='reject', dimension=1, datatype='I'),
+            PayloadItem(name='azimuth', dimension=1, datatype='f'),
+            PayloadItem(name='elevation', dimension=1, datatype='f')
+    ])
+
+    message_description = Message([
+        PayloadItem(name = 'num_obs', dimension = 1, datatype = 'I'),
+        PayloadItem(name = 'sat_observations', dimension = 0, datatype = _satellite_info)
+    ])
+
+
+    def get_varsize_item_list(self, num_obs):
+        _item_list = [
+        PayloadItem(name = 'num_obs', dimension = 1, datatype = 'I'),
+        PayloadItem(name = 'sat_observations', dimension = num_obs, datatype = self._satellite_info)
+            ]
+        return _item_list
+
+    def get_varsize_arg_from_bytes(self, inBytes):
+        num_obs = int.from_bytes(inBytes[:3],'little')
+        return num_obs
+
+
 @message(0x45)
 class NTRIPSTAT_Payload(ProtocolPayload):
     message_description = Message([

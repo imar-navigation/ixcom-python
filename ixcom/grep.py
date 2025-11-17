@@ -288,7 +288,6 @@ def parse_message_from_buffer(messageID, buffer, message_count, stack_varsize_ar
             _msg_length = 16
             
             buffer_view = buffer.getbuffer()
-            #buffer_view = buffer.read()
             buffer_length = len(buffer_view)
             parser = NpMessageParser()
             parser.nothrow = True

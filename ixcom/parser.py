@@ -735,6 +735,24 @@ class Client(MessageParser):
         msgToSend.payload.data['enable'] = enable
         self.send_msg_and_waitfor_okay(msgToSend)
 
+    def forced_zupt_param(self, enable: bool):
+        '''Enables or disables forced Zero Velocity updates
+
+        Enables or disables forced Zero Velocity updates using the EKF FORCED_ZUPT parameter.
+        
+        Args:
+            enable: boolean value to enable or disable ZUPTs.
+ 
+        Raises:
+            ClientTimeoutError: Timeout while waiting for response from the XCOM server
+            ResponseError: The response from the system was not 'OK'
+        
+        '''
+        msgToSend = data.getMessageByName("PAREKF_FORCEDZUPT")
+        msgToSend.payload.data['action'] = data.ParameterAction.CHANGING
+        msgToSend.payload.data['enable'] = enable
+        self.send_msg_and_waitfor_okay(msgToSend)
+
     def save_antoffset(self, antenna: int):
         '''Saves the currently estimated GNSS antenna offset
 

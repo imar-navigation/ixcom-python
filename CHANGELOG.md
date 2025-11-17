@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.9] - 2025-11-17
+
+### Fixed
+
+- Fixed variable length message `GNSSSATINF`
+
 ## [1.3.8] - 2025-11-05
 
 ### Added
