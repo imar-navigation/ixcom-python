@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.10] - 2026-01-30
+
+### Changed
+
+- Updated message definitions
+
 ## [1.3.9] - 2025-11-17
 
 ### Fixed

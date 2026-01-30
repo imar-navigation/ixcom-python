@@ -81,6 +81,8 @@ class SYSSTAT_Payload(ProtocolPayload):
             _item_list += [PayloadItem(name = 'serviceStat', dimension = 1, datatype = 'I')]
         if(stat_mode & (1 << 8)):
             _item_list += [PayloadItem(name = 'remainingAlignTime', dimension = 1, datatype = 'f')]
+        if(stat_mode & (1 << 9)):
+            _item_list += [PayloadItem(name = 'sysStat2', dimension = 1, datatype = 'I')]
         return _item_list
 
     @staticmethod

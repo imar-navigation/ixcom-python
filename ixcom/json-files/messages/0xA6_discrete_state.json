@@ -1,0 +1,20 @@
+{
+    "domain": "public",
+    "id": "0xA6",
+    "name": "DISCRETE_STATE",
+    "payload": [
+        {
+            "format": "B",
+            "var": "irq_source"
+        },
+        {
+            "format": "B",
+            "var": "port_state"
+        },
+        {
+            "format": "34B",
+            "var": "reserved"
+        }
+    ],
+    "type": "message"
+}

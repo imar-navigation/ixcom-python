@@ -1,0 +1,16 @@
+{
+    "domain": "public",
+    "id": "1505",
+    "name": "PARIO_IPST_PINMODE",
+    "payload": [
+        {
+            "format": "B",
+            "var": "pin_mode"
+        },
+        {
+            "format": "3B",
+            "var": "reserved"
+        }
+    ],
+    "type": "parameter"
+}

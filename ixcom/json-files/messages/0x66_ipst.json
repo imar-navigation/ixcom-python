@@ -1,0 +1,42 @@
+{
+    "domain": "public",
+    "id": "0x66",
+    "name": "IPST",
+    "payload": [
+        {
+            "format": "3f",
+            "var": "acc"
+        },
+        {
+            "format": "3f",
+            "var": "omg"
+        },
+        {
+            "format": "I",
+            "var": "system_status"
+        },
+        {
+            "format": "I",
+            "var": "fpga_status"
+        },
+        {
+            "format": "3t",
+            "structFields": [
+                {
+                    "format": "i",
+                    "var": "ticks"
+                },
+                {
+                    "format": "I",
+                    "var": "event_time"
+                },
+                {
+                    "format": "I",
+                    "var": "event_time_next"
+                }
+            ],
+            "var": "odometer"
+        }
+    ],
+    "type": "message"
+}

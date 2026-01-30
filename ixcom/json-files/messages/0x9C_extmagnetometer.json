@@ -12,6 +12,10 @@
             "var": "magnetic_field"
         },
         {
+            "format": "f",
+            "var": "magnetic_heading"
+        },
+        {
             "format": "B",
             "var": "measurement_valid"
         },
@@ -20,7 +24,11 @@
             "var": "calib_state"
         },
         {
-            "format": "6B",
+            "format": "B",
+            "var": "sensor_id"
+        },
+        {
+            "format": "5B",
             "var": "reserved"
         }
     ],
